@@ -35,6 +35,7 @@ interface PaymentItem {
   amount: number;
   time: string;
   status: 'waiting' | 'confirmed' | 'failed';
+  relatedId: number; // 연관된 후보(register) 또는 매칭(match_*) ID
 }
 
 interface MemberItem {
@@ -51,11 +52,6 @@ interface MemberItem {
   role: 'member' | 'candidate';
 }
 
-interface RejectModal {
-  type: 'candidate' | 'match';
-  id: number;
-  nickname: string;
-}
 
 const DUMMY_CANDIDATES: CandidateItem[] = [
   { id: 1, nickname: '즐거운 사자', time: '10:30', amount: 3000, status: 'waiting' },
@@ -94,21 +90,21 @@ const DUMMY_MATCHES: MatchItem[] = [
 ];
 
 const DUMMY_PAYMENTS: PaymentItem[] = [
-  { id: 1, realName: '김민수', type: 'register', amount: 3000, time: '10:29', status: 'waiting' },
-  { id: 2, realName: '이지은', type: 'register', amount: 3000, time: '10:34', status: 'waiting' },
-  { id: 3, realName: '박준혁', type: 'match_random', amount: 2000, time: '10:39', status: 'waiting' },
-  { id: 4, realName: '최서연', type: 'match_ideal', amount: 3000, time: '09:15', status: 'confirmed' },
-  { id: 5, realName: '정다은', type: 'register', amount: 3000, time: '09:00', status: 'failed' },
-  { id: 6, realName: '임수호', type: 'register', amount: 3000, time: '08:55', status: 'confirmed' },
-  { id: 7, realName: '윤아름', type: 'match_random', amount: 1000, time: '08:50', status: 'confirmed' },
-  { id: 8, realName: '강태풍', type: 'match_ideal', amount: 1500, time: '08:45', status: 'confirmed' },
-  { id: 9, realName: '한바다', type: 'register', amount: 3000, time: '08:40', status: 'confirmed' },
-  { id: 10, realName: '오햇살', type: 'match_random', amount: 5000, time: '08:35', status: 'confirmed' },
-  { id: 11, realName: '신비함', type: 'register', amount: 3000, time: '08:30', status: 'confirmed' },
-  { id: 12, realName: '성실한', type: 'match_ideal', amount: 4500, time: '08:25', status: 'confirmed' },
-  { id: 13, realName: '고독한', type: 'register', amount: 3000, time: '08:20', status: 'confirmed' },
-  { id: 14, realName: '용감한', type: 'match_random', amount: 2000, time: '08:15', status: 'confirmed' },
-  { id: 15, realName: '명랑한', type: 'register', amount: 3000, time: '08:10', status: 'confirmed' },
+  { id: 1, realName: '김민수', type: 'register', amount: 3000, time: '10:29', status: 'waiting', relatedId: 1 },
+  { id: 2, realName: '이지은', type: 'register', amount: 3000, time: '10:34', status: 'waiting', relatedId: 2 },
+  { id: 3, realName: '박준혁', type: 'match_random', amount: 2000, time: '10:39', status: 'waiting', relatedId: 1 },
+  { id: 4, realName: '최서연', type: 'match_ideal', amount: 3000, time: '09:15', status: 'confirmed', relatedId: 2 },
+  { id: 5, realName: '정다은', type: 'register', amount: 3000, time: '09:00', status: 'failed', relatedId: 3 },
+  { id: 6, realName: '임수호', type: 'register', amount: 3000, time: '08:55', status: 'confirmed', relatedId: 4 },
+  { id: 7, realName: '윤아름', type: 'match_random', amount: 1000, time: '08:50', status: 'confirmed', relatedId: 6 },
+  { id: 8, realName: '강태풍', type: 'match_ideal', amount: 1500, time: '08:45', status: 'confirmed', relatedId: 7 },
+  { id: 9, realName: '한바다', type: 'register', amount: 3000, time: '08:40', status: 'confirmed', relatedId: 5 },
+  { id: 10, realName: '오햇살', type: 'match_random', amount: 5000, time: '08:35', status: 'confirmed', relatedId: 8 },
+  { id: 11, realName: '신비함', type: 'register', amount: 3000, time: '08:30', status: 'confirmed', relatedId: 6 },
+  { id: 12, realName: '성실한', type: 'match_ideal', amount: 4500, time: '08:25', status: 'confirmed', relatedId: 9 },
+  { id: 13, realName: '고독한', type: 'register', amount: 3000, time: '08:20', status: 'confirmed', relatedId: 7 },
+  { id: 14, realName: '용감한', type: 'match_random', amount: 2000, time: '08:15', status: 'confirmed', relatedId: 10 },
+  { id: 15, realName: '명랑한', type: 'register', amount: 3000, time: '08:10', status: 'confirmed', relatedId: 8 },
 ];
 
 const DUMMY_MEMBERS: MemberItem[] = [
@@ -204,14 +200,12 @@ const AdminDashboard: React.FC = () => {
   const { toast } = useToast();
   const { isPWA } = useDisplayMode();
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('candidates');
+  const [activeTab, setActiveTab] = useState<AdminTab>('payments');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [candidates, setCandidates] = useState<CandidateItem[]>(DUMMY_CANDIDATES);
   const [matches, setMatches] = useState<MatchItem[]>(DUMMY_MATCHES);
   const [payments, setPayments] = useState<PaymentItem[]>(DUMMY_PAYMENTS);
-  const [rejectModal, setRejectModal] = useState<RejectModal | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
   const [selectedMember, setSelectedMember] = useState<MemberItem | null>(null);
 
   const handleLogout = (): void => {
@@ -230,81 +224,41 @@ const AdminDashboard: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const openRejectModal = (type: 'candidate' | 'match', id: number, nickname: string): void => {
-    setRejectReason('');
-    setRejectModal({ type, id, nickname });
-  };
-
-  const closeRejectModal = (): void => {
-    setRejectModal(null);
-    setRejectReason('');
-  };
-
-  const submitReject = (): void => {
-    if (!rejectModal || !rejectReason.trim()) return;
-    if (rejectModal.type === 'candidate') {
-      setCandidates((prev) =>
-        prev.map((c) => (c.id === rejectModal.id ? { ...c, status: 'rejected' } : c)),
-      );
-      toast('후보 등록을 거절했습니다.', 'info');
-    } else {
-      setMatches((prev) =>
-        prev.map((m) => (m.id === rejectModal.id ? { ...m, status: 'rejected' } : m)),
-      );
-      toast('매칭 요청을 거절했습니다.', 'info');
-    }
-    closeRejectModal();
-  };
-
-  const approveCandidate = (id: number): void => {
-    setCandidates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: 'approved' } : c)),
-    );
-    toast('후보 등록을 승인했습니다.', 'success');
-  };
-
-  const approveMatch = (id: number): void => {
-    setMatches((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: 'approved' } : m)),
-    );
-    toast('매칭 요청을 승인했습니다.', 'success');
-  };
-
   const confirmPayment = (id: number): void => {
-    setPayments((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'confirmed' as const } : p)),
-    );
-    toast('입금을 확인했습니다.', 'success');
+    const payment = payments.find((p) => p.id === id);
+    if (!payment) return;
+    setPayments((prev) => prev.map((p) => p.id === id ? { ...p, status: 'confirmed' as const } : p));
+    if (payment.type === 'register') {
+      setCandidates((prev) => prev.map((c) => c.id === payment.relatedId ? { ...c, status: 'approved' } : c));
+    } else {
+      setMatches((prev) => prev.map((m) => m.id === payment.relatedId ? { ...m, status: 'approved' } : m));
+    }
+    toast('입금 확인 및 신청이 자동 승인되었습니다.', 'success');
   };
 
   const failPayment = (id: number): void => {
-    setPayments((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'failed' as const } : p)),
-    );
-    toast('입금 실패로 처리했습니다.', 'info');
-  };
-
-  const toggleCandidateStatus = (id: number, currentStatus: 'approved' | 'rejected'): void => {
-    const newStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
-    setCandidates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c)),
-    );
-    toast(`상태를 ${newStatus === 'approved' ? '승인' : '거절'}으로 변경했습니다.`, 'info');
-  };
-
-  const toggleMatchStatus = (id: number, currentStatus: 'approved' | 'rejected'): void => {
-    const newStatus = currentStatus === 'approved' ? 'rejected' : 'approved';
-    setMatches((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: newStatus } : m)),
-    );
-    toast(`상태를 ${newStatus === 'approved' ? '승인' : '거절'}으로 변경했습니다.`, 'info');
+    const payment = payments.find((p) => p.id === id);
+    if (!payment) return;
+    setPayments((prev) => prev.map((p) => p.id === id ? { ...p, status: 'failed' as const } : p));
+    if (payment.type === 'register') {
+      setCandidates((prev) => prev.map((c) => c.id === payment.relatedId ? { ...c, status: 'rejected' } : c));
+    } else {
+      setMatches((prev) => prev.map((m) => m.id === payment.relatedId ? { ...m, status: 'rejected' } : m));
+    }
+    toast('미입금 처리 및 신청이 자동 거절되었습니다.', 'info');
   };
 
   const togglePaymentStatus = (id: number, currentStatus: 'confirmed' | 'failed'): void => {
     const newStatus = currentStatus === 'confirmed' ? 'failed' : 'confirmed';
-    setPayments((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p)),
-    );
+    const payment = payments.find((p) => p.id === id);
+    if (!payment) return;
+    setPayments((prev) => prev.map((p) => p.id === id ? { ...p, status: newStatus } : p));
+    const relatedStatus = newStatus === 'confirmed' ? 'approved' : 'rejected';
+    if (payment.type === 'register') {
+      setCandidates((prev) => prev.map((c) => c.id === payment.relatedId ? { ...c, status: relatedStatus } : c));
+    } else {
+      setMatches((prev) => prev.map((m) => m.id === payment.relatedId ? { ...m, status: relatedStatus } : m));
+    }
     toast(`입금 상태를 ${newStatus === 'confirmed' ? '확인' : '실패'}로 변경했습니다.`, 'info');
   };
 
@@ -315,85 +269,46 @@ const AdminDashboard: React.FC = () => {
     const waitingItems = filteredCandidates.filter((c) => c.status === 'waiting');
     const processedItems = filteredCandidates.filter((c) => c.status !== 'waiting');
 
-    const totalPages = Math.ceil(processedItems.length / ITEMS_PER_PAGE);
-    const paginatedProcessed = processedItems.slice(
+    const totalPages = Math.ceil(filteredCandidates.length / ITEMS_PER_PAGE);
+    const paginated = filteredCandidates.slice(
       (currentPage - 1) * ITEMS_PER_PAGE,
       currentPage * ITEMS_PER_PAGE,
     );
 
     return (
-      <div className="space-y-8">
-        <div>
-          <p className="text-xs font-semibold text-slate-400 mb-1">
-            승인 대기 ({waitingItems.length})
+      <div className="space-y-2">
+        <p className="text-xs text-slate-400 pb-2">
+          결제 탭에서 입금 확인 시 자동으로 승인/거절됩니다.
+        </p>
+        {waitingItems.length === 0 && processedItems.length === 0 ? (
+          <p className="text-sm text-slate-400 py-4">
+            {searchTerm ? '검색 결과가 없습니다.' : '신청 내역이 없습니다.'}
           </p>
-          {waitingItems.length === 0 ? (
-            <p className="text-sm text-slate-400 py-4">
-              {searchTerm ? '검색 결과가 없습니다.' : '대기 중인 신청이 없습니다.'}
-            </p>
-          ) : (
+        ) : (
+          <>
             <div className="divide-y divide-slate-100">
-              {waitingItems.map((item) => (
-                <div key={item.id} className="py-4 flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 text-sm">{item.nickname}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {item.time} · {item.amount.toLocaleString()}원
-                    </p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      onClick={() => openRejectModal('candidate', item.id, item.nickname)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 text-xs font-medium hover:bg-slate-50"
-                    >
-                      <X size={13} /> 거절
-                    </button>
-                    <button
-                      onClick={() => approveCandidate(item.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium hover:bg-slate-700"
-                    >
-                      <Check size={13} /> 승인
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {processedItems.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-slate-400 mb-1">
-              처리 완료 ({processedItems.length})
-            </p>
-            <div className="divide-y divide-slate-100">
-              {paginatedProcessed.map((item) => (
+              {paginated.map((item) => (
                 <div key={item.id} className="py-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-700">{item.nickname}</p>
+                    <p className="text-sm font-semibold text-slate-900">{item.nickname}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {item.time} · {item.amount.toLocaleString()}원
                     </p>
                   </div>
-                  <button
-                    onClick={() => toggleCandidateStatus(item.id, item.status as 'approved' | 'rejected')}
-                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-colors ${
-                      item.status === 'approved' 
-                        ? 'bg-green-50 text-green-600 hover:bg-green-100' 
-                        : 'bg-red-50 text-red-500 hover:bg-red-100'
-                    }`}
-                  >
-                    {item.status === 'approved' ? '승인됨' : '거절됨'}
-                  </button>
+                  <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
+                    item.status === 'approved'
+                      ? 'bg-green-50 text-green-600'
+                      : item.status === 'rejected'
+                        ? 'bg-red-50 text-red-500'
+                        : 'bg-amber-50 text-amber-500'
+                  }`}>
+                    {item.status === 'approved' ? '승인됨' : item.status === 'rejected' ? '거절됨' : '대기중'}
+                  </span>
                 </div>
               ))}
             </div>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          </>
         )}
       </div>
     );
@@ -403,88 +318,47 @@ const AdminDashboard: React.FC = () => {
     const filteredMatches = matches.filter((m) =>
       m.nickname.toLowerCase().includes(searchTerm.toLowerCase()),
     );
-    const waitingItems = filteredMatches.filter((m) => m.status === 'waiting');
-    const processedItems = filteredMatches.filter((m) => m.status !== 'waiting');
 
-    const totalPages = Math.ceil(processedItems.length / ITEMS_PER_PAGE);
-    const paginatedProcessed = processedItems.slice(
+    const totalPages = Math.ceil(filteredMatches.length / ITEMS_PER_PAGE);
+    const paginated = filteredMatches.slice(
       (currentPage - 1) * ITEMS_PER_PAGE,
       currentPage * ITEMS_PER_PAGE,
     );
 
     return (
-      <div className="space-y-8">
-        <div>
-          <p className="text-xs font-semibold text-slate-400 mb-1">
-            승인 대기 ({waitingItems.length})
+      <div className="space-y-2">
+        <p className="text-xs text-slate-400 pb-2">
+          결제 탭에서 입금 확인 시 자동으로 승인/거절됩니다.
+        </p>
+        {filteredMatches.length === 0 ? (
+          <p className="text-sm text-slate-400 py-4">
+            {searchTerm ? '검색 결과가 없습니다.' : '신청 내역이 없습니다.'}
           </p>
-          {waitingItems.length === 0 ? (
-            <p className="text-sm text-slate-400 py-4">
-              {searchTerm ? '검색 결과가 없습니다.' : '대기 중인 매칭이 없습니다.'}
-            </p>
-          ) : (
+        ) : (
+          <>
             <div className="divide-y divide-slate-100">
-              {waitingItems.map((item) => (
-                <div key={item.id} className="py-4 flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 text-sm">{item.nickname}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {item.time} · {item.type === 'random' ? '무작위' : '이상형'} {item.count}명 · {item.amount.toLocaleString()}원
-                    </p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      onClick={() => openRejectModal('match', item.id, item.nickname)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 text-xs font-medium hover:bg-slate-50"
-                    >
-                      <X size={13} /> 거절
-                    </button>
-                    <button
-                      onClick={() => approveMatch(item.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium hover:bg-slate-700"
-                    >
-                      <Check size={13} /> 승인
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {processedItems.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-slate-400 mb-1">
-              처리 완료 ({processedItems.length})
-            </p>
-            <div className="divide-y divide-slate-100">
-              {paginatedProcessed.map((item) => (
+              {paginated.map((item) => (
                 <div key={item.id} className="py-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-700">{item.nickname}</p>
+                    <p className="text-sm font-semibold text-slate-900">{item.nickname}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {item.time} · {item.type === 'random' ? '무작위' : '이상형'} {item.count}명 · {item.amount.toLocaleString()}원
                     </p>
                   </div>
-                  <button
-                    onClick={() => toggleMatchStatus(item.id, item.status as 'approved' | 'rejected')}
-                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-colors ${
-                      item.status === 'approved' 
-                        ? 'bg-green-50 text-green-600 hover:bg-green-100' 
-                        : 'bg-red-50 text-red-500 hover:bg-red-100'
-                    }`}
-                  >
-                    {item.status === 'approved' ? '승인됨' : '거절됨'}
-                  </button>
+                  <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
+                    item.status === 'approved'
+                      ? 'bg-green-50 text-green-600'
+                      : item.status === 'rejected'
+                        ? 'bg-red-50 text-red-500'
+                        : 'bg-amber-50 text-amber-500'
+                  }`}>
+                    {item.status === 'approved' ? '승인됨' : item.status === 'rejected' ? '거절됨' : '대기중'}
+                  </span>
                 </div>
               ))}
             </div>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          </>
         )}
       </div>
     );
@@ -723,41 +597,6 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'payments' && renderPayments()}
         {activeTab === 'members' && renderMembers()}
       </div>
-
-      {/* 거절 사유 모달 */}
-      {rejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
-          <div className="absolute inset-0 bg-black/40" onClick={closeRejectModal} />
-          <div className="relative w-full max-w-[390px] bg-white rounded-3xl p-6">
-            <h3 className="font-bold text-slate-900 text-base mb-1">거절 사유</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              <span className="font-semibold text-slate-600">{rejectModal.nickname}</span> 님의{' '}
-              {rejectModal.type === 'candidate' ? '후보 등록' : '매칭 요청'} 거절 사유를 입력해주세요.
-            </p>
-            <textarea
-              className="w-full h-28 px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:border-slate-400"
-              placeholder="예) 입금자명이 신청자 이름과 일치하지 않습니다."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-            />
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={closeRejectModal}
-                className="flex-1 h-12 rounded-2xl border border-slate-200 text-slate-500 text-sm font-medium hover:bg-slate-50"
-              >
-                취소
-              </button>
-              <button
-                onClick={submitReject}
-                disabled={!rejectReason.trim()}
-                className="flex-[2] h-12 rounded-2xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                거절하기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 회원 상세 모달 */}
       {selectedMember && (
