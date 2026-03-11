@@ -207,6 +207,8 @@ const AdminDashboard: React.FC = () => {
   const [matches, setMatches] = useState<MatchItem[]>(DUMMY_MATCHES);
   const [payments, setPayments] = useState<PaymentItem[]>(DUMMY_PAYMENTS);
   const [selectedMember, setSelectedMember] = useState<MemberItem | null>(null);
+  const [failModal, setFailModal] = useState<{ id: number; realName: string } | null>(null);
+  const [failReason, setFailReason] = useState('');
 
   const handleLogout = (): void => {
     logout();
@@ -236,16 +238,28 @@ const AdminDashboard: React.FC = () => {
     toast('입금 확인 및 신청이 자동 승인되었습니다.', 'success');
   };
 
-  const failPayment = (id: number): void => {
-    const payment = payments.find((p) => p.id === id);
+  const openFailModal = (id: number, realName: string): void => {
+    setFailReason('');
+    setFailModal({ id, realName });
+  };
+
+  const closeFailModal = (): void => {
+    setFailModal(null);
+    setFailReason('');
+  };
+
+  const submitFail = (): void => {
+    if (!failModal || !failReason.trim()) return;
+    const payment = payments.find((p) => p.id === failModal.id);
     if (!payment) return;
-    setPayments((prev) => prev.map((p) => p.id === id ? { ...p, status: 'failed' as const } : p));
+    setPayments((prev) => prev.map((p) => p.id === failModal.id ? { ...p, status: 'failed' as const } : p));
     if (payment.type === 'register') {
       setCandidates((prev) => prev.map((c) => c.id === payment.relatedId ? { ...c, status: 'rejected' } : c));
     } else {
       setMatches((prev) => prev.map((m) => m.id === payment.relatedId ? { ...m, status: 'rejected' } : m));
     }
     toast('미입금 처리 및 신청이 자동 거절되었습니다.', 'info');
+    closeFailModal();
   };
 
   const togglePaymentStatus = (id: number, currentStatus: 'confirmed' | 'failed'): void => {
@@ -399,7 +413,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <button
-                      onClick={() => failPayment(item.id)}
+                      onClick={() => openFailModal(item.id, item.realName)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 text-xs font-medium hover:bg-slate-50"
                     >
                       <X size={13} /> 미입금
@@ -597,6 +611,40 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'payments' && renderPayments()}
         {activeTab === 'members' && renderMembers()}
       </div>
+
+      {/* 미입금 거절 사유 모달 */}
+      {failModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
+          <div className="absolute inset-0 bg-black/40" onClick={closeFailModal} />
+          <div className="relative w-full max-w-[390px] bg-white rounded-3xl p-6">
+            <h3 className="font-bold text-slate-900 text-base mb-1">미입금 처리</h3>
+            <p className="text-xs text-slate-400 mb-4">
+              <span className="font-semibold text-slate-600">{failModal.realName}</span> 님의 거절 사유를 입력해주세요.
+            </p>
+            <textarea
+              className="w-full h-28 px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:border-slate-400"
+              placeholder="예) 입금자명이 신청자 이름과 일치하지 않습니다."
+              value={failReason}
+              onChange={(e) => setFailReason(e.target.value)}
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={closeFailModal}
+                className="flex-1 h-12 rounded-2xl border border-slate-200 text-slate-500 text-sm font-medium hover:bg-slate-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={submitFail}
+                disabled={!failReason.trim()}
+                className="flex-[2] h-12 rounded-2xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                미입금 처리
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 회원 상세 모달 */}
       {selectedMember && (
