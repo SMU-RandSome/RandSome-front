@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/Button';
@@ -8,6 +8,12 @@ import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
+import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
+import { login as loginApi } from '@/features/auth/api';
+import { getMyProfile } from '@/features/member/api';
+import { apiClient } from '@/lib/axios';
+import type { MemberCreateRequest, Gender, Mbti } from '@/types';
+import axios from 'axios';
 import {
   ChevronLeft,
   CheckCircle2,
@@ -56,9 +62,6 @@ const BANK_OPTIONS = [
   { value: '수협', label: '수협은행' },
   { value: '우체국', label: '우체국' },
 ];
-
-const ADJECTIVES = ['행복한', '즐거운', '설레는', '신나는', '귀여운', '멋진', '수줍은', '용감한'];
-const NOUNS = ['호랑이', '사자', '토끼', '강아지', '고양이', '쿼카', '다람쥐', '펭귄'];
 
 type SignupStep = 1 | 2 | 3;
 
@@ -191,7 +194,7 @@ const TERMS_ITEMS: TermsItem[] = [
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { setUser } = useAuth();
   const { toast } = useToast();
   const { isPWA } = useDisplayMode();
 
@@ -219,29 +222,55 @@ const SignupPage: React.FC = () => {
 
   const [emailSent, setEmailSent] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
-  const emailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [emailVerificationToken, setEmailVerificationToken] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (emailTimerRef.current) clearTimeout(emailTimerRef.current);
-    };
-  }, []);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [openTermKey, setOpenTermKey] = useState<TermsKey | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSendEmail = (): void => {
+  const handleSendEmail = async (): Promise<void> => {
     if (!formData.emailUsername.trim()) {
       toast('이메일 아이디를 입력해주세요.', 'error');
       return;
     }
-    if (emailTimerRef.current) clearTimeout(emailTimerRef.current);
-    setEmailSent(true);
-    toast('인증 메일이 발송되었습니다.', 'info');
-    emailTimerRef.current = setTimeout(() => {
+    try {
+      const email = `${formData.emailUsername}@sangmyung.kr`;
+      await sendEmailVerificationCode({ email });
+      setEmailSent(true);
+      setVerificationCode('');
+      toast('인증 메일이 발송되었습니다.', 'info');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast(err.response?.data?.error?.message ?? '메일 발송에 실패했습니다.', 'error');
+      } else {
+        toast('메일 발송 중 오류가 발생했습니다.', 'error');
+      }
+    }
+  };
+
+  const handleVerifyCode = async (): Promise<void> => {
+    if (!verificationCode.trim()) {
+      toast('인증코드를 입력해주세요.', 'error');
+      return;
+    }
+    try {
+      const email = `${formData.emailUsername}@sangmyung.kr`;
+      const res = await verifyEmailCode({ email, code: verificationCode });
+      if (!res.data) {
+        toast(res.error?.message ?? '인증 코드가 올바르지 않습니다.', 'error');
+        return;
+      }
+      setEmailVerificationToken(res.data.emailVerificationToken);
       setEmailVerified(true);
       toast('이메일 인증이 완료되었습니다!', 'success');
-    }, 2000);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast(err.response?.data?.error?.message ?? '인증에 실패했습니다.', 'error');
+      } else {
+        toast('인증 중 오류가 발생했습니다.', 'error');
+      }
+    }
   };
 
   const requiredTermsAgreed =
@@ -316,26 +345,59 @@ const SignupPage: React.FC = () => {
     setStep((s) => (s - 1) as SignupStep);
   };
 
-  const handleSubmit = (e: React.FormEvent): void => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (!isStep3Valid) {
       toast('자기소개와 이상형을 모두 입력해주세요.', 'error');
       return;
     }
-    const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-    const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
-    toast('회원가입이 완료되었습니다! 환영합니다.', 'success');
-    login({
-      id: Date.now(),
-      email: `${formData.emailUsername}@sangmyung.kr`,
-      nickname: `${adj} ${noun}`,
-      mbti: formData.mbti,
-      intro: formData.intro,
-      gender: formData.gender === 'male' ? 'male' : 'female',
-      role: 'ROLE_MEMBER',
-      instagramId: formData.instagramId,
-    });
-    navigate('/home');
+
+    setIsSubmitting(true);
+    try {
+      const body: MemberCreateRequest = {
+        emailVerificationToken,
+        email: `${formData.emailUsername}@sangmyung.kr`,
+        password: formData.password,
+        legalName: formData.realName,
+        gender: formData.gender as Gender,
+        mbti: formData.mbti as Mbti,
+        instagramId: formData.instagramId || undefined,
+        selfIntroduction: formData.intro || undefined,
+        idealDescription: formData.idealType || undefined,
+        agreedToTerms: requiredTermsAgreed,
+        bankName: formData.bankName,
+        accountNumber: formData.bankAccountNumber,
+      };
+
+      await apiClient.post('/v1/members/sign-up', body);
+
+      // 가입 후 자동 로그인
+      const tokenRes = await loginApi({ email: body.email, password: body.password });
+      if (!tokenRes.data) {
+        toast('회원가입이 완료되었습니다. 로그인해주세요.', 'success');
+        navigate('/login');
+        return;
+      }
+
+      localStorage.setItem('accessToken', tokenRes.data.accessToken);
+      localStorage.setItem('refreshToken', tokenRes.data.refreshToken);
+
+      const profileRes = await getMyProfile();
+      if (profileRes.data) {
+        setUser(profileRes.data);
+      }
+
+      toast('회원가입이 완료되었습니다! 환영합니다.', 'success');
+      navigate('/home');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast(err.response?.data?.error?.message ?? '회원가입에 실패했습니다.', 'error');
+      } else {
+        toast('회원가입 중 오류가 발생했습니다.', 'error');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openTerm = TERMS_ITEMS.find((t) => t.key === openTermKey);
@@ -421,7 +483,27 @@ const SignupPage: React.FC = () => {
                   <CheckCircle2 size={12} /> 인증이 완료되었습니다.
                 </p>
               ) : emailSent && (
-                <p className="text-xs text-blue-600 font-medium">인증 메일이 발송되었습니다.</p>
+                <div className="space-y-2">
+                  <p className="text-xs text-blue-600 font-medium">인증 메일이 발송되었습니다. 코드를 입력해주세요.</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="인증코드 입력"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="flex-1 px-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={!verificationCode.trim()}
+                      className="shrink-0 h-[46px] px-4 rounded-2xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-all"
+                    >
+                      확인
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -555,9 +637,9 @@ const SignupPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, gender: 'male' })}
+                    onClick={() => setFormData({ ...formData, gender: 'MALE' })}
                     className={`h-12 rounded-2xl border-2 font-bold transition-all ${
-                      formData.gender === 'male'
+                      formData.gender === 'MALE'
                         ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
                         : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
                     }`}
@@ -566,9 +648,9 @@ const SignupPage: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, gender: 'female' })}
+                    onClick={() => setFormData({ ...formData, gender: 'FEMALE' })}
                     className={`h-12 rounded-2xl border-2 font-bold transition-all ${
-                      formData.gender === 'female'
+                      formData.gender === 'FEMALE'
                         ? 'border-pink-500 bg-pink-50 text-pink-700 shadow-sm'
                         : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
                     }`}
@@ -681,12 +763,13 @@ const SignupPage: React.FC = () => {
             className="flex-[2] h-14 text-base font-bold"
             onClick={step === 3 ? handleSubmit : nextStep}
             disabled={
+              isSubmitting ||
               (step === 1 && !isStep1Valid) ||
               (step === 2 && !isStep2Valid) ||
               (step === 3 && !isStep3Valid)
             }
           >
-            {step === 3 ? '가입 완료하기' : '다음 단계'}
+            {step === 3 ? (isSubmitting ? '가입 중...' : '가입 완료하기') : '다음 단계'}
           </Button>
         </div>
       </div>
