@@ -4,8 +4,10 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/Button';
 import { PaymentModal } from '@/components/ui/PaymentModal';
 import { useToast } from '@/components/ui/Toast';
-import { useRequests } from '@/store/requestStore';
 import { useDisplayMode } from '@/store/displayModeStore';
+import { registerCandidate } from '@/features/candidate/api';
+import { applyMatching } from '@/features/matching/api';
+import axios from 'axios';
 import { Heart, UserPlus, ArrowRight, Check, Zap, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -20,7 +22,6 @@ const PRICE_PER_PERSON: Record<MatchType, number> = {
 
 const MatchPage: React.FC = () => {
   const { toast } = useToast();
-  const { addRequest } = useRequests();
   const { isPWA } = useDisplayMode();
 
   const [view, setView] = useState<MatchView>('hub');
@@ -37,24 +38,38 @@ const MatchPage: React.FC = () => {
     setCount(1);
   };
 
-  const handleRegisterConfirm = (): void => {
-    addRequest({ type: 'register', amount: 3000 });
-    toast('후보 등록 신청이 완료되었습니다! 관리자 승인을 기다려주세요.', 'success');
-    setShowRegisterPayment(false);
-    reset();
+  const handleRegisterConfirm = async (): Promise<void> => {
+    try {
+      await registerCandidate();
+      toast('후보 등록 신청이 완료되었습니다! 관리자 승인을 기다려주세요.', 'success');
+      setShowRegisterPayment(false);
+      reset();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast(err.response?.data?.error?.message ?? '등록 신청에 실패했습니다.', 'error');
+      } else {
+        toast('등록 신청 중 오류가 발생했습니다.', 'error');
+      }
+    }
   };
 
-  const handlePaymentConfirm = (): void => {
+  const handlePaymentConfirm = async (): Promise<void> => {
     if (!matchType) return;
-    const amount = PRICE_PER_PERSON[matchType] * count;
-    addRequest({
-      type: matchType === 'random' ? 'match_random' : 'match_ideal',
-      amount,
-      count,
-    });
-    toast('매칭 신청이 완료되었습니다! 설레는 만남을 기다려주세요.', 'success');
-    setShowPayment(false);
-    reset();
+    try {
+      await applyMatching({
+        matchingType: matchType === 'random' ? 'RANDOM' : 'IDEAL',
+        applicationCount: count,
+      });
+      toast('매칭 신청이 완료되었습니다! 설레는 만남을 기다려주세요.', 'success');
+      setShowPayment(false);
+      reset();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast(err.response?.data?.error?.message ?? '매칭 신청에 실패했습니다.', 'error');
+      } else {
+        toast('매칭 신청 중 오류가 발생했습니다.', 'error');
+      }
+    }
   };
 
   const renderHub = (): React.ReactNode => (
