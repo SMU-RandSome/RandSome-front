@@ -6,21 +6,29 @@ import { FeedSkeleton } from '@/components/ui/Skeleton';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useAuth } from '@/store/authStore';
 import { useFeed } from '@/hooks/useFeed';
+import { useDashboard } from '@/hooks/useDashboard';
 import { Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-const STATS = [
-  { label: '매칭 후보', value: '142', unit: '명', color: 'text-slate-900' },
-  { label: '오늘의 매칭', value: '58', unit: '건', color: 'text-blue-600' },
-  { label: '전체 매칭', value: '1,204', unit: '건', color: 'text-pink-500' },
-];
 
 const MemberMainPage: React.FC = () => {
   const { isPWA } = useDisplayMode();
   const { user } = useAuth();
   const { feed, isLoading } = useFeed();
+  const { stats } = useDashboard();
 
-  const feedContent = (
+  const statsConfig = [
+    { label: '매칭 후보', value: stats?.candidateCount?.toLocaleString() ?? '-', unit: '명', color: 'text-slate-900' },
+    { label: '오늘의 매칭', value: stats?.todayMatchingCount?.toLocaleString() ?? '-', unit: '건', color: 'text-blue-600' },
+    { label: '전체 매칭', value: stats?.totalMatchingCount?.toLocaleString() ?? '-', unit: '건', color: 'text-pink-500' },
+  ];
+
+  const feedContent = feed.length === 0 ? (
+    <div className="py-10 flex flex-col items-center gap-2 text-slate-400">
+      <span className="text-3xl">💤</span>
+      <p className="text-sm font-medium">아직 매칭 소식이 없어요</p>
+      <p className="text-xs">첫 번째 주인공이 되어보세요!</p>
+    </div>
+  ) : (
     <AnimatePresence initial={false}>
       {feed.map((item) => (
         <motion.div
@@ -51,7 +59,7 @@ const MemberMainPage: React.FC = () => {
 
           {/* 통계 카드 */}
           <div className="grid grid-cols-3 gap-4 mb-10">
-            {STATS.map(({ label, value, unit, color }) => (
+            {statsConfig.map(({ label, value, unit, color }) => (
               <div
                 key={label}
                 className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 text-center"
@@ -135,7 +143,7 @@ const MemberMainPage: React.FC = () => {
           <p className="text-sm text-slate-500 mt-1">오늘의 인연을 놓치지 마세요</p>
         </div>
         <div className="grid grid-cols-3 gap-3 mb-6">
-          {STATS.map(({ label, value, unit, color }) => (
+          {statsConfig.map(({ label, value, unit, color }) => (
             <div
               key={label}
               className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center"

@@ -6,6 +6,7 @@ import { FeedCard } from '@/components/ui/FeedCard';
 import { FeedSkeleton } from '@/components/ui/Skeleton';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useFeed } from '@/hooks/useFeed';
+import { useDashboard } from '@/hooks/useDashboard';
 import { Heart, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -13,6 +14,13 @@ const GuestMainPage: React.FC = () => {
   const navigate = useNavigate();
   const { isPWA } = useDisplayMode();
   const { feed, isLoading } = useFeed();
+  const { stats } = useDashboard();
+
+  const statsConfig = [
+    { label: '등록 후보', value: stats?.candidateCount?.toLocaleString() ?? '-', unit: '명', color: 'text-slate-900' },
+    { label: '오늘의 매칭', value: stats?.todayMatchingCount?.toLocaleString() ?? '-', unit: '건', color: 'text-blue-600' },
+    { label: '전체 매칭', value: stats?.totalMatchingCount?.toLocaleString() ?? '-', unit: '건', color: 'text-pink-500' },
+  ];
 
   // ── 웹 레이아웃 ────────────────────────────────────────────────────────────
   if (!isPWA) {
@@ -30,11 +38,7 @@ const GuestMainPage: React.FC = () => {
 
           {/* 통계 카드 */}
           <div className="grid grid-cols-3 gap-4 mb-10">
-            {[
-              { label: '등록 후보', value: '142', unit: '명', color: 'text-slate-900' },
-              { label: '오늘의 매칭', value: '58', unit: '건', color: 'text-blue-600' },
-              { label: '전체 매칭', value: '1,204', unit: '건', color: 'text-pink-500' },
-            ].map(({ label, value, unit, color }) => (
+            {statsConfig.map(({ label, value, unit, color }) => (
               <div
                 key={label}
                 className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 text-center"
@@ -84,6 +88,12 @@ const GuestMainPage: React.FC = () => {
                 <FeedSkeleton />
                 <FeedSkeleton />
               </>
+            ) : feed.length === 0 ? (
+              <div className="py-10 flex flex-col items-center gap-2 text-slate-400">
+                <span className="text-3xl">💤</span>
+                <p className="text-sm font-medium">아직 매칭 소식이 없어요</p>
+                <p className="text-xs">첫 번째 주인공이 되어보세요!</p>
+              </div>
             ) : (
               <AnimatePresence initial={false}>
                 {feed.map((item) => (
