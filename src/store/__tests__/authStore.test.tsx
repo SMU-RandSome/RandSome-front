@@ -7,9 +7,9 @@ const mockUser: AuthUser = {
   id: 1,
   email: 'test@sangmyung.kr',
   nickname: '행복한 쿼카',
+  legalName: '홍길동',
   mbti: 'ENFP',
-  intro: '안녕하세요',
-  gender: 'male',
+  gender: 'MALE',
   role: 'ROLE_MEMBER',
 };
 
@@ -25,11 +25,11 @@ describe('authStore', () => {
     expect(result.current.user).toBeNull();
   });
 
-  it('login 호출 시 user 설정 및 isAuthenticated true', () => {
+  it('setUser 호출 시 user 설정 및 isAuthenticated true', () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     act(() => {
-      result.current.login(mockUser);
+      result.current.setUser(mockUser);
     });
 
     expect(result.current.isAuthenticated).toBe(true);
@@ -40,7 +40,7 @@ describe('authStore', () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     act(() => {
-      result.current.login(mockUser);
+      result.current.setUser(mockUser);
     });
     act(() => {
       result.current.logout();
@@ -61,12 +61,12 @@ describe('authStore', () => {
     expect(localStorage.getItem('accessToken')).toBeNull();
   });
 
-  it('ROLE_ADMIN user로 로그인 가능', () => {
+  it('ROLE_ADMIN user로 setUser 가능', () => {
     const adminUser: AuthUser = { ...mockUser, role: 'ROLE_ADMIN' };
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     act(() => {
-      result.current.login(adminUser);
+      result.current.setUser(adminUser);
     });
 
     expect(result.current.user?.role).toBe('ROLE_ADMIN');
