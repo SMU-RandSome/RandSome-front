@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from '@/store/authStore';
-import { RequestProvider } from '@/store/requestStore';
 import { DisplayModeProvider } from '@/store/displayModeStore';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -22,11 +21,9 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <DisplayModeProvider>
           <AuthProvider>
-            <RequestProvider>
-              <ToastProvider>
-                <RouterProvider router={router} />
-              </ToastProvider>
-            </RequestProvider>
+            <ToastProvider>
+              <RouterProvider router={router} />
+            </ToastProvider>
           </AuthProvider>
         </DisplayModeProvider>
       </QueryClientProvider>

@@ -1,5 +1,34 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { MatchRequest, RequestType } from '@/types';
+
+type RequestType = 'register' | 'match_random' | 'match_ideal';
+
+interface PartnerProfile {
+  id: number;
+  nickname: string;
+  mbti: string;
+  intro: string;
+  gender: 'male' | 'female';
+  idealType: string;
+  instagramId?: string;
+}
+
+interface Match {
+  id: number;
+  partnerId: number;
+  matchedAt: string;
+  partnerProfile: PartnerProfile;
+}
+
+interface MatchRequest {
+  id: number;
+  type: RequestType;
+  status: 'pending' | 'approved' | 'rejected';
+  amount: number;
+  count?: number;
+  createdAt: string | Date;
+  rejectionReason?: string;
+  matches?: Match[];
+}
 
 interface RequestContextType {
   requests: MatchRequest[];
@@ -157,4 +186,3 @@ export const useRequests = (): RequestContextType => {
   return context;
 };
 
-export type { RequestType };
