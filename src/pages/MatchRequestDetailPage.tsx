@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useDisplayMode } from '@/store/displayModeStore';
+import { getMatchingResult } from '@/features/matching/api';
+import type { MatchingResultDetailItem } from '@/types';
 import { ArrowLeft, User, Heart, Instagram, ChevronDown, ChevronUp } from 'lucide-react';
-import { MatchRequest, Profile } from '@/types';
 import { motion } from 'motion/react';
 
 const CLAMP_LIMIT = 80;
@@ -29,23 +30,34 @@ const ClampedText: React.FC<{ text: string }> = ({ text }) => {
 };
 
 interface LocationState {
-  request: MatchRequest;
+  applicationId: number;
 }
 
 const MatchRequestDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isPWA } = useDisplayMode();
-  const { request } = (location.state as LocationState) ?? {};
-  const matches = request?.matches ?? [];
+  const { applicationId } = (location.state as LocationState) ?? {};
+
+  const [results, setResults] = useState<MatchingResultDetailItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!request) {
+    if (!applicationId) {
       navigate('/requests', { replace: true });
+      return;
     }
-  }, [request, navigate]);
+    getMatchingResult(applicationId)
+      .then((res) => {
+        if (res.data) setResults(res.data);
+      })
+      .catch(() => {
+        navigate('/requests', { replace: true });
+      })
+      .finally(() => setIsLoading(false));
+  }, [applicationId, navigate]);
 
-  if (!request) return null;
+  if (!applicationId) return null;
 
   return (
     <MobileLayout className="bg-slate-50">
@@ -58,7 +70,9 @@ const MatchRequestDetailPage: React.FC = () => {
           >
             <ArrowLeft size={24} />
           </button>
-          <h1 className="text-lg font-bold text-slate-900">매칭 결과 ({matches.length}명)</h1>
+          <h1 className="text-lg font-bold text-slate-900">
+            {isLoading ? '불러오는 중...' : `매칭 결과 (${results.length}명)`}
+          </h1>
           <div className="w-10" />
         </header>
       )}
@@ -72,20 +86,32 @@ const MatchRequestDetailPage: React.FC = () => {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-bold text-slate-900">매칭 결과 ({matches.length}명)</h1>
+          <h1 className="text-xl font-bold text-slate-900">
+            {isLoading ? '불러오는 중...' : `매칭 결과 (${results.length}명)`}
+          </h1>
         </div>
       )}
 
       <div className={`flex-1 overflow-y-auto p-5 space-y-8 ${isPWA ? 'pb-24' : 'pb-8'}`}>
-        {matches.map((match, index) => (
-          <ProfileCard key={match.id} profile={match.partnerProfile} index={index} />
-        ))}
+        {isLoading ? (
+          <div className="space-y-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-white rounded-2xl h-48 border border-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          results.map((result, index) => (
+            <ProfileCard key={result.id} result={result} index={index} />
+          ))
+        )}
 
-        <div className="text-center text-xs text-slate-400 mt-8">
-          상대방에게 불쾌감을 주는 언행은 제재 대상이 될 수 있습니다.
-          <br />
-          매너 있는 대화를 부탁드려요!
-        </div>
+        {!isLoading && (
+          <div className="text-center text-xs text-slate-400 mt-8">
+            상대방에게 불쾌감을 주는 언행은 제재 대상이 될 수 있습니다.
+            <br />
+            매너 있는 대화를 부탁드려요!
+          </div>
+        )}
       </div>
     </MobileLayout>
   );
@@ -93,10 +119,10 @@ const MatchRequestDetailPage: React.FC = () => {
 
 const VALID_INSTAGRAM_ID = /^[a-zA-Z0-9._]{1,30}$/;
 
-const ProfileCard: React.FC<{ profile: Profile; index: number }> = ({ profile, index }) => {
-  const isMale = profile.gender === 'male';
-  const instagramId = profile.instagramId && VALID_INSTAGRAM_ID.test(profile.instagramId)
-    ? profile.instagramId
+const ProfileCard: React.FC<{ result: MatchingResultDetailItem; index: number }> = ({ result, index }) => {
+  const isMale = result.gender === 'MALE';
+  const instagramId = result.instagramId && VALID_INSTAGRAM_ID.test(result.instagramId)
+    ? result.instagramId
     : null;
 
   return (
@@ -119,14 +145,14 @@ const ProfileCard: React.FC<{ profile: Profile; index: number }> = ({ profile, i
             isMale ? 'bg-blue-500' : 'bg-pink-500'
           }`}
         >
-          {profile.nickname[0]}
+          {result.nickname[0]}
         </div>
       </div>
 
       {/* 프로필 정보 */}
       <div className="pt-8 px-4 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-slate-900">{profile.nickname}</h2>
+          <h2 className="text-sm font-bold text-slate-900">{result.nickname}</h2>
           <div className="flex items-center gap-1">
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -136,7 +162,7 @@ const ProfileCard: React.FC<{ profile: Profile; index: number }> = ({ profile, i
               {isMale ? '남성' : '여성'}
             </span>
             <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full">
-              {profile.mbti}
+              {result.mbti}
             </span>
           </div>
         </div>
@@ -155,19 +181,21 @@ const ProfileCard: React.FC<{ profile: Profile; index: number }> = ({ profile, i
         )}
 
         <div className="space-y-2">
-          <div className="bg-slate-50 rounded-xl p-3">
-            <p className="text-[10px] font-bold text-slate-400 mb-1 flex items-center gap-1">
-              <User size={10} /> 자기 소개
-            </p>
-            <ClampedText text={profile.intro} />
-          </div>
+          {result.selfIntroduction && (
+            <div className="bg-slate-50 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-slate-400 mb-1 flex items-center gap-1">
+                <User size={10} /> 자기 소개
+              </p>
+              <ClampedText text={result.selfIntroduction} />
+            </div>
+          )}
 
-          {profile.idealType && (
+          {result.idealDescription && (
             <div className="bg-pink-50 rounded-xl p-3">
               <p className="text-[10px] font-bold text-pink-400 mb-1 flex items-center gap-1">
                 <Heart size={10} fill="currentColor" /> 이상형
               </p>
-              <ClampedText text={profile.idealType} />
+              <ClampedText text={result.idealDescription} />
             </div>
           )}
         </div>
