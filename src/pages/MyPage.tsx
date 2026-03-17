@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Modal } from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
+import { getMyProfile, updateMyProfile } from '@/features/member/api';
+import type { MemberProfile, Mbti } from '@/types';
 import { LogOut, Edit2, ChevronRight, UserCheck, UserX } from 'lucide-react';
+import axios from 'axios';
 
 const MBTI_OPTIONS = [
   { value: 'ISTJ', label: 'ISTJ - 소금형' },
@@ -29,12 +34,12 @@ const MBTI_OPTIONS = [
   { value: 'ENTJ', label: 'ENTJ - 지도자형' },
 ];
 
-interface ProfileState {
-  nickname: string;
-  mbti: string;
-  intro: string;
-  idealType: string;
-  isCandidate: boolean;
+interface EditForm {
+  legalName: string;
+  mbti: Mbti;
+  instagramId: string;
+  selfIntroduction: string;
+  idealDescription: string;
 }
 
 interface ModalState {
@@ -45,26 +50,78 @@ interface ModalState {
 
 const MyPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, setUser, logout } = useAuth();
+  const { toast } = useToast();
   const { isPWA } = useDisplayMode();
 
+  const [profile, setProfile] = useState<MemberProfile | null>(user);
   const [isEditing, setIsEditing] = useState(false);
-  const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', content: null });
-  const [profile, setProfile] = useState<ProfileState>({
-    nickname: user?.nickname ?? '행복한 쿼카',
-    mbti: user?.mbti ?? 'ENFP',
-    intro: user?.intro ?? '안녕하세요! 새로운 인연을 찾고 있어요.',
-    idealType: '성실하고 대화가 잘 통하는 사람이 좋아요. 같이 맛집 탐방 다니는 걸 좋아했으면 좋겠어요!',
-    isCandidate: user?.role === 'ROLE_CANDIDATE',
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm>({
+    legalName: user?.legalName ?? '',
+    mbti: (user?.mbti ?? 'ENFP') as Mbti,
+    instagramId: user?.instagramId ?? '',
+    selfIntroduction: user?.selfIntroduction ?? '',
+    idealDescription: user?.idealDescription ?? '',
   });
+  const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', content: null });
+
+  useEffect(() => {
+    getMyProfile()
+      .then((res) => {
+        if (res.data) {
+          setProfile(res.data);
+          setUser(res.data);
+          setEditForm({
+            legalName: res.data.legalName,
+            mbti: res.data.mbti,
+            instagramId: res.data.instagramId ?? '',
+            selfIntroduction: res.data.selfIntroduction ?? '',
+            idealDescription: res.data.idealDescription ?? '',
+          });
+        }
+      })
+      .catch(() => {
+        // 네트워크 오류 등 — authStore 캐시 사용
+      });
+  }, []);
 
   const handleLogout = (): void => {
     logout();
     navigate('/');
   };
 
-  const handleSave = (): void => {
-    setIsEditing(false);
+  const handleSave = async (): Promise<void> => {
+    if (!editForm.legalName.trim()) {
+      toast('실명을 입력해주세요.', 'error');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await updateMyProfile({
+        legalName: editForm.legalName,
+        mbti: editForm.mbti,
+        instagramId: editForm.instagramId || undefined,
+        selfIntroduction: editForm.selfIntroduction || undefined,
+        idealDescription: editForm.idealDescription || undefined,
+      });
+      // 저장 후 최신 프로필 다시 조회
+      const res = await getMyProfile();
+      if (res.data) {
+        setProfile(res.data);
+        setUser(res.data);
+      }
+      setIsEditing(false);
+      toast('프로필이 저장되었습니다.', 'success');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast(err.response?.data?.error?.message ?? '저장에 실패했습니다.', 'error');
+      } else {
+        toast('저장 중 오류가 발생했습니다.', 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const openNotice = (): void => {
@@ -120,6 +177,9 @@ const MyPage: React.FC = () => {
     });
   };
 
+  const displayProfile = profile ?? user;
+  const isCandidate = displayProfile?.role === 'ROLE_CANDIDATE';
+
   return (
     <MobileLayout>
       {isPWA && (
@@ -139,45 +199,57 @@ const MyPage: React.FC = () => {
         {/* 프로필 카드 */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6 text-center relative overflow-hidden">
           <div className="w-24 h-24 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center text-blue-500 text-3xl font-bold">
-            {profile.nickname[0]}
+            {(displayProfile?.nickname ?? '?')[0]}
           </div>
 
           {isEditing ? (
             <div className="space-y-4 text-left">
+              <Input
+                label="실명"
+                placeholder="홍길동"
+                value={editForm.legalName}
+                onChange={(e) => setEditForm({ ...editForm, legalName: e.target.value })}
+              />
               <Select
                 label="MBTI"
                 options={MBTI_OPTIONS}
-                value={profile.mbti}
-                onChange={(e) => setProfile({ ...profile, mbti: e.target.value })}
+                value={editForm.mbti}
+                onChange={(e) => setEditForm({ ...editForm, mbti: e.target.value as Mbti })}
+              />
+              <Input
+                label="인스타그램 아이디"
+                placeholder="my_insta (@ 제외)"
+                value={editForm.instagramId}
+                onChange={(e) => setEditForm({ ...editForm, instagramId: e.target.value })}
               />
               <Textarea
                 label="한줄 소개"
-                value={profile.intro}
-                onChange={(e) => setProfile({ ...profile, intro: e.target.value })}
+                value={editForm.selfIntroduction}
+                onChange={(e) => setEditForm({ ...editForm, selfIntroduction: e.target.value })}
               />
               <Textarea
                 label="나의 이상형"
                 placeholder="어떤 사람을 찾고 계신가요?"
-                value={profile.idealType}
-                onChange={(e) => setProfile({ ...profile, idealType: e.target.value })}
+                value={editForm.idealDescription}
+                onChange={(e) => setEditForm({ ...editForm, idealDescription: e.target.value })}
               />
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" fullWidth onClick={() => setIsEditing(false)}>
                   취소
                 </Button>
-                <Button fullWidth onClick={handleSave}>
-                  저장
+                <Button fullWidth onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? '저장 중...' : '저장'}
                 </Button>
               </div>
             </div>
           ) : (
             <>
-              <h2 className="text-xl font-bold text-slate-900 mb-1">{profile.nickname}</h2>
+              <h2 className="text-xl font-bold text-slate-900 mb-1">{displayProfile?.nickname}</h2>
               <div className="flex items-center justify-center gap-2 mb-4">
                 <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
-                  {profile.mbti}
+                  {displayProfile?.mbti}
                 </span>
-                {profile.isCandidate && (
+                {isCandidate && (
                   <span className="inline-block px-3 py-1 bg-green-100 text-green-600 text-xs font-bold rounded-full">
                     후보자
                   </span>
@@ -187,11 +259,17 @@ const MyPage: React.FC = () => {
               <div className="text-left space-y-4 mb-6">
                 <div className="bg-slate-50 p-4 rounded-xl">
                   <p className="text-xs font-bold text-slate-500 mb-1">한줄 소개</p>
-                  <p className="text-slate-700 text-sm leading-relaxed">&ldquo;{profile.intro}&rdquo;</p>
+                  <p className="text-slate-700 text-sm leading-relaxed">
+                    {displayProfile?.selfIntroduction
+                      ? `"${displayProfile.selfIntroduction}"`
+                      : <span className="text-slate-300">소개글을 작성해주세요</span>}
+                  </p>
                 </div>
                 <div className="bg-pink-50 p-4 rounded-xl">
                   <p className="text-xs font-bold text-pink-500 mb-1">나의 이상형</p>
-                  <p className="text-slate-700 text-sm leading-relaxed">{profile.idealType}</p>
+                  <p className="text-slate-700 text-sm leading-relaxed">
+                    {displayProfile?.idealDescription ?? <span className="text-slate-300">이상형을 작성해주세요</span>}
+                  </p>
                 </div>
               </div>
 
@@ -208,26 +286,32 @@ const MyPage: React.FC = () => {
         </div>
 
         {/* 후보 상태 */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-6 flex items-center justify-between">
+        <div
+          onClick={!isCandidate ? () => navigate('/match') : undefined}
+          className={`bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-6 flex items-center justify-between ${
+            !isCandidate ? 'cursor-pointer hover:bg-slate-50 transition-colors' : ''
+          }`}
+        >
           <div className="flex items-center gap-3">
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                profile.isCandidate ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'
+                isCandidate ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'
               }`}
             >
-              {profile.isCandidate ? <UserCheck size={20} /> : <UserX size={20} />}
+              {isCandidate ? <UserCheck size={20} /> : <UserX size={20} />}
             </div>
             <div>
               <p className="text-sm font-bold text-slate-900">
-                {profile.isCandidate ? '매칭 후보 등록됨' : '매칭 후보 미등록'}
+                {isCandidate ? '매칭 후보 등록됨' : '매칭 후보 미등록'}
               </p>
               <p className="text-xs text-slate-500">
-                {profile.isCandidate
+                {isCandidate
                   ? '다른 친구들이 나를 찾을 수 있어요!'
                   : '등록하면 매칭 확률이 올라가요!'}
               </p>
             </div>
           </div>
+          {!isCandidate && <ChevronRight size={18} className="text-slate-400" />}
         </div>
 
         {/* 메뉴 */}
