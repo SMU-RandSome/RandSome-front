@@ -1,31 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { FeedItem } from '@/types';
 import { getFeed } from '@/features/feed/api';
 
 const POLL_INTERVAL = 10_000;
 
 export const useFeed = (): { feed: FeedItem[]; isLoading: boolean } => {
-  const [feed, setFeed] = useState<FeedItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: ['feed'],
+    queryFn: async (): Promise<FeedItem[]> => {
+      const res = await getFeed({ size: 20 });
+      return res.data ?? [];
+    },
+    refetchInterval: POLL_INTERVAL,
+    // 탭이 숨겨지면 폴링 자동 중단, 포커스 복귀 시 재개
+    refetchIntervalInBackground: false,
+    // 포커스 복귀 시 인터벌 직전 중복 요청 방지
+    staleTime: POLL_INTERVAL,
+  });
 
-  useEffect(() => {
-    const fetchFeed = (): void => {
-      getFeed({ size: 20 })
-        .then((res) => {
-          if (res.data) setFeed(res.data);
-        })
-        .catch(() => {})
-        .finally(() => setIsLoading(false));
-    };
-
-    fetchFeed();
-    timerRef.current = setInterval(fetchFeed, POLL_INTERVAL);
-
-    return () => {
-      if (timerRef.current !== null) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  return { feed, isLoading };
+  return { feed: data ?? [], isLoading };
 };

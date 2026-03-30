@@ -19,6 +19,8 @@ apiClient.interceptors.request.use((config) => {
 
 // 진행 중인 토큰 갱신 요청 (중복 방지)
 let refreshPromise: Promise<string> | null = null;
+// 로그아웃 리다이렉트 중복 실행 방지
+let isRedirectingToLogin = false;
 
 const refreshAccessToken = async (): Promise<string> => {
   const refreshToken = localStorage.getItem('refreshToken');
@@ -46,8 +48,12 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     if (!originalRequest) return Promise.reject(error);
 
-    // 401이고 재시도 플래그가 없을 때만 갱신 시도
-    if (error.response?.status === 401 && !(originalRequest as typeof originalRequest & { _retry?: boolean })._retry) {
+    // 401이고 재시도 플래그가 없을 때만 갱신 시도 (로그인 요청 자체는 제외)
+    if (
+      error.response?.status === 401 &&
+      !(originalRequest as typeof originalRequest & { _retry?: boolean })._retry &&
+      !originalRequest.url?.includes('/v1/auth/login')
+    ) {
       (originalRequest as typeof originalRequest & { _retry?: boolean })._retry = true;
 
       try {
@@ -61,11 +67,14 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch {
-        // Refresh 실패 → 로그아웃
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('authUser');
-        window.location.href = '/login';
+        // Refresh 실패 → 로그아웃 (동시에 여러 요청이 실패해도 한 번만 실행)
+        if (!isRedirectingToLogin) {
+          isRedirectingToLogin = true;
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('authUser');
+          window.location.href = '/login';
+        }
         return Promise.reject(error);
       }
     }
