@@ -11,14 +11,14 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: '클릭하세요' })).toBeInTheDocument();
   });
 
-  it('기본 variant는 primary (bg-blue-600 클래스)', () => {
+  it('기본 variant는 primary (gradient 클래스)', () => {
     render(<Button>버튼</Button>);
-    expect(screen.getByRole('button')).toHaveClass('bg-blue-600');
+    expect(screen.getByRole('button')).toHaveClass('from-blue-500');
   });
 
   it('variant=secondary 클래스 적용', () => {
     render(<Button variant="secondary">버튼</Button>);
-    expect(screen.getByRole('button')).toHaveClass('bg-slate-100');
+    expect(screen.getByRole('button')).toHaveClass('bg-white');
   });
 
   it('variant=outline 클래스 적용', () => {

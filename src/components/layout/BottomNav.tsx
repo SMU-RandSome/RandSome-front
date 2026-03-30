@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, Heart, FileText, User } from 'lucide-react';
 import { useDisplayMode } from '@/store/displayModeStore';
+import { motion } from 'motion/react';
 
 const TABS = [
   { id: 'home', label: '홈', icon: Sparkles, path: '/home' },
@@ -15,11 +16,10 @@ export const BottomNav: React.FC = () => {
   const location = useLocation();
   const { isPWA } = useDisplayMode();
 
-  // 웹 모드에서는 WebShell 상단 네비게이션이 담당
   if (!isPWA) return null;
 
   return (
-    <nav className="fixed bottom-0 w-full max-w-[430px] bg-white border-t border-slate-200 h-16 px-6 flex items-center justify-between z-50 left-1/2 -translate-x-1/2">
+    <nav className="fixed bottom-0 w-full max-w-[430px] glass border-t border-white/30 shadow-[0_-1px_3px_rgba(0,0,0,0.03)] h-16 px-4 flex items-center justify-around z-50 left-1/2 -translate-x-1/2 safe-area-pb">
       {TABS.map((tab) => {
         const isActive = location.pathname === tab.path;
         const Icon = tab.icon;
@@ -28,13 +28,32 @@ export const BottomNav: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => navigate(tab.path)}
-            className={`flex flex-col items-center gap-1 transition-colors ${
-              isActive ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'
-            }`}
+            className="relative flex flex-col items-center gap-0.5 py-1 px-3"
             aria-label={tab.label}
           >
-            <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-[10px] font-medium">{tab.label}</span>
+            <div className="relative p-2 rounded-xl">
+              {isActive && (
+                <motion.div
+                  layoutId="bottomNavPill"
+                  className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-300/30"
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                />
+              )}
+              <Icon
+                size={20}
+                strokeWidth={isActive ? 2.5 : 1.8}
+                className={`relative z-10 transition-colors duration-200 ${
+                  isActive ? 'text-white' : 'text-slate-400'
+                }`}
+              />
+            </div>
+            <span
+              className={`text-[9px] font-semibold transition-colors duration-200 ${
+                isActive ? 'text-blue-600' : 'text-slate-400'
+              }`}
+            >
+              {tab.label}
+            </span>
           </button>
         );
       })}

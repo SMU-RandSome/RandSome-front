@@ -4,6 +4,7 @@ import { AuthProvider } from '@/store/authStore';
 import { DisplayModeProvider } from '@/store/displayModeStore';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import FcmInitializer from '@/components/FcmInitializer';
 import { router } from '@/router';
 
 const queryClient = new QueryClient({
@@ -22,6 +23,7 @@ export default function App() {
         <DisplayModeProvider>
           <AuthProvider>
             <ToastProvider>
+              <FcmInitializer />
               <RouterProvider router={router} />
             </ToastProvider>
           </AuthProvider>

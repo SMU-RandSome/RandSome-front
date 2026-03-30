@@ -28,9 +28,9 @@ export const Input: React.FC<InputProps> = ({
       )}
       <input
         id={inputId}
-        className={`w-full px-4 py-3 bg-white border ${
-          error ? 'border-red-400 focus:ring-red-100' : 'border-slate-200 focus:border-blue-400 focus:ring-blue-100'
-        } focus:outline-none focus:ring-2 transition-all text-slate-900 placeholder:text-slate-300 text-sm rounded-xl ${className}`}
+        className={`w-full px-4 py-3.5 bg-white/80 backdrop-blur-sm border ${
+          error ? 'border-red-400 focus:ring-red-200/80 focus:border-red-400' : 'border-slate-200/80 focus:border-blue-400 focus:ring-blue-100/60 focus:bg-white'
+        } focus:outline-none focus:ring-2 transition-all duration-200 text-slate-900 placeholder:text-slate-300/80 text-sm rounded-2xl ${className}`}
         {...props}
       />
       {helperText && !error && (

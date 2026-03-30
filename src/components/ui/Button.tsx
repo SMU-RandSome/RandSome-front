@@ -27,17 +27,17 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-semibold transition-all focus:outline-none disabled:opacity-50 disabled:pointer-events-none rounded-xl active:translate-y-0.5';
+    'inline-flex items-center justify-center font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rounded-2xl';
 
   const variants = {
     primary:
-      'bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 shadow-sm',
+      'relative overflow-hidden bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:brightness-90 shadow-md shadow-blue-300/40 border-0',
     secondary:
-      'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200',
+      'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200 hover:border-slate-300 shadow-sm',
     outline:
-      'bg-transparent text-slate-700 border border-slate-300 hover:border-blue-400 hover:text-blue-600',
+      'bg-transparent text-slate-700 border-2 border-slate-300 hover:border-blue-400 hover:text-blue-600',
     ghost:
-      'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900',
+      'bg-transparent text-slate-500 hover:bg-slate-100/80 hover:text-slate-900',
   };
 
   const sizes = {
@@ -54,6 +54,11 @@ export const Button: React.FC<ButtonProps> = ({
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`}
       {...props}
     >
+      {variant === 'primary' && (
+        <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-[inherit] pointer-events-none">
+          <span className="absolute top-0 h-full w-[55%] bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer" />
+        </span>
+      )}
       {children}
     </motion.button>
   );

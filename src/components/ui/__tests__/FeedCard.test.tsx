@@ -38,7 +38,7 @@ describe('FeedCard', () => {
 
     it('파란색 아이콘 스타일 적용', () => {
       const { container } = render(<FeedCard item={item} />);
-      expect(container.querySelector('.bg-blue-100')).toBeInTheDocument();
+      expect(container.querySelector('.from-blue-400')).toBeInTheDocument();
     });
   });
 
@@ -63,7 +63,7 @@ describe('FeedCard', () => {
 
     it('핑크색 아이콘 스타일 적용', () => {
       const { container } = render(<FeedCard item={item} />);
-      expect(container.querySelector('.bg-pink-100')).toBeInTheDocument();
+      expect(container.querySelector('.from-pink-400')).toBeInTheDocument();
     });
   });
 

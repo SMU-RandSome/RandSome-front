@@ -1,37 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { Textarea } from '@/components/ui/Textarea';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { getMyProfile, updateMyProfile } from '@/features/member/api';
+import { getMyProfile, updateMyProfile, updatePassword } from '@/features/member/api';
+import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
+import { useAnnouncements } from '@/hooks/useAnnouncements';
+import { registerFcmToken, unregisterFcmToken, FCM_TOKEN_KEY } from '@/hooks/useFcmToken';
 import type { MemberProfile, Mbti } from '@/types';
-import { LogOut, Edit2, ChevronRight, UserCheck, UserX } from 'lucide-react';
+import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import axios from 'axios';
 
 const MBTI_OPTIONS = [
-  { value: 'ISTJ', label: 'ISTJ - 소금형' },
-  { value: 'ISFJ', label: 'ISFJ - 권력형' },
-  { value: 'INFJ', label: 'INFJ - 예언자형' },
-  { value: 'INTJ', label: 'INTJ - 과학자형' },
-  { value: 'ISTP', label: 'ISTP - 백과사전형' },
-  { value: 'ISFP', label: 'ISFP - 성인군자형' },
-  { value: 'INFP', label: 'INFP - 잔다르크형' },
-  { value: 'INTP', label: 'INTP - 아이디어형' },
-  { value: 'ESTP', label: 'ESTP - 활동가형' },
-  { value: 'ESFP', label: 'ESFP - 사교형' },
-  { value: 'ENFP', label: 'ENFP - 스파크형' },
-  { value: 'ENTP', label: 'ENTP - 발명가형' },
-  { value: 'ESTJ', label: 'ESTJ - 사업가형' },
-  { value: 'ESFJ', label: 'ESFJ - 친선도모형' },
-  { value: 'ENFJ', label: 'ENFJ - 언변능숙형' },
-  { value: 'ENTJ', label: 'ENTJ - 지도자형' },
+  { value: 'ISTJ', label: 'ISTJ' },
+  { value: 'ISFJ', label: 'ISFJ' },
+  { value: 'INFJ', label: 'INFJ' },
+  { value: 'INTJ', label: 'INTJ' },
+  { value: 'ISTP', label: 'ISTP' },
+  { value: 'ISFP', label: 'ISFP' },
+  { value: 'INFP', label: 'INFP' },
+  { value: 'INTP', label: 'INTP' },
+  { value: 'ESTP', label: 'ESTP' },
+  { value: 'ESFP', label: 'ESFP' },
+  { value: 'ENFP', label: 'ENFP' },
+  { value: 'ENTP', label: 'ENTP' },
+  { value: 'ESTJ', label: 'ESTJ' },
+  { value: 'ESFJ', label: 'ESFJ' },
+  { value: 'ENFJ', label: 'ENFJ' },
+  { value: 'ENTJ', label: 'ENTJ' },
 ];
 
 interface EditForm {
@@ -54,6 +55,7 @@ const MyPage: React.FC = () => {
   const { toast } = useToast();
   const { isPWA } = useDisplayMode();
 
+  const { announcements } = useAnnouncements();
   const [profile, setProfile] = useState<MemberProfile | null>(user);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,6 +67,13 @@ const MyPage: React.FC = () => {
     idealDescription: user?.idealDescription ?? '',
   });
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', content: null });
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState<boolean>(
+    typeof Notification !== 'undefined' &&
+      Notification.permission === 'granted' &&
+      !!localStorage.getItem(FCM_TOKEN_KEY),
+  );
+  const [notifLoading, setNotifLoading] = useState(false);
 
   useEffect(() => {
     getMyProfile()
@@ -90,6 +99,34 @@ const MyPage: React.FC = () => {
     logout();
     navigate('/');
   };
+
+  const handleNotificationToggle = useCallback(async (): Promise<void> => {
+    if (typeof Notification === 'undefined') {
+      toast('이 브라우저는 알림을 지원하지 않습니다.', 'error');
+      return;
+    }
+
+    setNotifLoading(true);
+    try {
+      if (notifEnabled) {
+        // 토글 OFF: Firebase 토큰 삭제 → 서버 삭제
+        await unregisterFcmToken();
+        setNotifEnabled(false);
+        toast('알림을 껐습니다.', 'info');
+      } else {
+        // 토글 ON: 권한 요청 → 토큰 발급 → 서버 동기화
+        const success = await registerFcmToken();
+        if (success) {
+          setNotifEnabled(true);
+          toast('알림을 켰습니다.', 'success');
+        }
+      }
+    } catch {
+      toast('알림 설정 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setNotifLoading(false);
+    }
+  }, [notifEnabled, toast]);
 
   const handleSave = async (): Promise<void> => {
     if (!editForm.legalName.trim()) {
@@ -128,21 +165,22 @@ const MyPage: React.FC = () => {
     setModal({
       isOpen: true,
       title: '공지사항',
-      content: (
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-bold text-slate-900 mb-1">Randsome 오픈!</h4>
-            <p>2026 상명대 축제를 위한 랜덤 매칭 서비스가 오픈되었습니다. 많은 사랑 부탁드립니다!</p>
-            <span className="text-xs text-slate-400">2026.05.20</span>
+      content:
+        announcements.length === 0 ? (
+          <p className="text-center text-slate-400 py-6 text-sm">등록된 공지사항이 없습니다.</p>
+        ) : (
+          <div className="space-y-4">
+            {announcements.map((notice, i) => (
+              <React.Fragment key={notice.id}>
+                {i > 0 && <hr className="border-slate-100" />}
+                <div>
+                  <h4 className="font-bold text-slate-900 mb-1">{notice.title}</h4>
+                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{notice.content}</p>
+                </div>
+              </React.Fragment>
+            ))}
           </div>
-          <hr className="border-slate-100" />
-          <div>
-            <h4 className="font-bold text-slate-900 mb-1">매칭 승인 지연 안내</h4>
-            <p>현재 신청자가 몰려 승인이 조금 지연되고 있습니다. 최대 30분 내로 처리될 예정이니 양해 부탁드립니다.</p>
-            <span className="text-xs text-slate-400">2026.05.20</span>
-          </div>
-        </div>
-      ),
+        ),
     });
   };
 
@@ -178,16 +216,56 @@ const MyPage: React.FC = () => {
   };
 
   const displayProfile = profile ?? user;
-  const isCandidate = displayProfile?.role === 'ROLE_CANDIDATE';
+  const candidateStatus = displayProfile?.candidateRegistrationStatus ?? 'NOT_APPLIED';
+
+  const CANDIDATE_STATUS_CONFIG = {
+    NOT_APPLIED: {
+      icon: <UserX size={20} />,
+      iconBg: 'bg-slate-100 text-slate-400',
+      title: '매칭 후보 미등록',
+      description: '등록하면 매칭 확률이 올라가요!',
+      clickable: true,
+    },
+    PENDING: {
+      icon: <Clock size={20} />,
+      iconBg: 'bg-orange-100 text-orange-500',
+      title: '후보 등록 승인 대기중',
+      description: '관리자 확인 후 최대 10분 내 승인됩니다.',
+      clickable: false,
+    },
+    APPROVED: {
+      icon: <UserCheck size={20} />,
+      iconBg: 'bg-green-100 text-green-600',
+      title: '매칭 후보 등록됨',
+      description: '다른 친구들이 나를 찾을 수 있어요!',
+      clickable: false,
+    },
+    REJECTED: {
+      icon: <AlertCircle size={20} />,
+      iconBg: 'bg-red-100 text-red-500',
+      title: '후보 등록 거절됨',
+      description: '다시 신청하려면 탭을 눌러주세요.',
+      clickable: true,
+    },
+    WITHDRAWN: {
+      icon: <UserX size={20} />,
+      iconBg: 'bg-slate-100 text-slate-400',
+      title: '후보 등록 취소됨',
+      description: '다시 신청하려면 탭을 눌러주세요.',
+      clickable: true,
+    },
+  } as const;
+
+  const statusConfig = CANDIDATE_STATUS_CONFIG[candidateStatus];
 
   return (
     <MobileLayout>
       {isPWA && (
-        <header className="sticky top-0 z-50 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between">
+        <header className="sticky top-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] px-4 h-14 flex items-center justify-between">
           <h1 className="text-lg font-bold text-slate-900">마이페이지</h1>
           <button
             onClick={handleLogout}
-            className="text-slate-400 hover:text-slate-600"
+            className="text-slate-400 hover:text-slate-600 transition-colors"
             aria-label="로그아웃"
           >
             <LogOut size={20} />
@@ -197,49 +275,120 @@ const MyPage: React.FC = () => {
 
       <div className={`flex-1 overflow-y-auto p-5 ${isPWA ? 'pb-24' : 'pb-8'}`}>
         {/* 프로필 카드 */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6 text-center relative overflow-hidden">
-          <div className="w-24 h-24 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center text-blue-500 text-3xl font-bold">
-            {(displayProfile?.nickname ?? '?')[0]}
+        <div className="rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.05)] border border-slate-100/80 mb-6 overflow-hidden">
+          {/* 그라디언트 헤더 — morphing orbs */}
+          <div className="mesh-hero h-20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/25 to-indigo-600/20" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-400/15 to-pink-400/10 rounded-full blur-2xl animate-morph pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-br from-blue-400/12 to-indigo-500/8 rounded-full blur-xl animate-morph pointer-events-none" style={{ animationDelay: '-3s' }} />
           </div>
+          <div className="bg-white/90 backdrop-blur-sm px-6 pb-6 text-center relative">
+            {/* 아바타 — 헤더와 겹치도록 */}
+            <div className="w-20 h-20 -mt-10 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-display text-3xl shadow-xl shadow-blue-300/40">
+              {(displayProfile?.nickname ?? '?')[0]}
+            </div>
 
           {isEditing ? (
-            <div className="space-y-4 text-left">
-              <Input
-                label="실명"
-                placeholder="홍길동"
-                value={editForm.legalName}
-                onChange={(e) => setEditForm({ ...editForm, legalName: e.target.value })}
-              />
-              <Select
-                label="MBTI"
-                options={MBTI_OPTIONS}
-                value={editForm.mbti}
-                onChange={(e) => setEditForm({ ...editForm, mbti: e.target.value as Mbti })}
-              />
-              <Input
-                label="인스타그램 아이디"
-                placeholder="my_insta (@ 제외)"
-                value={editForm.instagramId}
-                onChange={(e) => setEditForm({ ...editForm, instagramId: e.target.value })}
-              />
-              <Textarea
-                label="한줄 소개"
-                value={editForm.selfIntroduction}
-                onChange={(e) => setEditForm({ ...editForm, selfIntroduction: e.target.value })}
-              />
-              <Textarea
-                label="나의 이상형"
-                placeholder="어떤 사람을 찾고 계신가요?"
-                value={editForm.idealDescription}
-                onChange={(e) => setEditForm({ ...editForm, idealDescription: e.target.value })}
-              />
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" fullWidth onClick={() => setIsEditing(false)}>
-                  취소
-                </Button>
-                <Button fullWidth onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? '저장 중...' : '저장'}
-                </Button>
+            <div className="text-left -mx-6 -mb-6">
+              {/* 상단 그라디언트 바 */}
+              <div className="h-0.5 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mb-6" />
+
+              <div className="px-6 pb-8 space-y-7">
+                {/* MBTI 칩 그리드 */}
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">MBTI</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {MBTI_OPTIONS.map(({ value }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setEditForm({ ...editForm, mbti: value as Mbti })}
+                        className={`py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors duration-150 ${
+                          editForm.mbti === value
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200/50'
+                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200 active:bg-slate-300'
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 실명 */}
+                <div className="group">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">실명</label>
+                  <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
+                    <User size={15} className="text-slate-300 shrink-0 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      value={editForm.legalName}
+                      onChange={(e) => setEditForm({ ...editForm, legalName: e.target.value })}
+                      placeholder="홍길동"
+                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-300"
+                    />
+                  </div>
+                </div>
+
+                {/* 인스타그램 */}
+                <div className="group">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">인스타그램</label>
+                  <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
+                    <AtSign size={15} className="text-slate-300 shrink-0 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      value={editForm.instagramId}
+                      onChange={(e) => setEditForm({ ...editForm, instagramId: e.target.value })}
+                      placeholder="my_insta  (@ 제외)"
+                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-300"
+                    />
+                  </div>
+                </div>
+
+                {/* 한줄 소개 */}
+                <div className="group">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">한줄 소개</label>
+                  <div className="flex items-start gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-violet-400 focus-within:bg-white transition-all">
+                    <Smile size={15} className="text-slate-300 shrink-0 mt-0.5 group-focus-within:text-violet-400 transition-colors" />
+                    <textarea
+                      value={editForm.selfIntroduction}
+                      onChange={(e) => setEditForm({ ...editForm, selfIntroduction: e.target.value })}
+                      placeholder="나를 한 마디로 표현하면?"
+                      rows={2}
+                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none resize-none placeholder:text-slate-300 leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                {/* 이상형 */}
+                <div className="group">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">나의 이상형</label>
+                  <div className="flex items-start gap-3 bg-pink-50/60 rounded-2xl px-4 py-3.5 ring-1 ring-pink-100 focus-within:ring-2 focus-within:ring-pink-400 focus-within:bg-white transition-all">
+                    <Heart size={15} className="text-pink-300 shrink-0 mt-0.5 group-focus-within:text-pink-500 transition-colors" />
+                    <textarea
+                      value={editForm.idealDescription}
+                      onChange={(e) => setEditForm({ ...editForm, idealDescription: e.target.value })}
+                      placeholder="어떤 사람을 찾고 계신가요?"
+                      rows={2}
+                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none resize-none placeholder:text-pink-200 leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                {/* 버튼 */}
+                <div className="flex gap-2.5 pt-1">
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="flex-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-bold shadow-lg shadow-blue-200/60 hover:shadow-xl hover:shadow-blue-200/60 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:scale-100"
+                  >
+                    {isSaving ? '저장 중...' : '저장하기'}
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -249,26 +398,32 @@ const MyPage: React.FC = () => {
                 <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
                   {displayProfile?.mbti}
                 </span>
-                {isCandidate && (
+                {candidateStatus === 'APPROVED' && (
                   <span className="inline-block px-3 py-1 bg-green-100 text-green-600 text-xs font-bold rounded-full">
                     후보자
                   </span>
                 )}
+                {candidateStatus === 'PENDING' && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-600 text-xs font-bold rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                    승인 대기중
+                  </span>
+                )}
               </div>
 
-              <div className="text-left space-y-4 mb-6">
-                <div className="bg-slate-50 p-4 rounded-xl">
-                  <p className="text-xs font-bold text-slate-500 mb-1">한줄 소개</p>
+              <div className="text-left space-y-3 mb-6">
+                <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">한줄 소개</p>
                   <p className="text-slate-700 text-sm leading-relaxed">
                     {displayProfile?.selfIntroduction
                       ? `"${displayProfile.selfIntroduction}"`
-                      : <span className="text-slate-300">소개글을 작성해주세요</span>}
+                      : <span className="text-slate-300 italic">소개글을 작성해주세요</span>}
                   </p>
                 </div>
-                <div className="bg-pink-50 p-4 rounded-xl">
-                  <p className="text-xs font-bold text-pink-500 mb-1">나의 이상형</p>
+                <div className="p-4 rounded-2xl border border-pink-100 bg-pink-50/40">
+                  <p className="text-[10px] font-bold text-pink-400 uppercase tracking-wider mb-1.5">나의 이상형</p>
                   <p className="text-slate-700 text-sm leading-relaxed">
-                    {displayProfile?.idealDescription ?? <span className="text-slate-300">이상형을 작성해주세요</span>}
+                    {displayProfile?.idealDescription ?? <span className="text-slate-300 italic">이상형을 작성해주세요</span>}
                   </p>
                 </div>
               </div>
@@ -283,53 +438,76 @@ const MyPage: React.FC = () => {
               </Button>
             </>
           )}
+          </div>
         </div>
 
         {/* 후보 상태 */}
         <div
-          onClick={!isCandidate ? () => navigate('/match') : undefined}
-          className={`bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-6 flex items-center justify-between ${
-            !isCandidate ? 'cursor-pointer hover:bg-slate-50 transition-colors' : ''
+          onClick={statusConfig.clickable ? () => navigate('/match') : undefined}
+          className={`bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-[0_1px_12px_rgba(0,0,0,0.04)] border border-slate-100/80 mb-5 flex items-center justify-between transition-all duration-200 ${
+            statusConfig.clickable ? 'cursor-pointer hover:shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 active:scale-[0.99]' : ''
           }`}
         >
           <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isCandidate ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'
-              }`}
-            >
-              {isCandidate ? <UserCheck size={20} /> : <UserX size={20} />}
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${statusConfig.iconBg}`}>
+              {statusConfig.icon}
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-900">
-                {isCandidate ? '매칭 후보 등록됨' : '매칭 후보 미등록'}
-              </p>
-              <p className="text-xs text-slate-500">
-                {isCandidate
-                  ? '다른 친구들이 나를 찾을 수 있어요!'
-                  : '등록하면 매칭 확률이 올라가요!'}
-              </p>
+              <p className="text-sm font-bold text-slate-900">{statusConfig.title}</p>
+              <p className="text-xs text-slate-400">{statusConfig.description}</p>
             </div>
           </div>
-          {!isCandidate && <ChevronRight size={18} className="text-slate-400" />}
+          {statusConfig.clickable && <ChevronRight size={16} className="text-slate-300" />}
         </div>
 
         {/* 메뉴 */}
-        <div className="space-y-2">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-100/80 shadow-[0_1px_12px_rgba(0,0,0,0.04)] overflow-hidden divide-y divide-slate-50">
           {[
+            { label: '비밀번호 변경', onClick: () => setShowPasswordChange(true) },
             { label: '공지사항', onClick: openNotice },
             { label: '이용약관', onClick: openTerms },
-            { label: '문의하기', onClick: () => {} },
           ].map(({ label, onClick }) => (
             <button
               key={label}
               onClick={onClick}
-              className="w-full bg-white p-4 rounded-xl border border-slate-100 flex items-center justify-between hover:bg-slate-50 transition-colors"
+              className="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors"
             >
-              <span className="text-slate-700 font-medium">{label}</span>
-              <ChevronRight size={18} className="text-slate-400" />
+              <span className="text-slate-700 font-medium text-sm">{label}</span>
+              <ChevronRight size={16} className="text-slate-300" />
             </button>
           ))}
+
+          {/* 알림 설정 토글 */}
+          {typeof Notification !== 'undefined' && (
+            <button
+              onClick={() => void handleNotificationToggle()}
+              disabled={notifLoading}
+              className="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors disabled:opacity-60"
+            >
+              <div className="flex items-center gap-3">
+                {notifEnabled ? (
+                  <Bell size={16} className="text-blue-500" />
+                ) : (
+                  <BellOff size={16} className="text-slate-400" />
+                )}
+                <div className="text-left">
+                  <span className="text-slate-700 font-medium text-sm">푸시 알림</span>
+                </div>
+              </div>
+              {/* 토글 스위치 */}
+              <div
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${
+                  notifEnabled ? 'bg-blue-500' : 'bg-slate-200'
+                }`}
+              >
+                <div
+                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                    notifEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                  }`}
+                />
+              </div>
+            </button>
+          )}
         </div>
 
         <div className="mt-8 text-center">
@@ -345,8 +523,252 @@ const MyPage: React.FC = () => {
         {modal.content}
       </Modal>
 
+      <AnimatePresence>
+        {showPasswordChange && (
+          <PasswordChangeSheet
+            userEmail={user?.email ?? ''}
+            onClose={() => setShowPasswordChange(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <BottomNav />
     </MobileLayout>
+  );
+};
+
+type PwStep = 'send' | 'verify' | 'newpw';
+
+const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> = ({
+  userEmail,
+  onClose,
+}) => {
+  const { toast } = useToast();
+  const [step, setStep] = useState<PwStep>('send');
+  const [code, setCode] = useState('');
+  const [emailVerificationToken, setEmailVerificationToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [showPwConfirm, setShowPwConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSendCode = async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const res = await sendEmailVerificationCode({ email: userEmail });
+      if (res.result === 'ERROR') {
+        toast(res.error?.message ?? '인증 코드 발송에 실패했습니다.', 'error');
+        return;
+      }
+      toast('인증 코드를 발송했습니다.', 'success');
+      setStep('verify');
+    } catch {
+      toast('인증 코드 발송 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (): Promise<void> => {
+    if (!code) return;
+    setIsLoading(true);
+    try {
+      const res = await verifyEmailCode({ email: userEmail, code }, 'PASSWORD_RESET');
+      if (res.result === 'ERROR' || !res.data) {
+        toast(res.error?.message ?? '인증 코드가 올바르지 않습니다.', 'error');
+        return;
+      }
+      setEmailVerificationToken(res.data.emailVerificationToken);
+      setStep('newpw');
+    } catch {
+      toast('인증 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (): Promise<void> => {
+    if (newPassword !== newPasswordConfirm) {
+      toast('비밀번호가 일치하지 않습니다.', 'error');
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast('비밀번호는 8자 이상이어야 합니다.', 'error');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await updatePassword({ email: userEmail, emailVerificationToken, newPassword });
+      if (res.result === 'ERROR') {
+        toast(res.error?.message ?? '비밀번호 변경에 실패했습니다.', 'error');
+        return;
+      }
+      toast('비밀번호가 변경되었습니다.', 'success');
+      onClose();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        toast(err.response?.data?.error?.message ?? '비밀번호 변경에 실패했습니다.', 'error');
+      } else {
+        toast('비밀번호 변경 중 오류가 발생했습니다.', 'error');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black z-[60]"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[2rem] max-w-[430px] mx-auto max-h-[80vh] flex flex-col"
+      >
+        <div className="px-6 pt-4 pb-4 shrink-0">
+          <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-5" />
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-lg font-bold text-slate-900">비밀번호 변경</h3>
+            <button onClick={onClose} className="p-2 -mr-2 text-slate-400 hover:text-slate-600" aria-label="닫기">
+              <X size={20} />
+            </button>
+          </div>
+          {/* 스텝 인디케이터 */}
+          <div className="flex gap-1.5 mt-3">
+            {(['send', 'verify', 'newpw'] as PwStep[]).map((s, i) => (
+              <div
+                key={s}
+                className={`h-1 rounded-full flex-1 transition-all ${
+                  s === step ? 'bg-blue-500' : i < (['send', 'verify', 'newpw'] as PwStep[]).indexOf(step) ? 'bg-blue-300' : 'bg-slate-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="overflow-y-auto px-6 pb-8 space-y-4">
+          {/* Step: send */}
+          {step === 'send' && (
+            <>
+              <div className="text-center py-2">
+                <p className="text-sm text-slate-600">
+                  아래 이메일로 인증 코드를 발송합니다.
+                </p>
+                <p className="font-semibold text-slate-900 mt-1 text-sm">{userEmail}</p>
+              </div>
+              <Button fullWidth size="lg" onClick={() => void handleSendCode()} disabled={isLoading}>
+                {isLoading ? '발송 중...' : '인증 코드 받기'}
+              </Button>
+            </>
+          )}
+
+          {/* Step: verify */}
+          {step === 'verify' && (
+            <>
+              <p className="text-xs text-blue-600 font-medium">
+                인증 메일이 발송되었습니다. 코드를 입력해주세요.
+              </p>
+              <a
+                href="https://outlook.office.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
+              >
+                <span>📧</span>
+                학교 아웃룩 메일 바로가기
+                <ExternalLink size={12} />
+              </a>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="인증 코드 6자리"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && code) void handleVerifyCode(); }}
+                  autoFocus
+                  className="flex-1 px-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+                <button
+                  onClick={() => void handleVerifyCode()}
+                  disabled={!code || isLoading}
+                  className="shrink-0 h-[46px] px-4 rounded-2xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-all"
+                >
+                  {isLoading ? '확인 중...' : '확인'}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleSendCode()}
+                disabled={isLoading}
+                className="text-xs text-slate-400 hover:text-blue-500 hover:underline disabled:pointer-events-none"
+              >
+                인증 코드 재발송
+              </button>
+            </>
+          )}
+
+          {/* Step: newpw */}
+          {step === 'newpw' && (
+            <>
+              <p className="text-xs text-green-600 font-bold flex items-center gap-1">
+                <CheckCircle2 size={12} /> 인증이 완료되었습니다.
+              </p>
+              <div>
+                <label htmlFor="pw-new" className="block text-sm font-semibold text-slate-700 mb-1">새 비밀번호</label>
+                <div className="flex items-center border-2 border-slate-200 rounded-2xl overflow-hidden focus-within:border-blue-500 transition-colors">
+                  <input
+                    id="pw-new"
+                    type={showPw ? 'text' : 'password'}
+                    placeholder="8자 이상 입력해주세요"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="flex-1 min-w-0 px-4 py-3 text-sm outline-none bg-white"
+                  />
+                  <button type="button" onClick={() => setShowPw((v) => !v)} className="px-3 text-slate-400" aria-label="비밀번호 보기">
+                    {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="pw-confirm" className="block text-sm font-semibold text-slate-700 mb-1">새 비밀번호 확인</label>
+                <div className="flex items-center border-2 border-slate-200 rounded-2xl overflow-hidden focus-within:border-blue-500 transition-colors">
+                  <input
+                    id="pw-confirm"
+                    type={showPwConfirm ? 'text' : 'password'}
+                    placeholder="비밀번호를 다시 입력해주세요"
+                    value={newPasswordConfirm}
+                    onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                    className="flex-1 min-w-0 px-4 py-3 text-sm outline-none bg-white"
+                  />
+                  <button type="button" onClick={() => setShowPwConfirm((v) => !v)} className="px-3 text-slate-400" aria-label="비밀번호 보기">
+                    {showPwConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {newPasswordConfirm && newPassword !== newPasswordConfirm && (
+                  <p className="text-xs text-red-500 mt-1">비밀번호가 일치하지 않습니다.</p>
+                )}
+              </div>
+              <Button
+                fullWidth
+                size="lg"
+                onClick={() => void handleChangePassword()}
+                disabled={!newPassword || !newPasswordConfirm || newPassword !== newPasswordConfirm || isLoading}
+              >
+                {isLoading ? '변경 중...' : '비밀번호 변경하기'}
+              </Button>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </>
   );
 };
 

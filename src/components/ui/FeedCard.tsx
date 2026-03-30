@@ -13,36 +13,41 @@ const formatTime = (createdAt: string): string => {
   return `${Math.floor(hours / 24)}일 전`;
 };
 
-export const FeedCard: React.FC<{ item: FeedItem }> = ({ item }) => (
-  <Card className="py-4 px-5 flex items-start gap-4 border-none shadow-sm hover:shadow-md transition-shadow">
-    <div
-      className={`mt-1 w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-        item.eventType === 'CANDIDATE_REGISTERED' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'
-      }`}
-    >
-      {item.eventType === 'CANDIDATE_REGISTERED' ? (
-        <UserPlus size={20} />
-      ) : (
-        <Heart size={20} fill="currentColor" />
-      )}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex justify-between items-start mb-1">
-        <span className="font-bold text-slate-900 text-sm">{item.nickname}</span>
-        <span className="text-xs text-slate-400">{formatTime(item.createdAt)}</span>
-      </div>
-      <p className="text-sm text-slate-600 leading-snug">
-        {item.eventType === 'CANDIDATE_REGISTERED' ? (
-          <>
-            매칭 후보로 <span className="text-blue-600 font-medium">등록</span>되었습니다!
-          </>
+export const FeedCard: React.FC<{ item: FeedItem }> = React.memo(({ item }) => {
+  const isCandidate = item.eventType === 'CANDIDATE_REGISTERED';
+
+  return (
+    <Card className="!py-3.5 !px-4 flex items-center gap-4 border-none !shadow-[0_1px_12px_rgba(0,0,0,0.04)] hover:!shadow-[0_4px_20px_rgba(0,0,0,0.08)] group">
+      <div
+        className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+          isCandidate
+            ? 'bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-md shadow-blue-200/40'
+            : 'bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-md shadow-pink-200/40'
+        }`}
+      >
+        {isCandidate ? (
+          <UserPlus size={18} strokeWidth={2.5} />
         ) : (
-          <>
-            사랑을 찾기 위해{' '}
-            <span className="text-pink-600 font-medium">{item.requestCount}명</span>을 요청하였습니다!
-          </>
+          <Heart size={18} fill="currentColor" strokeWidth={0} />
         )}
-      </p>
-    </div>
-  </Card>
-);
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-center mb-0.5">
+          <span className="font-bold text-slate-900 text-sm">{item.nickname}</span>
+          <span className="text-[11px] text-slate-400 shrink-0">{formatTime(item.createdAt)}</span>
+        </div>
+        <p className="text-xs text-slate-500 leading-snug">
+          {isCandidate ? (
+            <>
+              매칭 후보로 <span className="text-blue-600 font-semibold">등록</span>되었어요
+            </>
+          ) : (
+            <>
+              <span className="text-rose-500 font-semibold">{item.requestCount}명</span>의 인연을 기다리고 있어요
+            </>
+          )}
+        </p>
+      </div>
+    </Card>
+  );
+});
