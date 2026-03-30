@@ -57,6 +57,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem('fcmToken');
   };
 
   return (

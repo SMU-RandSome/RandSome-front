@@ -3,11 +3,13 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { WebShell } from '@/components/layout/WebShell';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // 라우트 단위 코드 스플리팅
 const GuestMainPage = React.lazy(() => import('@/pages/GuestMainPage'));
 const LoginPage = React.lazy(() => import('@/pages/LoginPage'));
 const SignupPage = React.lazy(() => import('@/pages/SignupPage'));
+const ForgotPasswordPage = React.lazy(() => import('@/pages/ForgotPasswordPage'));
 const MemberMainPage = React.lazy(() => import('@/pages/MemberMainPage'));
 const MatchPage = React.lazy(() => import('@/pages/MatchPage'));
 const RequestsPage = React.lazy(() => import('@/pages/RequestsPage'));
@@ -29,17 +31,21 @@ const AppShell: React.FC = () => {
 
   if (isPWA) {
     return (
-      <Suspense fallback={<PageLoader />}>
-        <Outlet />
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
+      </ErrorBoundary>
     );
   }
 
   // 웹 모드: WebShell이 내부에서 <Outlet /> 렌더링
   return (
-    <Suspense fallback={<PageLoader />}>
-      <WebShell />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <WebShell />
+      </Suspense>
+    </ErrorBoundary>
   );
 };
 
@@ -67,6 +73,7 @@ export const router = createBrowserRouter([
       { path: '/', element: <GuestMainPage /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/signup', element: <SignupPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
 
       // 회원 전용 라우트
       {

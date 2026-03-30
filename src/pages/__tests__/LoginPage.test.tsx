@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/utils';
 import LoginPage from '@/pages/LoginPage';
@@ -79,9 +79,10 @@ describe('LoginPage', () => {
 
   it('폼 제출 시 @sangmyung.kr 붙여서 loginApi 호출', async () => {
     renderWithProviders(<LoginPage />);
-    await userEvent.type(screen.getByLabelText('학교 이메일'), 'testuser');
-    await userEvent.type(screen.getByLabelText('비밀번호'), 'password123');
-    await userEvent.click(screen.getByRole('button', { name: '로그인하기' }));
+    // fireEvent.change: userEvent.type + React 19 + JSDOM 호환성 이슈 우회
+    fireEvent.change(screen.getByLabelText('학교 이메일'), { target: { value: 'testuser' } });
+    fireEvent.change(screen.getByLabelText('비밀번호'), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: '로그인하기' }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith({

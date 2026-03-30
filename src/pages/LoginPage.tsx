@@ -9,6 +9,7 @@ import { useDisplayMode } from '@/store/displayModeStore';
 import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
 import { ChevronLeft, Heart } from 'lucide-react';
+import { motion } from 'motion/react';
 import axios from 'axios';
 
 const LoginPage: React.FC = () => {
@@ -65,17 +66,17 @@ const LoginPage: React.FC = () => {
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="email-id" className="block text-sm font-semibold text-slate-700 mb-1">학교 이메일</label>
-        <div className="flex items-center border-2 border-slate-200 rounded-2xl overflow-hidden focus-within:border-blue-500 transition-colors">
+        <label htmlFor="email-id" className="block text-sm font-semibold text-slate-700 mb-1.5">학교 이메일</label>
+        <div className="flex items-center border-2 border-slate-200/80 rounded-2xl overflow-hidden focus-within:border-blue-500 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all duration-200 bg-white/80 backdrop-blur-sm">
           <input
             id="email-id"
             type="text"
             placeholder="이메일 아이디"
             value={emailId}
             onChange={(e) => setEmailId(e.target.value)}
-            className="flex-1 px-4 py-3 text-sm outline-none bg-white"
+            className="flex-1 min-w-0 px-4 py-3 text-sm outline-none bg-transparent"
           />
-          <span className="px-3 py-3 text-sm text-slate-400 bg-slate-50 border-l border-slate-200 shrink-0">
+          <span className="shrink-0 px-3 py-3 text-sm text-slate-400 bg-slate-50/80 border-l border-slate-200/80 whitespace-nowrap">
             @sangmyung.kr
           </span>
         </div>
@@ -98,10 +99,10 @@ const LoginPage: React.FC = () => {
   return (
     <MobileLayout>
       {isPWA && (
-        <header className="sticky top-0 z-50 bg-white border-b border-slate-100 px-4 h-14 flex items-center">
+        <header className="sticky top-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] px-4 h-14 flex items-center">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 -ml-2 text-slate-600 hover:bg-slate-50 rounded-full"
+            className="p-2 -ml-2 text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
             aria-label="뒤로 가기"
           >
             <ChevronLeft size={24} />
@@ -110,28 +111,70 @@ const LoginPage: React.FC = () => {
         </header>
       )}
 
-      <div className={`flex-1 flex flex-col justify-center p-6 ${isPWA ? 'pb-32' : 'max-w-md mx-auto w-full py-16'}`}>
-        {/* 로고 */}
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-pink-500 rounded-3xl flex items-center justify-center text-white mb-4 shadow-lg shadow-blue-200">
-            <Heart size={30} fill="currentColor" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900">다시 만나요! 👋</h2>
-          <p className="text-slate-500 text-sm mt-1">설레는 인연이 기다리고 있어요</p>
+      <div className={`relative flex-1 flex flex-col justify-center p-6 ${isPWA ? 'pb-32' : 'max-w-md mx-auto w-full py-16'}`}>
+        {/* Animated gradient orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 -left-20 w-56 h-56 bg-gradient-to-br from-blue-400/10 to-indigo-500/8 rounded-full blur-3xl animate-morph" />
+          <div
+            className="absolute bottom-1/4 -right-20 w-56 h-56 bg-gradient-to-br from-pink-400/10 to-rose-500/8 rounded-full blur-3xl animate-morph"
+            style={{ animationDelay: '-4s' }}
+          />
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-br from-violet-400/6 to-purple-500/4 rounded-full blur-2xl animate-morph"
+            style={{ animationDelay: '-6s' }}
+          />
         </div>
 
-        {formContent}
+        {/* 로고 */}
+        <motion.div
+          className="relative flex flex-col items-center mb-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center text-white mb-4 shadow-xl shadow-blue-300/30">
+            <Heart size={30} fill="currentColor" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900">다시 만나요!</h2>
+          <p className="text-slate-400 text-sm mt-1.5">설레는 인연이 기다리고 있어요</p>
+        </motion.div>
 
-        <p className="text-center text-sm text-slate-500 mt-6">
-          아직 계정이 없으신가요?{' '}
-          <button
-            type="button"
-            onClick={() => navigate('/signup')}
-            className="text-blue-600 font-bold hover:underline"
-          >
-            회원가입
-          </button>
-        </p>
+        <motion.div
+          className="relative"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          {formContent}
+        </motion.div>
+
+        <motion.div
+          className="relative"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <p className="text-center text-sm text-slate-500 mt-6">
+            아직 계정이 없으신가요?{' '}
+            <button
+              type="button"
+              onClick={() => navigate('/signup')}
+              className="text-blue-600 font-bold hover:underline"
+            >
+              회원가입
+            </button>
+          </p>
+
+          <p className="text-center text-sm text-slate-400 mt-3">
+            <button
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              className="hover:text-slate-600 hover:underline transition-colors"
+            >
+              비밀번호를 잊으셨나요?
+            </button>
+          </p>
+        </motion.div>
       </div>
     </MobileLayout>
   );

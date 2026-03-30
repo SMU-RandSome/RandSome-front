@@ -25,6 +25,7 @@ import {
   Check,
   X,
   ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 
 const MBTI_OPTIONS = [
@@ -123,7 +124,7 @@ const TERMS_ITEMS: TermsItem[] = [
   {
     key: 'refund',
     label: '환불 처리를 위한 정보 제공 동의',
-    required: false,
+    required: true,
     content: (
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
         <p>서비스 운영 중 불가피한 사유로 환불이 필요한 경우를 대비하여 다음 정보를 수집할 수 있습니다.</p>
@@ -256,7 +257,7 @@ const SignupPage: React.FC = () => {
     }
     try {
       const email = `${formData.emailUsername}@sangmyung.kr`;
-      const res = await verifyEmailCode({ email, code: verificationCode });
+      const res = await verifyEmailCode({ email, code: verificationCode }, 'SIGN_UP');
       if (!res.data) {
         toast(res.error?.message ?? '인증 코드가 올바르지 않습니다.', 'error');
         return;
@@ -276,11 +277,11 @@ const SignupPage: React.FC = () => {
   const requiredTermsAgreed =
     formData.terms.service &&
     formData.terms.privacy &&
+    formData.terms.refund &&
     formData.terms.disclaimer &&
     formData.terms.profilePublic;
 
-  const allTermsAgreed =
-    requiredTermsAgreed && formData.terms.refund;
+  const allTermsAgreed = requiredTermsAgreed;
 
   const toggleAllTerms = (): void => {
     const next = !allTermsAgreed;
@@ -403,12 +404,16 @@ const SignupPage: React.FC = () => {
   const openTerm = TERMS_ITEMS.find((t) => t.key === openTermKey);
 
   const renderStepIndicator = (): React.ReactNode => (
-    <div className="flex items-center justify-center gap-2 mb-8">
+    <div className="flex items-center gap-1.5 mb-8">
       {[1, 2, 3].map((s) => (
         <div
           key={s}
-          className={`h-1.5 rounded-full transition-all ${
-            step === s ? 'w-8 bg-blue-600' : 'w-4 bg-slate-200'
+          className={`h-1 rounded-full transition-all duration-300 ${
+            s < step
+              ? 'flex-1 bg-blue-400'
+              : s === step
+              ? 'flex-[2] bg-gradient-to-r from-blue-500 to-indigo-600'
+              : 'flex-1 bg-slate-200'
           }`}
         />
       ))}
@@ -478,6 +483,16 @@ const SignupPage: React.FC = () => {
                   {emailVerified ? <Check size={20} /> : emailSent ? '재전송' : '인증'}
                 </button>
               </div>
+              <a
+                href="https://outlook.office.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
+              >
+                <span>📧</span>
+                학교 아웃룩 메일 바로가기
+                <ExternalLink size={12} />
+              </a>
               {emailVerified ? (
                 <p className="text-xs text-green-600 font-bold flex items-center gap-1">
                   <CheckCircle2 size={12} /> 인증이 완료되었습니다.
@@ -488,7 +503,6 @@ const SignupPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      inputMode="numeric"
                       placeholder="인증코드 입력"
                       value={verificationCode}
                       onChange={(e) => setVerificationCode(e.target.value)}
