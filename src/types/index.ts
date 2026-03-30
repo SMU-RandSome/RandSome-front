@@ -24,6 +24,8 @@ export interface ApiResponse<T> {
 
 // --- 인증 ---
 
+export type VerificationPurpose = 'SIGN_UP' | 'PASSWORD_RESET';
+
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
@@ -53,6 +55,8 @@ export interface TokenReissueRequest {
 
 // --- 회원 ---
 
+export type CandidateRegistrationStatus = 'NOT_APPLIED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN';
+
 export interface MemberProfile {
   id: number;
   nickname: string;
@@ -64,6 +68,7 @@ export interface MemberProfile {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
+  candidateRegistrationStatus: CandidateRegistrationStatus;
 }
 
 export interface MemberProfileUpdateRequest {
@@ -91,6 +96,33 @@ export interface MemberCreateRequest {
 
 // authStore에서 사용하는 로그인된 사용자 타입
 export type AuthUser = MemberProfile;
+
+// --- 비밀번호 변경 ---
+
+export interface PasswordUpdateRequest {
+  email: string;
+  emailVerificationToken: string;
+  newPassword: string;
+}
+
+// --- 디바이스 ---
+
+export interface DeviceTokenSyncRequest {
+  deviceToken: string;
+}
+
+// --- 공지사항 ---
+
+export interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+}
+
+export interface AnnouncementRegisterRequest {
+  title: string;
+  content: string;
+}
 
 // --- 피드 ---
 
@@ -138,9 +170,33 @@ export interface MatchingResultDetailItem {
 
 // --- 결제 ---
 
-export type PaymentStatus = 'WAITING' | 'CONFIRMED' | 'FAILED';
+export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'REJECTED';
+
+export type PaymentFilterStatus = 'PENDING' | 'PROCESSED';
+
+export type PaymentType = 'CANDIDATE_REGISTRATION' | 'RANDOM_MATCHING' | 'IDEAL_TYPE_MATCHING';
+
+export interface PaymentPreviewItem {
+  paymentId: number;
+  memberName: string;
+  paymentType: PaymentType;
+  paymentStatus: PaymentStatus;
+  amount: number;
+  rejectedReason?: string;
+  applyAt: string;
+}
 
 // --- 관리자 ---
+
+export interface CandidateGenderCountResponse {
+  maleCount: number;
+  femaleCount: number;
+}
+
+export interface PaymentStatusStatisticsResponse {
+  pendingCount: number;
+  processedCount: number;
+}
 
 export interface DashboardResponse {
   candidateCount: number;
