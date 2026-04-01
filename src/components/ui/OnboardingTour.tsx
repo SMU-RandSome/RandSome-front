@@ -38,7 +38,8 @@ const STORAGE_KEY_PREFIX = 'randsome_onboarding_';
 
 export const OnboardingTour: React.FC<OnboardingTourProps> = ({ userId, onDone }) => {
   const storageKey = `${STORAGE_KEY_PREFIX}${userId}`;
-  const alreadySeen = localStorage.getItem(storageKey) === '1';
+  // lazy initializer로 마운트 시 1회만 localStorage 읽기 — 매 렌더마다 호출 방지
+  const [alreadySeen] = useState(() => localStorage.getItem(storageKey) === '1');
 
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState(1);

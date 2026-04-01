@@ -16,6 +16,45 @@ import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User
 import { motion, AnimatePresence } from 'motion/react';
 import axios from 'axios';
 
+// 컴포넌트 외부 정의 — 매 렌더마다 React 엘리먼트 재생성 방지
+const CANDIDATE_STATUS_CONFIG = {
+  NOT_APPLIED: {
+    icon: <UserX size={20} />,
+    iconBg: 'bg-slate-100 text-slate-400',
+    title: '매칭 후보 미등록',
+    description: '등록하면 매칭 확률이 올라가요!',
+    clickable: true,
+  },
+  PENDING: {
+    icon: <Clock size={20} />,
+    iconBg: 'bg-orange-100 text-orange-500',
+    title: '후보 등록 승인 대기중',
+    description: '관리자 확인 후 최대 10분 내 승인됩니다.',
+    clickable: false,
+  },
+  APPROVED: {
+    icon: <UserCheck size={20} />,
+    iconBg: 'bg-green-100 text-green-600',
+    title: '매칭 후보 등록됨',
+    description: '다른 친구들이 나를 찾을 수 있어요!',
+    clickable: false,
+  },
+  REJECTED: {
+    icon: <AlertCircle size={20} />,
+    iconBg: 'bg-red-100 text-red-500',
+    title: '후보 등록 거절됨',
+    description: '다시 신청하려면 탭을 눌러주세요.',
+    clickable: true,
+  },
+  WITHDRAWN: {
+    icon: <UserX size={20} />,
+    iconBg: 'bg-slate-100 text-slate-400',
+    title: '후보 등록 취소됨',
+    description: '다시 신청하려면 탭을 눌러주세요.',
+    clickable: true,
+  },
+} as const;
+
 const MBTI_OPTIONS = [
   { value: 'ISTJ', label: 'ISTJ' },
   { value: 'ISFJ', label: 'ISFJ' },
@@ -76,8 +115,10 @@ const MyPage: React.FC = () => {
   const [notifLoading, setNotifLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     getMyProfile()
       .then((res) => {
+        if (cancelled) return;
         if (res.data) {
           setProfile(res.data);
           setUser(res.data);
@@ -93,6 +134,7 @@ const MyPage: React.FC = () => {
       .catch(() => {
         // 네트워크 오류 등 — authStore 캐시 사용
       });
+    return () => { cancelled = true; };
   }, []);
 
   const handleLogout = (): void => {
@@ -217,45 +259,6 @@ const MyPage: React.FC = () => {
 
   const displayProfile = profile ?? user;
   const candidateStatus = displayProfile?.candidateRegistrationStatus ?? 'NOT_APPLIED';
-
-  const CANDIDATE_STATUS_CONFIG = {
-    NOT_APPLIED: {
-      icon: <UserX size={20} />,
-      iconBg: 'bg-slate-100 text-slate-400',
-      title: '매칭 후보 미등록',
-      description: '등록하면 매칭 확률이 올라가요!',
-      clickable: true,
-    },
-    PENDING: {
-      icon: <Clock size={20} />,
-      iconBg: 'bg-orange-100 text-orange-500',
-      title: '후보 등록 승인 대기중',
-      description: '관리자 확인 후 최대 10분 내 승인됩니다.',
-      clickable: false,
-    },
-    APPROVED: {
-      icon: <UserCheck size={20} />,
-      iconBg: 'bg-green-100 text-green-600',
-      title: '매칭 후보 등록됨',
-      description: '다른 친구들이 나를 찾을 수 있어요!',
-      clickable: false,
-    },
-    REJECTED: {
-      icon: <AlertCircle size={20} />,
-      iconBg: 'bg-red-100 text-red-500',
-      title: '후보 등록 거절됨',
-      description: '다시 신청하려면 탭을 눌러주세요.',
-      clickable: true,
-    },
-    WITHDRAWN: {
-      icon: <UserX size={20} />,
-      iconBg: 'bg-slate-100 text-slate-400',
-      title: '후보 등록 취소됨',
-      description: '다시 신청하려면 탭을 눌러주세요.',
-      clickable: true,
-    },
-  } as const;
-
   const statusConfig = CANDIDATE_STATUS_CONFIG[candidateStatus];
 
   return (

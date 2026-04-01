@@ -28,29 +28,35 @@ const MemberMainPage: React.FC = () => {
     { label: '전체 매칭', value: stats?.totalMatchingCount?.toLocaleString() ?? '-', unit: '건', gradient: 'from-pink-500 to-rose-500' },
   ], [stats]);
 
-  const feedContent = feed.length === 0 ? (
-    <div className="py-12 flex flex-col items-center gap-3 text-slate-400">
-      <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-        <Sparkles size={24} className="text-slate-300" />
-      </div>
-      <p className="text-sm font-medium">아직 매칭 소식이 없어요</p>
-      <p className="text-xs">첫 번째 주인공이 되어보세요!</p>
-    </div>
-  ) : (
-    <AnimatePresence initial={false}>
-      {feed.map((item, i) => (
-        <motion.div
-          key={item.id}
-          initial={{ opacity: 0, y: -20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ duration: 0.3, delay: i * 0.03 }}
-        >
-          <FeedCard item={item} />
-        </motion.div>
-      ))}
-    </AnimatePresence>
-  );
+  // feed가 변경될 때만 재계산 — 10초 폴링 외 리렌더링 시 불필요한 JSX 재생성 방지
+  const feedContent = useMemo(() => {
+    if (feed.length === 0) {
+      return (
+        <div className="py-12 flex flex-col items-center gap-3 text-slate-400">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+            <Sparkles size={24} className="text-slate-300" />
+          </div>
+          <p className="text-sm font-medium">아직 매칭 소식이 없어요</p>
+          <p className="text-xs">첫 번째 주인공이 되어보세요!</p>
+        </div>
+      );
+    }
+    return (
+      <AnimatePresence initial={false}>
+        {feed.map((item, i) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3, delay: i * 0.03 }}
+          >
+            <FeedCard item={item} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    );
+  }, [feed]);
 
   // ── 웹 레이아웃 ────────────────────────────────────────────────────────────
   if (!isPWA) {

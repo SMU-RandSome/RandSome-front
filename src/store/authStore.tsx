@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 import type { AuthUser, UserRole, Gender } from '@/types';
 
 interface AuthContextType {
@@ -47,21 +47,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<AuthUser | null>(getStoredUser);
 
-  const setUser = (authUser: AuthUser): void => {
+  // useCallback으로 안정적인 참조 유지 — useAuth() 소비자의 불필요한 리렌더링 방지
+  const setUser = useCallback((authUser: AuthUser): void => {
     setUserState(authUser);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser));
-  };
+  }, []);
 
-  const logout = (): void => {
+  const logout = useCallback((): void => {
     setUserState(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem(AUTH_USER_KEY);
     localStorage.removeItem('fcmToken');
-  };
+  }, []);
+
+  // useMemo로 context 값 안정화 — user 변경 시에만 하위 트리 리렌더링
+  const value = useMemo(
+    () => ({ user, isAuthenticated: user !== null, setUser, logout }),
+    [user, setUser, logout],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: user !== null, setUser, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

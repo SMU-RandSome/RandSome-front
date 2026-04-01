@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
@@ -21,10 +21,10 @@ export const WebShell: React.FC = () => {
   const isAdminPage = location.pathname.startsWith('/admin');
   const isMemberPage = isAuthenticated && !isAdminPage;
 
-  const handleLogout = (): void => {
+  const handleLogout = useCallback((): void => {
     logout();
     navigate('/');
-  };
+  }, [logout, navigate]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFF] flex flex-col">
