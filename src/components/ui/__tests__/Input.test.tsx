@@ -51,10 +51,10 @@ describe('Input', () => {
     expect(screen.getByLabelText('레이블')).toHaveAttribute('id', 'custom-input');
   });
 
-  it('label에서 id를 자동 생성함 (공백은 하이픈으로)', () => {
+  it('id prop 미전달 시 label과 input이 자동으로 연결됨 (React.useId)', () => {
     render(<Input label="학교 이메일" />);
     const input = screen.getByLabelText('학교 이메일');
-    expect(input).toHaveAttribute('id', '학교-이메일');
+    expect(input).toHaveAttribute('id'); // React.useId() 생성 — 구체적 형식은 검사하지 않음
   });
 
   it('type=password prop이 전달됨', () => {

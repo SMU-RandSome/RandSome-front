@@ -14,7 +14,9 @@ export const Input: React.FC<InputProps> = ({
   id,
   ...props
 }) => {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
+  // React.useId()로 인스턴스마다 고유 id 보장 — 동일 label 중복 시 htmlFor/id 연결 파괴 방지
+  const generatedId = React.useId();
+  const inputId = id ?? generatedId;
 
   return (
     <div className="w-full mb-4">
