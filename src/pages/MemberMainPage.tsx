@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { FeedCard } from '@/components/ui/FeedCard';
@@ -15,6 +16,7 @@ import { AnnouncementBanner } from '@/components/ui/AnnouncementBanner';
 import { TiltCard } from '@/components/ui/TiltCard';
 
 const MemberMainPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isPWA } = useDisplayMode();
   const { user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -101,7 +103,13 @@ const MemberMainPage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <TiltCard className="rounded-2xl">
-              <div className="bg-slate-900 rounded-2xl p-5 text-white relative overflow-hidden h-full">
+              <div
+                className="bg-slate-900 rounded-2xl p-5 text-white relative overflow-hidden h-full cursor-pointer"
+                onClick={() => navigate('/match?view=find')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/match?view=find'); }}
+              >
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-pink-600/20" />
                 <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
                   <span className="absolute top-0 h-full w-[55%] bg-gradient-to-r from-transparent via-white/8 to-transparent animate-shimmer" />
@@ -119,7 +127,13 @@ const MemberMainPage: React.FC = () => {
               </div>
             </TiltCard>
             <TiltCard className="rounded-2xl">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-slate-100/80 relative overflow-hidden h-full">
+              <div
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-slate-100/80 relative overflow-hidden h-full cursor-pointer"
+                onClick={() => navigate('/match?view=register')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/match?view=register'); }}
+              >
                 <div className="absolute -right-3 -bottom-3 opacity-[0.05]">
                   <UserPlus size={80} />
                 </div>

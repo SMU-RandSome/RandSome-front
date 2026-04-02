@@ -5,19 +5,13 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { getMatchingHistory, withdrawMatching } from '@/features/matching/api';
+import { getApiErrorMessage } from '@/lib/axios';
 import { useToast } from '@/components/ui/Toast';
 import type { MatchingHistoryItem, MatchingApplicationStatus } from '@/types';
 import { Heart, Dice5, Calendar, CheckCircle2, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type TabType = 'PENDING' | 'APPROVED' | 'REJECTED';
-
-const WITHDRAW_REASONS = [
-  '실수로 신청했어요',
-  '금액을 잘못 입금했어요',
-  '마음이 바뀌었어요',
-  '기타',
-] as const;
 
 const RequestsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -29,7 +23,6 @@ const RequestsPage: React.FC = () => {
   const [loadError, setLoadError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const [withdrawTarget, setWithdrawTarget] = useState<MatchingHistoryItem | null>(null);
-  const [withdrawReason, setWithdrawReason] = useState<string>('');
 
   useEffect(() => {
     let cancelled = false;
@@ -59,18 +52,16 @@ const RequestsPage: React.FC = () => {
         setItems((prev) => prev.filter((item) => item.id !== targetId));
         toast('신청이 취소되었습니다', 'success');
       })
-      .catch(() => {
-        toast('신청 취소에 실패했습니다. 다시 시도해주세요.', 'error');
+      .catch((err: unknown) => {
+        toast(getApiErrorMessage(err), 'error');
       })
       .finally(() => {
         setWithdrawTarget(null);
-        setWithdrawReason('');
       });
   };
 
   const handleCloseSheet = (): void => {
     setWithdrawTarget(null);
-    setWithdrawReason('');
   };
 
   const TABS: { id: TabType; label: string }[] = [
@@ -79,8 +70,12 @@ const RequestsPage: React.FC = () => {
     { id: 'REJECTED', label: '거절' },
   ];
 
-  const formatDate = (iso: string): string =>
-    new Date(iso).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
+  const formatDate = (iso: string): string => {
+    const d = new Date(iso);
+    const date = d.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
+    const time = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${date} ${time}`;
+  };
 
   return (
     <MobileLayout>
@@ -200,44 +195,29 @@ const RequestsPage: React.FC = () => {
               onClick={handleCloseSheet}
             />
             <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[2rem] max-w-[430px] mx-auto"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-2xl w-[calc(100%-2rem)] max-w-[360px]"
             >
               <div className="p-6">
-                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
                 <h3 className="text-xl font-bold text-slate-900 mb-1">신청 취소</h3>
-                <p className="text-sm text-slate-500 mb-5">취소 사유를 선택해주세요</p>
-
-                <div className="space-y-2 mb-6">
-                  {WITHDRAW_REASONS.map((reason) => (
-                    <button
-                      key={reason}
-                      onClick={() => setWithdrawReason(reason)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
-                        withdrawReason === reason
-                          ? 'border-rose-400 bg-rose-50 text-rose-600 shadow-sm shadow-rose-100/50'
-                          : 'border-slate-100 bg-slate-50 text-slate-700 hover:bg-slate-100/80'
-                      }`}
-                    >
-                      {reason}
-                    </button>
-                  ))}
+                <p className="text-sm text-slate-500 mb-6">정말 신청을 취소하시겠어요?</p>
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={handleCloseSheet}
+                    className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
+                  >
+                    닫기
+                  </button>
+                  <button
+                    onClick={handleWithdrawConfirm}
+                    className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 active:opacity-80 shadow-md shadow-rose-200/40 transition-all"
+                  >
+                    취소 확인
+                  </button>
                 </div>
-
-                <button
-                  onClick={handleWithdrawConfirm}
-                  disabled={!withdrawReason}
-                  className={`w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all duration-200 ${
-                    withdrawReason
-                      ? 'bg-rose-500 active:opacity-80 hover:bg-rose-600 shadow-md shadow-rose-200/40'
-                      : 'bg-rose-200 opacity-50 cursor-not-allowed'
-                  }`}
-                >
-                  취소 확인
-                </button>
               </div>
             </motion.div>
           </>
@@ -310,10 +290,15 @@ const MatchingHistoryCard: React.FC<{
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 {isPending && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 bg-orange-100 px-2.5 py-1 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-                    관리자 승인 대기중
-                  </span>
+                  <>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 bg-orange-100 px-2.5 py-1 rounded-full">
+                      <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                      관리자 승인 대기중
+                    </span>
+                    <span className="text-xs font-semibold text-orange-500">
+                      {item.applicationCount}명
+                    </span>
+                  </>
                 )}
                 {isApproved && (
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2.5 py-1 rounded-full">

@@ -25,7 +25,7 @@ import type {
   Announcement,
 } from '@/types';
 import { Check, X, ChevronRight, Search, ChevronLeft, Megaphone, Plus } from 'lucide-react';
-import axios from 'axios';
+import { getApiErrorMessage } from '@/lib/axios';
 
 type AdminTab = 'payments' | 'members' | 'announcements';
 type PaymentSubTab = 'waiting' | 'processed';
@@ -46,7 +46,7 @@ const PAYMENT_TYPE_COLORS: Record<PaymentPreviewItem['paymentType'], string> = {
 
 const formatPaymentTime = (dateStr: string): string => {
   const d = new Date(dateStr);
-  return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
 
@@ -140,7 +140,7 @@ const AdminDashboard: React.FC = () => {
           setPaymentTotalPages(res.data.totalPages || 1);
         }
       })
-      .catch(() => toast('결제 목록을 불러오지 못했습니다.', 'error'))
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
       .finally(() => setPaymentsLoading(false));
   }, [toast]);
 
@@ -160,8 +160,8 @@ const AdminDashboard: React.FC = () => {
           setTotalPages(res.data.totalPages);
         }
       })
-      .catch(() => {
-        toast('회원 목록을 불러오지 못했습니다.', 'error');
+      .catch((err: unknown) => {
+        toast(getApiErrorMessage(err), 'error');
       })
       .finally(() => setMembersLoading(false));
   }, [toast]);
@@ -170,7 +170,7 @@ const AdminDashboard: React.FC = () => {
     setAnnouncementsLoading(true);
     getAnnouncements()
       .then((res) => { if (res.data) setAnnouncements(res.data); })
-      .catch(() => toast('공지사항을 불러오지 못했습니다.', 'error'))
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
       .finally(() => setAnnouncementsLoading(false));
   }, [toast]);
 
@@ -184,11 +184,7 @@ const AdminDashboard: React.FC = () => {
       setNewContent('');
       fetchAnnouncements();
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '등록에 실패했습니다.', 'error');
-      } else {
-        toast('등록 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsPosting(false);
     }
@@ -246,17 +242,14 @@ const AdminDashboard: React.FC = () => {
       await confirmPayment(id);
       const item = paymentItems.find((p) => p.paymentId === id);
       const followUp = item?.paymentType !== 'CANDIDATE_REGISTRATION'
-        ? ' 매칭 승인 탭에서 최종 승인해주세요.'
+        ? ' 매칭이 자동으로 처리되었습니다.'
         : ' 후보 등록이 자동 승인되었습니다.';
       toast(`입금 확인 완료.${followUp}`, 'success');
-      fetchPayments('PENDING', paymentPage);
+      const filterStatus: PaymentFilterStatus = paymentSubTab === 'waiting' ? 'PENDING' : 'PROCESSED';
+      fetchPayments(filterStatus, paymentPage);
       fetchPaymentStats();
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '처리에 실패했습니다.', 'error');
-      } else {
-        toast('처리 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -282,11 +275,7 @@ const AdminDashboard: React.FC = () => {
       fetchPayments('PENDING', paymentPage);
       fetchPaymentStats();
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '거절 처리에 실패했습니다.', 'error');
-      } else {
-        toast('처리 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -298,8 +287,8 @@ const AdminDashboard: React.FC = () => {
     try {
       const res = await getAdminMemberDetail(memberId);
       if (res.data) setSelectedMemberDetail(res.data);
-    } catch {
-      toast('회원 정보를 불러오지 못했습니다.', 'error');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setDetailLoading(false);
     }
@@ -481,11 +470,17 @@ const AdminDashboard: React.FC = () => {
                         <p className="text-xs text-red-500 mt-1 truncate">{item.rejectedReason}</p>
                       )}
                     </div>
-                    <span className={`text-xs font-bold shrink-0 ${
-                      item.paymentStatus === 'COMPLETED' ? 'text-green-600' : 'text-red-500'
-                    }`}>
-                      {item.paymentStatus === 'COMPLETED' ? '확인됨' : '거절됨'}
-                    </span>
+                    {item.paymentStatus === 'COMPLETED' ? (
+                      <span className="text-xs font-bold shrink-0 text-green-600">확인됨</span>
+                    ) : (
+                      <button
+                        onClick={() => handleConfirmPayment(item.paymentId)}
+                        disabled={isProcessing}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-700 disabled:opacity-50 transition-colors shrink-0"
+                      >
+                        <Check size={12} /> 승인
+                      </button>
+                    )}
                   </motion.div>
                 ))
             }
@@ -663,6 +658,9 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">{notice.title}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {new Date(notice.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
                     <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{notice.content}</p>
                   </div>
                   <Megaphone size={14} className="text-amber-400 shrink-0 mt-0.5" />

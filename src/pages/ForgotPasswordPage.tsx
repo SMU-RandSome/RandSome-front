@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { updatePassword } from '@/features/member/api';
+import { getApiErrorMessage } from '@/lib/axios';
 import { ChevronLeft, KeyRound, Eye, EyeOff, ExternalLink, CheckCircle2 } from 'lucide-react';
 
 type Step = 1 | 2;
@@ -35,13 +36,13 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       const res = await sendEmailVerificationCode({ email });
       if (res.result === 'ERROR') {
-        toast(res.error?.message ?? '인증 코드 발송에 실패했습니다.', 'error');
+        toast(res.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
       toast('인증 코드를 발송했습니다. 이메일을 확인해주세요.', 'success');
       setCodeSent(true);
-    } catch {
-      toast('인증 코드 발송 중 오류가 발생했습니다.', 'error');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -53,14 +54,14 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       const res = await verifyEmailCode({ email, code }, 'PASSWORD_RESET');
       if (res.result === 'ERROR' || !res.data) {
-        toast(res.error?.message ?? '인증 코드가 올바르지 않습니다.', 'error');
+        toast(res.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
       setEmailVerificationToken(res.data.emailVerificationToken);
       setCodeVerified(true);
       setStep(2);
-    } catch {
-      toast('인증 중 오류가 발생했습니다.', 'error');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -80,13 +81,13 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       const res = await updatePassword({ email, emailVerificationToken, newPassword });
       if (res.result === 'ERROR') {
-        toast(res.error?.message ?? '비밀번호 변경에 실패했습니다.', 'error');
+        toast(res.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
       toast('비밀번호가 변경되었습니다. 다시 로그인해주세요.', 'success');
       navigate('/login', { replace: true });
-    } catch {
-      toast('비밀번호 변경 중 오류가 발생했습니다.', 'error');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsLoading(false);
     }

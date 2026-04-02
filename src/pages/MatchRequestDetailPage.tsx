@@ -389,23 +389,25 @@ const ProfileSwipeCard: React.FC<{ result: MatchingResultDetailItem }> = ({ resu
         )}
 
         <div className="space-y-3">
-          {result.selfIntroduction && (
-            <div className="bg-slate-50 rounded-2xl p-3.5">
-              <p className="text-[10px] font-bold text-slate-400 mb-1.5 flex items-center gap-1">
-                <User size={10} /> 자기 소개
-              </p>
-              <ClampedText text={result.selfIntroduction} />
-            </div>
-          )}
+          <div className="bg-slate-50 rounded-2xl p-3.5">
+            <p className="text-[10px] font-bold text-slate-400 mb-1.5 flex items-center gap-1">
+              <User size={10} /> 자기 소개
+            </p>
+            {result.selfIntroduction
+              ? <ClampedText text={result.selfIntroduction} />
+              : <p className="text-slate-400 text-xs italic">작성된 내용이 없어요</p>
+            }
+          </div>
 
-          {result.idealDescription && (
-            <div className="bg-pink-50 rounded-2xl p-3.5">
-              <p className="text-[10px] font-bold text-pink-400 mb-1.5 flex items-center gap-1">
-                <Heart size={10} fill="currentColor" /> 이상형
-              </p>
-              <ClampedText text={result.idealDescription} />
-            </div>
-          )}
+          <div className="bg-pink-50 rounded-2xl p-3.5">
+            <p className="text-[10px] font-bold text-pink-400 mb-1.5 flex items-center gap-1">
+              <Heart size={10} fill="currentColor" /> 이상형
+            </p>
+            {result.idealDescription
+              ? <ClampedText text={result.idealDescription} />
+              : <p className="text-pink-300 text-xs italic">작성된 내용이 없어요</p>
+            }
+          </div>
         </div>
       </div>
     </div>

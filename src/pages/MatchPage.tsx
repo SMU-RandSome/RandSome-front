@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/Button';
@@ -7,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { registerCandidate } from '@/features/candidate/api';
 import { applyMatching } from '@/features/matching/api';
-import axios from 'axios';
+import { getApiErrorMessage } from '@/lib/axios';
 import { Heart, UserPlus, ArrowRight, Check, Zap, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -23,8 +24,13 @@ const PRICE_PER_PERSON: Record<MatchType, number> = {
 const MatchPage: React.FC = () => {
   const { toast } = useToast();
   const { isPWA } = useDisplayMode();
+  const [searchParams] = useSearchParams();
 
-  const [view, setView] = useState<MatchView>('hub');
+  const [view, setView] = useState<MatchView>(() => {
+    const v = searchParams.get('view');
+    if (v === 'register' || v === 'find') return v;
+    return 'hub';
+  });
   const [step, setStep] = useState<MatchStep>('select-type');
   const [matchType, setMatchType] = useState<MatchType | null>(null);
   const [count, setCount] = useState(1);
@@ -45,11 +51,7 @@ const MatchPage: React.FC = () => {
       setShowRegisterPayment(false);
       reset();
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '등록 신청에 실패했습니다.', 'error');
-      } else {
-        toast('등록 신청 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     }
   };
 
@@ -64,11 +66,7 @@ const MatchPage: React.FC = () => {
       setShowPayment(false);
       reset();
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '매칭 신청에 실패했습니다.', 'error');
-      } else {
-        toast('매칭 신청 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     }
   };
 

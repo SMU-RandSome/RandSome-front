@@ -11,9 +11,8 @@ import { useDisplayMode } from '@/store/displayModeStore';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
-import { apiClient } from '@/lib/axios';
+import { apiClient, getApiErrorMessage } from '@/lib/axios';
 import type { MemberCreateRequest, Gender, Mbti } from '@/types';
-import axios from 'axios';
 import {
   ChevronLeft,
   CheckCircle2,
@@ -242,11 +241,7 @@ const SignupPage: React.FC = () => {
       setVerificationCode('');
       toast('인증 메일이 발송되었습니다.', 'info');
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '메일 발송에 실패했습니다.', 'error');
-      } else {
-        toast('메일 발송 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     }
   };
 
@@ -259,18 +254,14 @@ const SignupPage: React.FC = () => {
       const email = `${formData.emailUsername}@sangmyung.kr`;
       const res = await verifyEmailCode({ email, code: verificationCode }, 'SIGN_UP');
       if (!res.data) {
-        toast(res.error?.message ?? '인증 코드가 올바르지 않습니다.', 'error');
+        toast(res.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
       setEmailVerificationToken(res.data.emailVerificationToken);
       setEmailVerified(true);
       toast('이메일 인증이 완료되었습니다!', 'success');
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '인증에 실패했습니다.', 'error');
-      } else {
-        toast('인증 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     }
   };
 
@@ -391,11 +382,7 @@ const SignupPage: React.FC = () => {
       toast('회원가입이 완료되었습니다! 환영합니다.', 'success');
       navigate('/home');
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '회원가입에 실패했습니다.', 'error');
-      } else {
-        toast('회원가입 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsSubmitting(false);
     }

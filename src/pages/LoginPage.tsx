@@ -8,9 +8,9 @@ import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
+import { getApiErrorMessage } from '@/lib/axios';
 import { ChevronLeft, Heart } from 'lucide-react';
 import { motion } from 'motion/react';
-import axios from 'axios';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
     try {
       const tokenRes = await loginApi({ email, password });
       if (!tokenRes.data) {
-        toast(tokenRes.error?.message ?? '로그인에 실패했습니다.', 'error');
+        toast(tokenRes.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
 
@@ -40,7 +40,7 @@ const LoginPage: React.FC = () => {
 
       const profileRes = await getMyProfile();
       if (!profileRes.data) {
-        toast('사용자 정보를 불러오는 데 실패했습니다.', 'error');
+        toast(profileRes.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
 
@@ -52,12 +52,7 @@ const LoginPage: React.FC = () => {
         navigate('/home');
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        const message = err.response?.data?.error?.message;
-        toast(message ?? '로그인 중 오류가 발생했습니다.', 'error');
-      } else {
-        toast('로그인 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsLoading(false);
     }

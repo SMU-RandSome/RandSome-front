@@ -8,13 +8,31 @@ import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { getMyProfile, updateMyProfile, updatePassword } from '@/features/member/api';
+import { withdrawCandidate, cancelCandidateRegistration } from '@/features/candidate/api';
+import { getApiErrorMessage } from '@/lib/axios';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { registerFcmToken, unregisterFcmToken, FCM_TOKEN_KEY } from '@/hooks/useFcmToken';
 import type { MemberProfile, Mbti } from '@/types';
-import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff } from 'lucide-react';
+import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, CreditCard, Landmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import axios from 'axios';
+
+const BANK_OPTIONS = [
+  { value: '국민', label: '국민은행' },
+  { value: '신한', label: '신한은행' },
+  { value: '우리', label: '우리은행' },
+  { value: '하나', label: '하나은행' },
+  { value: 'IBK기업', label: 'IBK기업은행' },
+  { value: 'NH농협', label: 'NH농협은행' },
+  { value: '카카오', label: '카카오뱅크' },
+  { value: '토스', label: '토스뱅크' },
+  { value: '케이', label: '케이뱅크' },
+  { value: 'SC제일', label: 'SC제일은행' },
+  { value: '씨티', label: '씨티은행' },
+  { value: '새마을', label: '새마을금고' },
+  { value: '수협', label: '수협은행' },
+  { value: '우체국', label: '우체국' },
+];
 
 // 컴포넌트 외부 정의 — 매 렌더마다 React 엘리먼트 재생성 방지
 const CANDIDATE_STATUS_CONFIG = {
@@ -80,6 +98,8 @@ interface EditForm {
   instagramId: string;
   selfIntroduction: string;
   idealDescription: string;
+  bankName: string;
+  accountNumber: string;
 }
 
 interface ModalState {
@@ -104,9 +124,15 @@ const MyPage: React.FC = () => {
     instagramId: user?.instagramId ?? '',
     selfIntroduction: user?.selfIntroduction ?? '',
     idealDescription: user?.idealDescription ?? '',
+    bankName: user?.bankName ?? '',
+    accountNumber: user?.accountNumber ?? '',
   });
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', content: null });
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState<boolean>(
     typeof Notification !== 'undefined' &&
       Notification.permission === 'granted' &&
@@ -128,6 +154,8 @@ const MyPage: React.FC = () => {
             instagramId: res.data.instagramId ?? '',
             selfIntroduction: res.data.selfIntroduction ?? '',
             idealDescription: res.data.idealDescription ?? '',
+            bankName: res.data.bankName ?? '',
+            accountNumber: res.data.accountNumber ?? '',
           });
         }
       })
@@ -140,6 +168,42 @@ const MyPage: React.FC = () => {
   const handleLogout = (): void => {
     logout();
     navigate('/');
+  };
+
+  const handleWithdrawCandidate = async (): Promise<void> => {
+    setIsWithdrawing(true);
+    try {
+      await withdrawCandidate();
+      const res = await getMyProfile();
+      if (res.data) {
+        setProfile(res.data);
+        setUser(res.data);
+      }
+      toast('후보 등록이 철회되었습니다.', 'success');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setIsWithdrawing(false);
+      setShowWithdrawConfirm(false);
+    }
+  };
+
+  const handleCancelCandidateRegistration = async (): Promise<void> => {
+    setIsCancelling(true);
+    try {
+      await cancelCandidateRegistration();
+      const res = await getMyProfile();
+      if (res.data) {
+        setProfile(res.data);
+        setUser(res.data);
+      }
+      toast('후보 등록 신청이 취소되었습니다.', 'success');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setIsCancelling(false);
+      setShowCancelConfirm(false);
+    }
   };
 
   const handleNotificationToggle = useCallback(async (): Promise<void> => {
@@ -183,6 +247,8 @@ const MyPage: React.FC = () => {
         instagramId: editForm.instagramId || undefined,
         selfIntroduction: editForm.selfIntroduction || undefined,
         idealDescription: editForm.idealDescription || undefined,
+        bankName: editForm.bankName || undefined,
+        accountNumber: editForm.accountNumber || undefined,
       });
       // 저장 후 최신 프로필 다시 조회
       const res = await getMyProfile();
@@ -193,11 +259,7 @@ const MyPage: React.FC = () => {
       setIsEditing(false);
       toast('프로필이 저장되었습니다.', 'success');
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '저장에 실패했습니다.', 'error');
-      } else {
-        toast('저장 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -216,7 +278,10 @@ const MyPage: React.FC = () => {
               <React.Fragment key={notice.id}>
                 {i > 0 && <hr className="border-slate-100" />}
                 <div>
-                  <h4 className="font-bold text-slate-900 mb-1">{notice.title}</h4>
+                  <h4 className="font-bold text-slate-900 mb-0.5">{notice.title}</h4>
+                  <p className="text-[11px] text-slate-400 mb-1">
+                    {new Date(notice.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
                   <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{notice.content}</p>
                 </div>
               </React.Fragment>
@@ -231,27 +296,99 @@ const MyPage: React.FC = () => {
       isOpen: true,
       title: '이용약관',
       content: (
-        <div className="space-y-2">
-          <p>
-            <strong>제1조 (목적)</strong>
-            <br />
-            본 약관은 Randsome 서비스의 이용 조건을 규정합니다.
-          </p>
-          <p>
-            <strong>제2조 (개인정보)</strong>
-            <br />
-            수집된 개인정보는 매칭 목적 외에는 사용되지 않으며, 축제 종료 후 파기됩니다.
-          </p>
-          <p>
-            <strong>제3조 (환불)</strong>
-            <br />
-            매칭 신청 후 단순 변심으로 인한 환불은 불가능합니다.
-          </p>
-          <p>
-            <strong>제4조 (책임)</strong>
-            <br />
-            매칭 후 발생하는 개인 간의 문제에 대해 서비스는 책임을 지지 않습니다.
-          </p>
+        <div className="space-y-6 text-sm text-slate-700">
+          {/* 1. 서비스 이용 약관 */}
+          <section>
+            <h3 className="font-bold text-slate-900 mb-2">1. 서비스 이용 약관 (필수)</h3>
+            <p className="text-slate-500 text-xs mb-2">
+              본 서비스는 상명대학교 천안캠퍼스 축제 기간 동안 운영되는 온라인 랜덤 매칭 서비스 <strong className="text-slate-700">Randsome</strong>입니다.
+            </p>
+            <ul className="space-y-1.5">
+              {[
+                '본 서비스는 학생 간의 새로운 인연 형성을 돕기 위한 축제 이벤트 서비스입니다.',
+                '서비스 이용 대상은 상명대학교 재학생 또는 휴학생으로 제한됩니다.',
+                '회원은 매칭 후보 등록 및 랜덤 매칭 신청 기능을 이용할 수 있습니다.',
+                '매칭은 랜덤 방식 또는 추천 방식으로 진행되며 결과에 대한 만족도는 보장되지 않습니다.',
+                '허위 정보 입력, 타인 정보 도용, 부적절한 프로필 작성 등의 경우 서비스 이용이 제한될 수 있습니다.',
+                '본 서비스는 축제 기간 동안 한시적으로 운영되며 행사 종료 후 종료될 수 있습니다.',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-1.5">
+                  <span className="mt-1 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <div className="h-px bg-slate-100" />
+
+          {/* 2. 개인정보 수집 및 이용 */}
+          <section>
+            <h3 className="font-bold text-slate-900 mb-2">2. 개인정보 수집 및 이용 동의 (필수)</h3>
+            <div className="space-y-3">
+              <div>
+                <p className="font-semibold text-slate-800 text-xs mb-1">수집 항목</p>
+                <p className="text-slate-500 text-xs">학생 이메일, 성별, MBTI, 자기소개, 이상형 정보</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 text-xs mb-1">수집 목적</p>
+                <p className="text-slate-500 text-xs">회원 식별 및 서비스 이용 관리 / 매칭 서비스 제공 / 부정 이용 방지</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 text-xs mb-1">보관 기간</p>
+                <p className="text-slate-500 text-xs">서비스 종료 후 일정 기간 내 파기</p>
+              </div>
+              <p className="text-xs text-slate-400">※ 개인정보 수집 및 이용에 동의하지 않을 권리가 있으며, 동의하지 않을 경우 서비스 이용이 제한될 수 있습니다.</p>
+            </div>
+          </section>
+
+          <div className="h-px bg-slate-100" />
+
+          {/* 3. 환불 처리 정보 */}
+          <section>
+            <h3 className="font-bold text-slate-900 mb-2">3. 환불 처리를 위한 정보 제공 동의 (필수)</h3>
+            <p className="text-slate-500 text-xs mb-2">서비스 운영 중 불가피한 사유로 환불이 필요한 경우를 대비해 실명 및 계좌번호를 수집할 수 있습니다. 해당 정보는 환불 처리 목적에 한하여 사용되며 관리자에게만 노출됩니다.</p>
+            <div className="space-y-2">
+              <div>
+                <p className="font-semibold text-slate-800 text-xs mb-0.5">환불 가능한 경우</p>
+                <p className="text-slate-500 text-xs">서비스 장애로 매칭이 정상 진행되지 않은 경우 / 운영자 판단에 따라 서비스 제공이 불가능한 경우</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 text-xs mb-0.5">환불 불가능한 경우</p>
+                <p className="text-slate-500 text-xs">단순 변심 / 매칭 결과에 대한 개인적 불만 / 사용자의 정보 입력 오류</p>
+              </div>
+            </div>
+          </section>
+
+          <div className="h-px bg-slate-100" />
+
+          {/* 4. 운영 및 면책 */}
+          <section>
+            <h3 className="font-bold text-slate-900 mb-2">4. 운영 및 면책 동의 (필수)</h3>
+            <ul className="space-y-1.5">
+              {[
+                '매칭은 랜덤 알고리즘 또는 추천 방식으로 진행됩니다.',
+                '매칭 결과에 대한 개인적인 만족도는 보장되지 않습니다.',
+                '서비스 이용 중 발생하는 개인 간의 문제에 대해서는 운영자가 책임지지 않습니다.',
+                '부적절한 프로필 작성, 타인에게 불쾌감을 주는 행위 등의 경우 운영자가 서비스를 제한할 수 있습니다.',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-1.5">
+                  <span className="mt-1 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <div className="h-px bg-slate-100" />
+
+          {/* 5. 프로필 정보 공개 */}
+          <section>
+            <h3 className="font-bold text-slate-900 mb-2">5. 프로필 정보 공개 동의 (필수)</h3>
+            <p className="text-slate-500 text-xs mb-2">매칭 서비스 특성상 다음 정보가 매칭된 상대방에게 공개될 수 있습니다.</p>
+            <p className="text-slate-500 text-xs mb-2">닉네임 / 인스타그램 ID / 자기소개 / MBTI</p>
+            <p className="text-xs text-slate-400">해당 정보는 매칭 결과가 생성된 사용자에게만 공개됩니다.</p>
+          </section>
         </div>
       ),
     });
@@ -376,6 +513,38 @@ const MyPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* 은행 */}
+                <div className="group">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">은행</label>
+                  <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
+                    <Landmark size={15} className="text-slate-300 shrink-0 group-focus-within:text-blue-400 transition-colors" />
+                    <select
+                      value={editForm.bankName}
+                      onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })}
+                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none"
+                    >
+                      <option value="">은행 선택</option>
+                      {BANK_OPTIONS.map(({ value, label }) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 계좌번호 */}
+                <div className="group">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">계좌번호</label>
+                  <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
+                    <CreditCard size={15} className="text-slate-300 shrink-0 group-focus-within:text-blue-400 transition-colors" />
+                    <input
+                      value={editForm.accountNumber}
+                      onChange={(e) => setEditForm({ ...editForm, accountNumber: e.target.value })}
+                      placeholder="계좌번호 (- 제외)"
+                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-300"
+                    />
+                  </div>
+                </div>
+
                 {/* 버튼 */}
                 <div className="flex gap-2.5 pt-1">
                   <button
@@ -429,6 +598,14 @@ const MyPage: React.FC = () => {
                     {displayProfile?.idealDescription ?? <span className="text-slate-300 italic">이상형을 작성해주세요</span>}
                   </p>
                 </div>
+                {(displayProfile?.bankName ?? displayProfile?.accountNumber) && (
+                  <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">환불 계좌</p>
+                    <p className="text-slate-700 text-sm">
+                      {[displayProfile?.bankName, displayProfile?.accountNumber].filter(Boolean).join(' ')}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <Button
@@ -461,6 +638,22 @@ const MyPage: React.FC = () => {
             </div>
           </div>
           {statusConfig.clickable && <ChevronRight size={16} className="text-slate-300" />}
+          {candidateStatus === 'APPROVED' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowWithdrawConfirm(true); }}
+              className="text-xs text-rose-400 font-medium hover:text-rose-500 transition-colors shrink-0"
+            >
+              철회하기
+            </button>
+          )}
+          {candidateStatus === 'PENDING' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowCancelConfirm(true); }}
+              className="text-xs text-rose-400 font-medium hover:text-rose-500 transition-colors shrink-0"
+            >
+              신청 취소
+            </button>
+          )}
         </div>
 
         {/* 메뉴 */}
@@ -527,6 +720,90 @@ const MyPage: React.FC = () => {
       </Modal>
 
       <AnimatePresence>
+        {showWithdrawConfirm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black z-[60]"
+              onClick={() => setShowWithdrawConfirm(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-2xl w-[calc(100%-2rem)] max-w-[360px]"
+            >
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-slate-900 mb-1">후보 등록 철회</h3>
+                <p className="text-sm text-slate-500 mb-2">정말 후보 등록을 철회하시겠어요?</p>
+                <p className="text-xs text-rose-400 mb-6">철회 후에는 다시 등록 신청이 필요합니다.</p>
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={() => setShowWithdrawConfirm(false)}
+                    className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={() => void handleWithdrawCandidate()}
+                    disabled={isWithdrawing}
+                    className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 active:opacity-80 shadow-md shadow-rose-200/40 transition-all disabled:opacity-60"
+                  >
+                    {isWithdrawing ? '처리 중...' : '철회 확인'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black z-[60]"
+              onClick={() => setShowCancelConfirm(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-2xl w-[calc(100%-2rem)] max-w-[360px]"
+            >
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-slate-900 mb-1">후보 등록 신청 취소</h3>
+                <p className="text-sm text-slate-500 mb-2">정말 후보 등록 신청을 취소하시겠어요?</p>
+                <p className="text-xs text-slate-400 mb-6">취소 시 결제 정보도 함께 취소됩니다.</p>
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
+                  >
+                    돌아가기
+                  </button>
+                  <button
+                    onClick={() => void handleCancelCandidateRegistration()}
+                    disabled={isCancelling}
+                    className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 active:opacity-80 shadow-md shadow-rose-200/50 transition-all disabled:opacity-60"
+                  >
+                    {isCancelling ? '처리 중...' : '취소 확인'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {showPasswordChange && (
           <PasswordChangeSheet
             userEmail={user?.email ?? ''}
@@ -561,13 +838,13 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
     try {
       const res = await sendEmailVerificationCode({ email: userEmail });
       if (res.result === 'ERROR') {
-        toast(res.error?.message ?? '인증 코드 발송에 실패했습니다.', 'error');
+        toast(res.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
       toast('인증 코드를 발송했습니다.', 'success');
       setStep('verify');
-    } catch {
-      toast('인증 코드 발송 중 오류가 발생했습니다.', 'error');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -579,13 +856,13 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
     try {
       const res = await verifyEmailCode({ email: userEmail, code }, 'PASSWORD_RESET');
       if (res.result === 'ERROR' || !res.data) {
-        toast(res.error?.message ?? '인증 코드가 올바르지 않습니다.', 'error');
+        toast(res.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
       setEmailVerificationToken(res.data.emailVerificationToken);
       setStep('newpw');
-    } catch {
-      toast('인증 중 오류가 발생했습니다.', 'error');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -604,17 +881,13 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
     try {
       const res = await updatePassword({ email: userEmail, emailVerificationToken, newPassword });
       if (res.result === 'ERROR') {
-        toast(res.error?.message ?? '비밀번호 변경에 실패했습니다.', 'error');
+        toast(res.error?.message ?? '오류가 발생했습니다.', 'error');
         return;
       }
       toast('비밀번호가 변경되었습니다.', 'success');
       onClose();
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast(err.response?.data?.error?.message ?? '비밀번호 변경에 실패했습니다.', 'error');
-      } else {
-        toast('비밀번호 변경 중 오류가 발생했습니다.', 'error');
-      }
+      toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -630,14 +903,13 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
         onClick={onClose}
       />
       <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[2rem] max-w-[430px] mx-auto max-h-[80vh] flex flex-col"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-2xl w-[calc(100%-2rem)] max-w-[430px] max-h-[80vh] flex flex-col"
       >
         <div className="px-6 pt-4 pb-4 shrink-0">
-          <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-lg font-bold text-slate-900">비밀번호 변경</h3>
             <button onClick={onClose} className="p-2 -mr-2 text-slate-400 hover:text-slate-600" aria-label="닫기">
