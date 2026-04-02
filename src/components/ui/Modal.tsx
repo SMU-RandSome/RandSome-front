@@ -22,14 +22,12 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
             onClick={onClose}
           />
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[2rem] p-6 max-w-[430px] mx-auto max-h-[80vh] overflow-y-auto"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-2xl p-6 w-[calc(100%-2rem)] max-w-[430px] max-h-[80vh] overflow-y-auto"
           >
-            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
-
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-slate-900">{title}</h3>
               <button

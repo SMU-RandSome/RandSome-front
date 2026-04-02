@@ -11,7 +11,7 @@ export const useAnnouncements = (): { announcements: Announcement[]; isLoading: 
   const { data, isLoading } = useQuery({
     queryKey: ['announcements'],
     queryFn: fetchAnnouncements,
-    // staleTime은 App.tsx QueryClient 전역 기본값(5분) 상속
+    staleTime: 0,
   });
 
   return { announcements: data ?? [], isLoading };
