@@ -17,7 +17,7 @@ export const getMatchingHistory = (status?: MatchingApplicationStatus): Promise<
 
 export const withdrawMatching = (applicationId: number): Promise<ApiResponse<null>> =>
   apiClient
-    .post<ApiResponse<null>>(`/v1/matching/applications/${applicationId}/withdraw`)
+    .post<ApiResponse<null>>(`/v1/matching/applications/${applicationId}/cancel`)
     .then((r) => r.data);
 
 export const getMatchingResult = (applicationId: number): Promise<ApiResponse<MatchingResultDetailItem[]>> =>

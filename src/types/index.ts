@@ -68,6 +68,8 @@ export interface MemberProfile {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
+  bankName?: string;
+  accountNumber?: string;
   candidateRegistrationStatus: CandidateRegistrationStatus;
 }
 
@@ -77,6 +79,8 @@ export interface MemberProfileUpdateRequest {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
+  bankName?: string;
+  accountNumber?: string;
 }
 
 export interface MemberCreateRequest {
@@ -117,6 +121,7 @@ export interface Announcement {
   id: number;
   title: string;
   content: string;
+  createdAt: string;
 }
 
 export interface AnnouncementRegisterRequest {

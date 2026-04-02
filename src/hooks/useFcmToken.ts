@@ -43,11 +43,14 @@ export const registerFcmToken = async (): Promise<boolean> => {
 
 /** 알림 허용 토글 OFF: Firebase 토큰 삭제 → 서버 삭제 → 캐시 제거 */
 export const unregisterFcmToken = async (): Promise<void> => {
+  const token = localStorage.getItem(FCM_TOKEN_KEY);
   const messaging = await getFirebaseMessaging();
   if (messaging) {
     await deleteToken(messaging).catch(() => {});
   }
-  await deleteDeviceToken().catch(() => {});
+  if (token) {
+    await deleteDeviceToken(token).catch(() => {});
+  }
   localStorage.removeItem(FCM_TOKEN_KEY);
 };
 

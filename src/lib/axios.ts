@@ -1,6 +1,13 @@
 import axios from 'axios';
 import type { ApiResponse, TokenResponse } from '@/types';
 
+export const getApiErrorMessage = (err: unknown, fallback = '오류가 발생했습니다.'): string => {
+  if (axios.isAxiosError(err)) {
+    return (err.response?.data as ApiResponse<unknown> | undefined)?.error?.message ?? fallback;
+  }
+  return fallback;
+};
+
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
   headers: {
@@ -70,10 +77,17 @@ apiClient.interceptors.response.use(
         // Refresh 실패 → 로그아웃 (동시에 여러 요청이 실패해도 한 번만 실행)
         if (!isRedirectingToLogin) {
           isRedirectingToLogin = true;
+          const wasAuthenticated = !!localStorage.getItem('authUser');
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('authUser');
-          window.location.href = '/login';
+          if (wasAuthenticated) {
+            // 실제 인증 상태였을 때만 로그인 페이지로 리다이렉트
+            window.location.href = '/login';
+          } else {
+            // 비회원이 공개 API 호출 중 만료된 토큰으로 401이 난 경우 → 리다이렉트 없이 토큰만 정리
+            isRedirectingToLogin = false;
+          }
         }
         return Promise.reject(error);
       }
