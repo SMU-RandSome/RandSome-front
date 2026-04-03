@@ -34,7 +34,7 @@ export const rejectPayment = (paymentId: number, body: PaymentRejectRequest): Pr
 
 export const getAdminPayments = (
   filterStatus: PaymentFilterStatus,
-  params?: { page?: number; size?: number },
+  params?: { page?: number; size?: number; query?: string },
 ): Promise<ApiResponse<PageResponse<PaymentPreviewItem>>> =>
   apiClient
     .get<ApiResponse<PageResponse<PaymentPreviewItem>>>('/v1/admin/payments', {

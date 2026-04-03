@@ -131,9 +131,9 @@ const AdminDashboard: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  const fetchPayments = useCallback((filterStatus: PaymentFilterStatus, page: number): void => {
+  const fetchPayments = useCallback((filterStatus: PaymentFilterStatus, page: number, memberName?: string): void => {
     setPaymentsLoading(true);
-    getAdminPayments(filterStatus, { page: page - 1, size: ITEMS_PER_PAGE })
+    getAdminPayments(filterStatus, { page: page - 1, size: ITEMS_PER_PAGE, ...(memberName ? { query: memberName } : {}) })
       .then((res) => {
         if (res.data) {
           setPaymentItems(res.data.content);
@@ -200,9 +200,9 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'payments') {
       const filterStatus: PaymentFilterStatus = paymentSubTab === 'waiting' ? 'PENDING' : 'PROCESSED';
-      fetchPayments(filterStatus, paymentPage);
+      fetchPayments(filterStatus, paymentPage, searchTerm || undefined);
     }
-  }, [activeTab, paymentSubTab, paymentPage, fetchPayments]);
+  }, [activeTab, paymentSubTab, paymentPage, searchTerm, fetchPayments]);
 
   useEffect(() => {
     if (activeTab === 'members') {
@@ -246,7 +246,7 @@ const AdminDashboard: React.FC = () => {
         : ' 후보 등록이 자동 승인되었습니다.';
       toast(`입금 확인 완료.${followUp}`, 'success');
       const filterStatus: PaymentFilterStatus = paymentSubTab === 'waiting' ? 'PENDING' : 'PROCESSED';
-      fetchPayments(filterStatus, paymentPage);
+      fetchPayments(filterStatus, paymentPage, searchTerm || undefined);
       fetchPaymentStats();
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
@@ -272,7 +272,7 @@ const AdminDashboard: React.FC = () => {
       await rejectPayment(rejectModal.id, { rejectedReason: rejectReason });
       toast('거절 처리되었습니다.', 'info');
       closeRejectModal();
-      fetchPayments('PENDING', paymentPage);
+      fetchPayments('PENDING', paymentPage, searchTerm || undefined);
       fetchPaymentStats();
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
@@ -309,10 +309,6 @@ const AdminDashboard: React.FC = () => {
   // ── 파생 상태 ────────────────────────────────────────────────
   const pendingCount = paymentStats?.pendingCount ?? 0;
   const processedCount = paymentStats?.processedCount ?? 0;
-
-  const filteredPaymentItems = searchTerm
-    ? paymentItems.filter((p) => p.memberName.includes(searchTerm))
-    : paymentItems;
 
   // ── 렌더 함수 ────────────────────────────────────────────────
   const renderPayments = (): React.ReactNode => (
@@ -384,7 +380,7 @@ const AdminDashboard: React.FC = () => {
             <div key={i} className="h-24 bg-slate-50 rounded-2xl animate-pulse" />
           ))}
         </div>
-      ) : filteredPaymentItems.length === 0 ? (
+      ) : paymentItems.length === 0 ? (
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -403,7 +399,7 @@ const AdminDashboard: React.FC = () => {
             className="space-y-2"
           >
             {paymentSubTab === 'waiting'
-              ? filteredPaymentItems.map((item, i) => (
+              ? paymentItems.map((item, i) => (
                   <motion.div
                     key={item.paymentId}
                     initial={{ opacity: 0, y: 12 }}
@@ -419,7 +415,10 @@ const AdminDashboard: React.FC = () => {
                             {PAYMENT_TYPE_LABELS[item.paymentType]}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400">{formatPaymentTime(item.applyAt)}</p>
+                        <p className="text-xs text-slate-400">
+                          {formatPaymentTime(item.applyAt)}
+                          {item.applicationCount != null && ` · ${item.applicationCount}명`}
+                        </p>
                       </div>
                       <p className="text-base font-black text-slate-900">{item.amount.toLocaleString()}원</p>
                     </div>
@@ -441,7 +440,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </motion.div>
                 ))
-              : filteredPaymentItems.map((item, i) => (
+              : paymentItems.map((item, i) => (
                   <motion.div
                     key={item.paymentId}
                     initial={{ opacity: 0, y: 12 }}
@@ -465,7 +464,10 @@ const AdminDashboard: React.FC = () => {
                           {PAYMENT_TYPE_LABELS[item.paymentType]}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400">{formatPaymentTime(item.applyAt)} · {item.amount.toLocaleString()}원</p>
+                      <p className="text-xs text-slate-400">
+                        {formatPaymentTime(item.applyAt)} · {item.amount.toLocaleString()}원
+                        {item.applicationCount != null && ` · ${item.applicationCount}명`}
+                      </p>
                       {item.paymentStatus === 'REJECTED' && item.rejectedReason && (
                         <p className="text-xs text-red-500 mt-1 truncate">{item.rejectedReason}</p>
                       )}

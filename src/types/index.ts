@@ -187,6 +187,7 @@ export interface PaymentPreviewItem {
   paymentType: PaymentType;
   paymentStatus: PaymentStatus;
   amount: number;
+  applicationCount?: number;
   rejectedReason?: string;
   applyAt: string;
 }
