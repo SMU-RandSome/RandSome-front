@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { PaymentModal } from '@/components/ui/PaymentModal';
 import { useToast } from '@/components/ui/Toast';
 import { useDisplayMode } from '@/store/displayModeStore';
+import { useAuth } from '@/store/authStore';
 import { registerCandidate } from '@/features/candidate/api';
 import { applyMatching } from '@/features/matching/api';
 import { getApiErrorMessage } from '@/lib/axios';
@@ -24,6 +25,10 @@ const PRICE_PER_PERSON: Record<MatchType, number> = {
 const MatchPage: React.FC = () => {
   const { toast } = useToast();
   const { isPWA } = useDisplayMode();
+  const { user } = useAuth();
+  const isAlreadyCandidate =
+    user?.candidateRegistrationStatus === 'PENDING' ||
+    user?.candidateRegistrationStatus === 'APPROVED';
   const [searchParams] = useSearchParams();
 
   const [view, setView] = useState<MatchView>(() => {
@@ -127,23 +132,38 @@ const MatchPage: React.FC = () => {
         </motion.button>
 
         <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setView('register')}
-          className="w-full relative overflow-hidden bg-white rounded-[2rem] p-6 text-left shadow-lg shadow-slate-100 border border-slate-100 group"
+          whileTap={isAlreadyCandidate ? undefined : { scale: 0.98 }}
+          onClick={isAlreadyCandidate ? undefined : () => setView('register')}
+          disabled={isAlreadyCandidate}
+          className={`w-full relative overflow-hidden rounded-[2rem] p-6 text-left shadow-lg border ${
+            isAlreadyCandidate
+              ? 'bg-slate-100 shadow-slate-50 border-slate-200 cursor-not-allowed'
+              : 'bg-white shadow-slate-100 border-slate-100 group'
+          }`}
         >
           <div className="flex items-start justify-between">
             <div>
-              <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-3 group-hover:bg-blue-100 transition-colors">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-3 ${
+                isAlreadyCandidate ? 'bg-slate-200 text-slate-400' : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors'
+              }`}>
                 <UserPlus size={20} />
               </div>
-              <h3 className="text-lg font-bold text-slate-900">매칭 후보 등록하기</h3>
-              <p className="text-slate-500 text-sm mt-1">
-                다른 친구들이 나를 찾을 수 있도록
-                <br />
-                후보 리스트에 등록해보세요!
+              <h3 className={`text-lg font-bold ${isAlreadyCandidate ? 'text-slate-400' : 'text-slate-900'}`}>
+                매칭 후보 등록하기
+              </h3>
+              <p className="text-slate-400 text-sm mt-1">
+                {isAlreadyCandidate
+                  ? user?.candidateRegistrationStatus === 'PENDING'
+                    ? '후보 등록 승인 대기 중입니다.'
+                    : '이미 후보로 등록되어 있습니다.'
+                  : <>다른 친구들이 나를 찾을 수 있도록<br />후보 리스트에 등록해보세요!</>}
               </p>
             </div>
-            <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              isAlreadyCandidate
+                ? 'bg-slate-200 text-slate-300'
+                : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors'
+            }`}>
               <ArrowRight size={16} />
             </div>
           </div>
