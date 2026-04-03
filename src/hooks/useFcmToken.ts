@@ -4,6 +4,7 @@ import { getFirebaseMessaging } from '@/lib/firebase';
 import { syncDeviceToken, deleteDeviceToken } from '@/features/notification/api';
 
 export const FCM_TOKEN_KEY = 'fcmToken';
+export const FCM_ENABLED_KEY = 'fcmEnabled';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
 
 /** 로그인 시 권한이 이미 허용된 경우 자동으로 토큰을 동기화한다. */
@@ -13,7 +14,7 @@ export const useFcmToken = (isAuthenticated: boolean): void => {
     if (!VAPID_KEY) return;
     if (typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
-    if (!localStorage.getItem(FCM_TOKEN_KEY)) return; // 토글 OFF 상태면 자동 등록 생략
+    if (localStorage.getItem(FCM_ENABLED_KEY) !== 'true') return; // 토글 OFF 상태면 자동 등록 생략
 
     registerFcmToken().catch(() => {});
   }, [isAuthenticated]);
@@ -37,6 +38,7 @@ export const registerFcmToken = async (): Promise<boolean> => {
     await syncDeviceToken({ deviceToken: token });
     localStorage.setItem(FCM_TOKEN_KEY, token);
   }
+  localStorage.setItem(FCM_ENABLED_KEY, 'true');
 
   return true;
 };
@@ -52,6 +54,7 @@ export const unregisterFcmToken = async (): Promise<void> => {
     await deleteDeviceToken(token).catch(() => {});
   }
   localStorage.removeItem(FCM_TOKEN_KEY);
+  localStorage.removeItem(FCM_ENABLED_KEY);
 };
 
 /** 로그아웃 시 호출 — 서버 API 없이 로컬 캐시만 제거 */

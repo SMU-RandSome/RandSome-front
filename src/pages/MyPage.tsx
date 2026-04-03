@@ -12,7 +12,7 @@ import { withdrawCandidate, cancelCandidateRegistration } from '@/features/candi
 import { getApiErrorMessage } from '@/lib/axios';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
-import { registerFcmToken, unregisterFcmToken, FCM_TOKEN_KEY } from '@/hooks/useFcmToken';
+import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/useFcmToken';
 import type { MemberProfile, Mbti } from '@/types';
 import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, CreditCard, Landmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -136,7 +136,7 @@ const MyPage: React.FC = () => {
   const [notifEnabled, setNotifEnabled] = useState<boolean>(
     typeof Notification !== 'undefined' &&
       Notification.permission === 'granted' &&
-      !!localStorage.getItem(FCM_TOKEN_KEY),
+      localStorage.getItem(FCM_ENABLED_KEY) === 'true',
   );
   const [notifLoading, setNotifLoading] = useState(false);
 
@@ -418,13 +418,23 @@ const MyPage: React.FC = () => {
         <div className="rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.05)] border border-slate-100/80 mb-6 overflow-hidden">
           {/* 그라디언트 헤더 — morphing orbs */}
           <div className="mesh-hero h-20 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/25 to-indigo-600/20" />
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-400/15 to-pink-400/10 rounded-full blur-2xl animate-morph pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-br from-blue-400/12 to-indigo-500/8 rounded-full blur-xl animate-morph pointer-events-none" style={{ animationDelay: '-3s' }} />
+            {displayProfile?.gender === 'FEMALE' ? (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-400/25 to-rose-500/20" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-pink-300/15 to-rose-400/10 rounded-full blur-2xl animate-morph pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-br from-fuchsia-400/12 to-pink-500/8 rounded-full blur-xl animate-morph pointer-events-none" style={{ animationDelay: '-3s' }} />
+              </>
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/25 to-indigo-600/20" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-400/15 to-pink-400/10 rounded-full blur-2xl animate-morph pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-br from-blue-400/12 to-indigo-500/8 rounded-full blur-xl animate-morph pointer-events-none" style={{ animationDelay: '-3s' }} />
+              </>
+            )}
           </div>
           <div className="bg-white/90 backdrop-blur-sm px-6 pb-6 text-center relative">
             {/* 아바타 — 헤더와 겹치도록 */}
-            <div className="w-20 h-20 -mt-10 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-display text-3xl shadow-xl shadow-blue-300/40">
+            <div className={`w-20 h-20 -mt-10 mx-auto mb-3 rounded-2xl flex items-center justify-center text-white font-display text-3xl shadow-xl ${displayProfile?.gender === 'FEMALE' ? 'bg-gradient-to-br from-pink-400 to-rose-500 shadow-pink-300/40' : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-300/40'}`}>
               {(displayProfile?.nickname ?? '?')[0]}
             </div>
 
@@ -570,6 +580,11 @@ const MyPage: React.FC = () => {
                 <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
                   {displayProfile?.mbti}
                 </span>
+                {displayProfile?.gender && (
+                  <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${displayProfile.gender === 'MALE' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                    {displayProfile.gender === 'MALE' ? '남성' : '여성'}
+                  </span>
+                )}
                 {candidateStatus === 'APPROVED' && (
                   <span className="inline-block px-3 py-1 bg-green-100 text-green-600 text-xs font-bold rounded-full">
                     후보자

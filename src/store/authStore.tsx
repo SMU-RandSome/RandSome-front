@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import { unregisterFcmToken } from '@/hooks/useFcmToken';
 import type { AuthUser, UserRole, Gender } from '@/types';
 
 interface AuthContextType {
@@ -58,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem(AUTH_USER_KEY);
-    localStorage.removeItem('fcmToken');
+    unregisterFcmToken().catch(() => {});
   }, []);
 
   // useMemo로 context 값 안정화 — user 변경 시에만 하위 트리 리렌더링
