@@ -3,12 +3,12 @@ import { getMessaging, isSupported } from 'firebase/messaging';
 import type { Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyB2QPQ9wLoIbW9HjnQ-aGhqF-6gyACHMJk',
-  authDomain: 'randsome-8a530.firebaseapp.com',
-  projectId: 'randsome-8a530',
-  storageBucket: 'randsome-8a530.firebasestorage.app',
-  messagingSenderId: '301164368239',
-  appId: '1:301164368239:web:47a16bcef522df385f189a',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
 };
 
 const app = initializeApp(firebaseConfig);

@@ -49,6 +49,14 @@ const AppShell: React.FC = () => {
   );
 };
 
+/** 루트('/') 진입 시 인증 상태에 따라 리다이렉트 */
+const RootRoute: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated || !user) return <GuestMainPage />;
+  if (user.role === 'ROLE_ADMIN') return <Navigate to="/admin" replace />;
+  return <Navigate to="/home" replace />;
+};
+
 /** 인증된 회원만 접근 가능한 라우트 */
 const ProtectedRoute: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -70,7 +78,7 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       // 공개 라우트
-      { path: '/', element: <GuestMainPage /> },
+      { path: '/', element: <RootRoute /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/signup', element: <SignupPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },

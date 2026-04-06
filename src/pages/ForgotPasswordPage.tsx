@@ -161,15 +161,15 @@ const ForgotPasswordPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Outlook 바로가기 */}
+            {/* 웹메일 바로가기 */}
             <a
-              href="https://outlook.office.com"
+              href="https://cloud.smu.ac.kr/t/smu.ac.kr"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
             >
               <span>📧</span>
-              학교 아웃룩 메일 바로가기
+              학교 웹메일 바로가기
               <ExternalLink size={12} />
             </a>
 
