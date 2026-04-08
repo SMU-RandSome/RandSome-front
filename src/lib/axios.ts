@@ -1,6 +1,11 @@
 import axios from 'axios';
 import type { ApiResponse, TokenResponse } from '@/types';
 
+const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE_URL = ENV_API_BASE_URL
+  ? ENV_API_BASE_URL.replace(/\/+$/, '')
+  : 'http://localhost:8080';
+
 export const getApiErrorMessage = (err: unknown, fallback = '오류가 발생했습니다.'): string => {
   if (axios.isAxiosError(err)) {
     return (err.response?.data as ApiResponse<unknown> | undefined)?.error?.message ?? fallback;
@@ -9,7 +14,7 @@ export const getApiErrorMessage = (err: unknown, fallback = '오류가 발생했
 };
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -34,7 +39,7 @@ const refreshAccessToken = async (): Promise<string> => {
   if (!refreshToken) throw new Error('No refresh token');
 
   const response = await axios.post<ApiResponse<TokenResponse>>(
-    `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'}/v1/auth/reissue`,
+    `${API_BASE_URL}/v1/auth/reissue`,
     { refreshToken },
   );
 
@@ -91,6 +96,13 @@ apiClient.interceptors.response.use(
         }
         return Promise.reject(error);
       }
+    }
+
+    // 403 Forbidden: 권한 없음
+    if (error.response?.status === 403) {
+      console.error('403 Forbidden:', error.response);
+      // Toast는 에러를 받는 쪽에서 처리하도록 여기선 로그만
+      return Promise.reject(error);
     }
 
     return Promise.reject(error);

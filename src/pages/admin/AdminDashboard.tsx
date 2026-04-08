@@ -122,14 +122,20 @@ const AdminDashboard: React.FC = () => {
   const fetchPaymentStats = useCallback((): void => {
     getPaymentStatusStatistics()
       .then((res) => { if (res.data) setPaymentStats(res.data); })
-      .catch(() => {});
-  }, []);
+      .catch((err) => {
+        console.error('결제 통계 로딩 실패:', err);
+        toast('결제 통계를 불러오는데 실패했습니다', 'error');
+      });
+  }, [toast]);
 
   const fetchCandidateStats = useCallback((): void => {
     getCandidateGenderCount()
       .then((res) => { if (res.data) setCandidateStats(res.data); })
-      .catch(() => {});
-  }, []);
+      .catch((err) => {
+        console.error('후보 통계 로딩 실패:', err);
+        toast('후보 통계를 불러오는데 실패했습니다', 'error');
+      });
+  }, [toast]);
 
   const fetchPayments = useCallback((filterStatus: PaymentFilterStatus, page: number, memberName?: string): void => {
     setPaymentsLoading(true);

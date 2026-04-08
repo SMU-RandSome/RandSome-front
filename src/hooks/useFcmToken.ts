@@ -16,7 +16,9 @@ export const useFcmToken = (isAuthenticated: boolean): void => {
     if (Notification.permission !== 'granted') return;
     if (localStorage.getItem(FCM_ENABLED_KEY) !== 'true') return; // 토글 OFF 상태면 자동 등록 생략
 
-    registerFcmToken().catch(() => {});
+    registerFcmToken().catch((err) => {
+      console.error('FCM 토큰 자동 등록 실패:', err);
+    });
   }, [isAuthenticated]);
 };
 
@@ -35,8 +37,14 @@ export const registerFcmToken = async (): Promise<boolean> => {
 
   const cached = localStorage.getItem(FCM_TOKEN_KEY);
   if (cached !== token) {
-    await syncDeviceToken({ deviceToken: token });
-    localStorage.setItem(FCM_TOKEN_KEY, token);
+    try {
+      await syncDeviceToken({ deviceToken: token });
+      localStorage.setItem(FCM_TOKEN_KEY, token);
+    } catch (err) {
+      console.error('FCM 토큰 서버 동기화 실패:', err);
+      // 동기화 실패 시 localStorage에 저장하지 않음 (일관성 유지)
+      return false;
+    }
   }
   localStorage.setItem(FCM_ENABLED_KEY, 'true');
 
@@ -48,10 +56,14 @@ export const unregisterFcmToken = async (): Promise<void> => {
   const token = localStorage.getItem(FCM_TOKEN_KEY);
   const messaging = await getFirebaseMessaging();
   if (messaging) {
-    await deleteToken(messaging).catch(() => {});
+    await deleteToken(messaging).catch((err) => {
+      console.error('Firebase 토큰 삭제 실패:', err);
+    });
   }
   if (token) {
-    await deleteDeviceToken(token).catch(() => {});
+    await deleteDeviceToken(token).catch((err) => {
+      console.error('서버 FCM 토큰 삭제 실패:', err);
+    });
   }
   localStorage.removeItem(FCM_TOKEN_KEY);
   localStorage.removeItem(FCM_ENABLED_KEY);
