@@ -5,16 +5,24 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { getMyProfile, updateMyProfile, updatePassword } from '@/features/member/api';
 import { withdrawCandidate, cancelCandidateRegistration } from '@/features/candidate/api';
 import { getApiErrorMessage } from '@/lib/axios';
+import {
+  getRealNameErrorMessage,
+  validateInstagramId,
+  getInstagramIdErrorMessage,
+  validateBankAccount,
+  getBankAccountErrorMessage,
+} from '@/lib/validation';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
-import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/useFcmToken';
-import type { MemberProfile, Mbti } from '@/types';
-import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, CreditCard, Landmark } from 'lucide-react';
+import { DEPARTMENT_OPTIONS } from '@/constants/departments';
+import type { Department, MemberProfile, Mbti } from '@/types';
+import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const BANK_OPTIONS = [
@@ -95,6 +103,7 @@ const MBTI_OPTIONS = [
 interface EditForm {
   legalName: string;
   mbti: Mbti;
+  department: Department | '';
   instagramId: string;
   selfIntroduction: string;
   idealDescription: string;
@@ -114,13 +123,13 @@ const MyPage: React.FC = () => {
   const { toast } = useToast();
   const { isPWA } = useDisplayMode();
 
-  const { announcements } = useAnnouncements();
   const [profile, setProfile] = useState<MemberProfile | null>(user);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
     legalName: user?.legalName ?? '',
     mbti: (user?.mbti ?? 'ENFP') as Mbti,
+    department: user?.department ?? '',
     instagramId: user?.instagramId ?? '',
     selfIntroduction: user?.selfIntroduction ?? '',
     idealDescription: user?.idealDescription ?? '',
@@ -151,6 +160,7 @@ const MyPage: React.FC = () => {
           setEditForm({
             legalName: res.data.legalName,
             mbti: res.data.mbti,
+            department: res.data.department ?? '',
             instagramId: res.data.instagramId ?? '',
             selfIntroduction: res.data.selfIntroduction ?? '',
             idealDescription: res.data.idealDescription ?? '',
@@ -235,15 +245,41 @@ const MyPage: React.FC = () => {
   }, [notifEnabled, toast]);
 
   const handleSave = async (): Promise<void> => {
+    // 유효성 검증
     if (!editForm.legalName.trim()) {
       toast('실명을 입력해주세요.', 'error');
       return;
     }
+
+    const nameError = getRealNameErrorMessage(editForm.legalName);
+    if (nameError) {
+      toast(nameError, 'error');
+      return;
+    }
+
+    if (!editForm.department) {
+      toast('학과를 선택해주세요.', 'error');
+      return;
+    }
+
+    if (editForm.instagramId && !validateInstagramId(editForm.instagramId)) {
+      const instagramError = getInstagramIdErrorMessage(editForm.instagramId);
+      toast(instagramError ?? '올바른 인스타그램 ID를 입력해주세요.', 'error');
+      return;
+    }
+
+    if (editForm.accountNumber && !validateBankAccount(editForm.accountNumber)) {
+      const accountError = getBankAccountErrorMessage(editForm.accountNumber);
+      toast(accountError ?? '올바른 계좌번호를 입력해주세요.', 'error');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateMyProfile({
         legalName: editForm.legalName,
         mbti: editForm.mbti,
+        department: editForm.department as Department,
         instagramId: editForm.instagramId || undefined,
         selfIntroduction: editForm.selfIntroduction || undefined,
         idealDescription: editForm.idealDescription || undefined,
@@ -265,31 +301,6 @@ const MyPage: React.FC = () => {
     }
   };
 
-  const openNotice = (): void => {
-    setModal({
-      isOpen: true,
-      title: '공지사항',
-      content:
-        announcements.length === 0 ? (
-          <p className="text-center text-slate-400 py-6 text-sm">등록된 공지사항이 없습니다.</p>
-        ) : (
-          <div className="space-y-4">
-            {announcements.map((notice, i) => (
-              <React.Fragment key={notice.id}>
-                {i > 0 && <hr className="border-slate-100" />}
-                <div>
-                  <h4 className="font-bold text-slate-900 mb-0.5">{notice.title}</h4>
-                  <p className="text-[11px] text-slate-400 mb-1">
-                    {new Date(notice.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{notice.content}</p>
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-        ),
-    });
-  };
 
   const openTerms = (): void => {
     setModal({
@@ -479,6 +490,17 @@ const MyPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* 학과 */}
+                <SearchableSelect
+                  label=""
+                  options={DEPARTMENT_OPTIONS}
+                  value={editForm.department}
+                  onChange={(value) => setEditForm({ ...editForm, department: value as Department | '' })}
+                  placeholder="학과 선택"
+                  searchPlaceholder="학과명 검색..."
+                  className="mb-0"
+                />
+
                 {/* 인스타그램 */}
                 <div className="group">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">인스타그램</label>
@@ -524,22 +546,15 @@ const MyPage: React.FC = () => {
                 </div>
 
                 {/* 은행 */}
-                <div className="group">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">은행</label>
-                  <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
-                    <Landmark size={15} className="text-slate-300 shrink-0 group-focus-within:text-blue-400 transition-colors" />
-                    <select
-                      value={editForm.bankName}
-                      onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })}
-                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none"
-                    >
-                      <option value="">은행 선택</option>
-                      {BANK_OPTIONS.map(({ value, label }) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                <SearchableSelect
+                  label=""
+                  options={BANK_OPTIONS}
+                  value={editForm.bankName}
+                  onChange={(value) => setEditForm({ ...editForm, bankName: value })}
+                  placeholder="은행 선택"
+                  searchPlaceholder="은행명 검색..."
+                  className="mb-0"
+                />
 
                 {/* 계좌번호 */}
                 <div className="group">
@@ -580,6 +595,11 @@ const MyPage: React.FC = () => {
                 <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
                   {displayProfile?.mbti}
                 </span>
+                {displayProfile?.department && (
+                  <span className="inline-block px-3 py-1 bg-violet-100 text-violet-700 text-xs font-bold rounded-full">
+                    {DEPARTMENT_OPTIONS.find((option) => option.value === displayProfile.department)?.label ?? displayProfile.department}
+                  </span>
+                )}
                 {displayProfile?.gender && (
                   <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${displayProfile.gender === 'MALE' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
                     {displayProfile.gender === 'MALE' ? '남성' : '여성'}
@@ -643,23 +663,29 @@ const MyPage: React.FC = () => {
             statusConfig.clickable ? 'cursor-pointer hover:shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 active:scale-[0.99]' : ''
           }`}
         >
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${statusConfig.iconBg}`}>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${statusConfig.iconBg}`}>
               {statusConfig.icon}
             </div>
-            <div>
-              <p className="text-sm font-bold text-slate-900">{statusConfig.title}</p>
-              <p className="text-xs text-slate-400">{statusConfig.description}</p>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-900 truncate">{statusConfig.title}</p>
+              <p className="text-xs text-slate-400 truncate">{statusConfig.description}</p>
             </div>
           </div>
-          {statusConfig.clickable && <ChevronRight size={16} className="text-slate-300" />}
+          {statusConfig.clickable && <ChevronRight size={16} className="text-slate-300 shrink-0" />}
           {candidateStatus === 'APPROVED' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowWithdrawConfirm(true); }}
-              className="text-xs text-rose-400 font-medium hover:text-rose-500 transition-colors shrink-0"
-            >
-              철회하기
-            </button>
+            <div className="flex items-center gap-2 shrink-0 ml-2">
+              <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg">
+                <Eye size={12} className="text-blue-500" />
+                <span className="text-xs font-bold text-blue-600">노출 {displayProfile?.exposureCount ?? 0}회</span>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowWithdrawConfirm(true); }}
+                className="text-xs text-rose-400 font-medium hover:text-rose-500 transition-colors"
+              >
+                철회
+              </button>
+            </div>
           )}
           {candidateStatus === 'PENDING' && (
             <button
@@ -675,8 +701,8 @@ const MyPage: React.FC = () => {
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-100/80 shadow-[0_1px_12px_rgba(0,0,0,0.04)] overflow-hidden divide-y divide-slate-50">
           {[
             { label: '비밀번호 변경', onClick: () => setShowPasswordChange(true) },
-            { label: '공지사항', onClick: openNotice },
             { label: '이용약관', onClick: openTerms },
+            { label: '개발팀 소개', onClick: () => navigate('/about') },
           ].map(({ label, onClick }) => (
             <button
               key={label}
