@@ -140,7 +140,7 @@ const MemberMainPage: React.FC = () => {
                 <UserPlus size={18} className="text-blue-500 mb-3" />
                 <h3 className="font-bold text-sm text-slate-900 mb-1">후보 등록하기</h3>
                 <p className="text-slate-400 text-xs mb-3 leading-relaxed">프로필을 등록하고 매칭 기회를 높여요</p>
-                <p className="font-display text-xl gradient-text">3,000원</p>
+                <p className="font-display text-xl gradient-text">2,000원</p>
               </div>
             </TiltCard>
           </motion.div>

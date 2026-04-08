@@ -50,7 +50,7 @@ const DUMMY_REQUESTS: MatchRequest[] = [
     id: 2,
     type: 'register',
     status: 'pending',
-    amount: 3000,
+    amount: 2000,
     createdAt: '2026.05.20 13:00',
   },
   {

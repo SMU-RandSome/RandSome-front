@@ -192,7 +192,7 @@ const MatchPage: React.FC = () => {
               📢
             </div>
             <div>
-              <p className="font-bold text-slate-900">등록비 3,000원</p>
+              <p className="font-bold text-slate-900">등록비 2,000원</p>
               <p className="text-xs text-slate-500">축제 기간 동안 유지됩니다</p>
             </div>
           </div>
@@ -218,7 +218,7 @@ const MatchPage: React.FC = () => {
           onClick={() => setShowRegisterPayment(true)}
           className="rounded-2xl h-14 text-lg shadow-lg shadow-blue-500/20"
         >
-          3,000원 결제하고 등록하기
+          2,000원 결제하고 등록하기
         </Button>
         <Button
           fullWidth
@@ -234,7 +234,7 @@ const MatchPage: React.FC = () => {
         isOpen={showRegisterPayment}
         onClose={() => setShowRegisterPayment(false)}
         onConfirm={handleRegisterConfirm}
-        amount={3000}
+        amount={2000}
       />
     </div>
   );

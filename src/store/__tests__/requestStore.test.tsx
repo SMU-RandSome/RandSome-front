@@ -29,7 +29,7 @@ describe('requestStore', () => {
     const { result } = renderHook(() => useRequests(), { wrapper });
 
     act(() => {
-      result.current.addRequest({ type: 'register', amount: 3000 });
+      result.current.addRequest({ type: 'register', amount: 2000 });
     });
 
     expect(result.current.requests[0].status).toBe('pending');
