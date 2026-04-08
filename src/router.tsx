@@ -16,6 +16,7 @@ const RequestsPage = React.lazy(() => import('@/pages/RequestsPage'));
 const MatchRequestDetailPage = React.lazy(() => import('@/pages/MatchRequestDetailPage'));
 const MyPage = React.lazy(() => import('@/pages/MyPage'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/AdminDashboard'));
+const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
 
 const PageLoader: React.FC = () => (
   <div className="min-h-screen bg-gray-100 flex justify-center items-start">
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
       { path: '/login', element: <LoginPage /> },
       { path: '/signup', element: <SignupPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/about', element: <AboutPage /> },
 
       // 회원 전용 라우트
       {
