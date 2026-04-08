@@ -10,6 +10,48 @@ export type Mbti =
   | 'ESTP' | 'ESFP' | 'ENFP' | 'ENTP'
   | 'ESTJ' | 'ESFJ' | 'ENFJ' | 'ENTJ';
 
+export type Department =
+  | 'KOREAN_LANGUAGE_CULTURE'
+  | 'JAPANESE_REGIONAL_STUDIES'
+  | 'CHINESE_REGIONAL_STUDIES'
+  | 'ENGLISH_REGIONAL_STUDIES'
+  | 'FRENCH_REGIONAL_STUDIES'
+  | 'GERMAN_REGIONAL_STUDIES'
+  | 'RUSSIAN_CENTRAL_ASIA_REGIONAL_STUDIES'
+  | 'COMMUNICATION_DESIGN'
+  | 'FASHION_DESIGN'
+  | 'TEXTILE_DESIGN'
+  | 'SPACE_DESIGN'
+  | 'CERAMIC_DESIGN'
+  | 'INDUSTRIAL_DESIGN'
+  | 'AR_VR_MEDIA_DESIGN'
+  | 'FILM_VIDEO'
+  | 'THEATER'
+  | 'STAGE_ART'
+  | 'PHOTO_VIDEO_MEDIA'
+  | 'DIGITAL_COMICS_VIDEO'
+  | 'ARTS_CULTURE_MANAGEMENT'
+  | 'AI_MEDIA_CONTENT'
+  | 'GLOBAL_FINANCE_MANAGEMENT'
+  | 'FOOD_ENGINEERING'
+  | 'GREEN_SMART_CITY'
+  | 'NURSING'
+  | 'BIO_FOOD_TECH'
+  | 'SPORTS_CONVERGENCE'
+  | 'ELECTRONICS_ENGINEERING'
+  | 'SOFTWARE'
+  | 'SMART_INFO_COMMUNICATION_ENGINEERING'
+  | 'INDUSTRIAL_MANAGEMENT_ENGINEERING'
+  | 'GREEN_CHEMICAL_ENGINEERING'
+  | 'CIVIL_SYSTEM_ENGINEERING'
+  | 'INFORMATION_SECURITY_ENGINEERING'
+  | 'SYSTEM_SEMICONDUCTOR_ENGINEERING'
+  | 'HUMAN_INTELLIGENT_ROBOT_ENGINEERING'
+  | 'INTELLIGENT_ROBOTICS'
+  | 'AI_MOBILITY_ENGINEERING'
+  | 'SMART_IT_CONVERGENCE_ENGINEERING'
+  | 'SELF_DIRECTED_MAJOR';
+
 export interface ErrorMessage {
   code: string;
   message: string;
@@ -64,6 +106,7 @@ export interface MemberProfile {
   email: string;
   gender: Gender;
   mbti: Mbti;
+  department?: Department;
   role: UserRole;
   instagramId?: string;
   selfIntroduction?: string;
@@ -71,11 +114,13 @@ export interface MemberProfile {
   bankName?: string;
   accountNumber?: string;
   candidateRegistrationStatus: CandidateRegistrationStatus;
+  exposureCount: number;
 }
 
 export interface MemberProfileUpdateRequest {
   legalName: string;
   mbti: Mbti;
+  department: Department;
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
@@ -90,6 +135,7 @@ export interface MemberCreateRequest {
   legalName: string;
   gender: Gender;
   mbti: Mbti;
+  department: Department;
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
