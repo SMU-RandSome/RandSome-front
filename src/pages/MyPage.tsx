@@ -81,6 +81,39 @@ const CANDIDATE_STATUS_CONFIG = {
   },
 } as const;
 
+const PERSONALITY_TAG_LABELS: Record<string, string> = {
+  ACTIVE: '활발한',
+  QUIET: '조용한',
+  AFFECTIONATE: '다정한',
+  INDEPENDENT: '독립적인',
+  FUNNY: '유머있는',
+  SERIOUS: '진지한',
+  OPTIMISTIC: '긍정적인',
+  CAREFUL: '신중한',
+};
+
+const FACE_TYPE_TAG_LABELS: Record<string, string> = {
+  PUPPY: '강아지상',
+  CAT: '고양이상',
+  BEAR: '곰상',
+  FOX: '여우상',
+  RABBIT: '토끼상',
+  PURE: '청순한',
+  CHIC: '시크한',
+  WARM: '훈훈한',
+};
+
+const DATING_STYLE_TAG_LABELS: Record<string, string> = {
+  FREQUENT_CONTACT: '자주 연락',
+  MODERATE_CONTACT: '적당한 연락',
+  PLANNED_DATE: '계획형 데이트',
+  SPONTANEOUS_DATE: '즉흥형 데이트',
+  SKINSHIP_LOVER: '스킨십 많은',
+  RESPECTFUL_SPACE: '각자 시간 존중',
+  EXPRESSIVE: '감정 표현 잘함',
+  GROW_TOGETHER: '함께 성장',
+};
+
 const MBTI_OPTIONS = [
   { value: 'ISTJ', label: 'ISTJ' },
   { value: 'ISFJ', label: 'ISFJ' },
@@ -107,6 +140,9 @@ interface EditForm {
   instagramId: string;
   selfIntroduction: string;
   idealDescription: string;
+  personalityTag: string;
+  faceTypeTag: string;
+  datingStyleTag: string;
   bankName: string;
   accountNumber: string;
 }
@@ -129,10 +165,17 @@ const MyPage: React.FC = () => {
   const [editForm, setEditForm] = useState<EditForm>({
     legalName: user?.legalName ?? '',
     mbti: (user?.mbti ?? 'ENFP') as Mbti,
-    department: user?.department ?? '',
+    department: (() => {
+      const v = user?.department ?? '';
+      const opt = DEPARTMENT_OPTIONS.find((o) => o.value === v || o.label === v);
+      return opt ? opt.value : '';
+    })(),
     instagramId: user?.instagramId ?? '',
     selfIntroduction: user?.selfIntroduction ?? '',
     idealDescription: user?.idealDescription ?? '',
+    personalityTag: user?.personalityTag ?? '',
+    faceTypeTag: user?.faceTypeTag ?? '',
+    datingStyleTag: user?.datingStyleTag ?? '',
     bankName: user?.bankName ?? '',
     accountNumber: user?.accountNumber ?? '',
   });
@@ -160,10 +203,17 @@ const MyPage: React.FC = () => {
           setEditForm({
             legalName: res.data.legalName,
             mbti: res.data.mbti,
-            department: res.data.department ?? '',
+            department: (() => {
+              const v = res.data.department ?? '';
+              const opt = DEPARTMENT_OPTIONS.find((o) => o.value === v || o.label === v);
+              return opt ? opt.value : '';
+            })(),
             instagramId: res.data.instagramId ?? '',
             selfIntroduction: res.data.selfIntroduction ?? '',
             idealDescription: res.data.idealDescription ?? '',
+            personalityTag: res.data.personalityTag ?? '',
+            faceTypeTag: res.data.faceTypeTag ?? '',
+            datingStyleTag: res.data.datingStyleTag ?? '',
             bankName: res.data.bankName ?? '',
             accountNumber: res.data.accountNumber ?? '',
           });
@@ -276,6 +326,13 @@ const MyPage: React.FC = () => {
 
     setIsSaving(true);
     try {
+      // 디버그: 전송할 데이터 확인
+      console.log('전송할 editForm:', {
+        department: editForm.department,
+        personalityTag: editForm.personalityTag,
+        faceTypeTag: editForm.faceTypeTag,
+        datingStyleTag: editForm.datingStyleTag,
+      });
       await updateMyProfile({
         legalName: editForm.legalName,
         mbti: editForm.mbti,
@@ -283,6 +340,9 @@ const MyPage: React.FC = () => {
         instagramId: editForm.instagramId || undefined,
         selfIntroduction: editForm.selfIntroduction || undefined,
         idealDescription: editForm.idealDescription || undefined,
+        personalityTag: editForm.personalityTag,
+        faceTypeTag: editForm.faceTypeTag,
+        datingStyleTag: editForm.datingStyleTag,
         bankName: editForm.bankName || undefined,
         accountNumber: editForm.accountNumber || undefined,
       });
@@ -545,6 +605,70 @@ const MyPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* 나를 표현하는 태그 */}
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">나를 표현하는 태그</p>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-2">성격</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(PERSONALITY_TAG_LABELS).map(([value, label]) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setEditForm({ ...editForm, personalityTag: editForm.personalityTag === value ? '' : value })}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${
+                              editForm.personalityTag === value
+                                ? 'bg-blue-500 text-white shadow-sm'
+                                : 'bg-blue-50 text-blue-500 hover:bg-blue-100'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-2">외모 스타일</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(FACE_TYPE_TAG_LABELS).map(([value, label]) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setEditForm({ ...editForm, faceTypeTag: editForm.faceTypeTag === value ? '' : value })}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${
+                              editForm.faceTypeTag === value
+                                ? 'bg-violet-500 text-white shadow-sm'
+                                : 'bg-violet-50 text-violet-500 hover:bg-violet-100'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-2">연애 스타일</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(DATING_STYLE_TAG_LABELS).map(([value, label]) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setEditForm({ ...editForm, datingStyleTag: editForm.datingStyleTag === value ? '' : value })}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${
+                              editForm.datingStyleTag === value
+                                ? 'bg-pink-500 text-white shadow-sm'
+                                : 'bg-pink-50 text-pink-500 hover:bg-pink-100'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 은행 */}
                 <SearchableSelect
                   label=""
@@ -633,6 +757,28 @@ const MyPage: React.FC = () => {
                     {displayProfile?.idealDescription ?? <span className="text-slate-300 italic">이상형을 작성해주세요</span>}
                   </p>
                 </div>
+                {(displayProfile?.personalityTag || displayProfile?.faceTypeTag || displayProfile?.datingStyleTag) && (
+                  <div className="px-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">나를 표현하는 태그</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {displayProfile.personalityTag && (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                          {PERSONALITY_TAG_LABELS[displayProfile.personalityTag] ?? displayProfile.personalityTag}
+                        </span>
+                      )}
+                      {displayProfile.faceTypeTag && (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-700">
+                          {FACE_TYPE_TAG_LABELS[displayProfile.faceTypeTag] ?? displayProfile.faceTypeTag}
+                        </span>
+                      )}
+                      {displayProfile.datingStyleTag && (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-700">
+                          {DATING_STYLE_TAG_LABELS[displayProfile.datingStyleTag] ?? displayProfile.datingStyleTag}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {(displayProfile?.bankName ?? displayProfile?.accountNumber) && (
                   <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">환불 계좌</p>
