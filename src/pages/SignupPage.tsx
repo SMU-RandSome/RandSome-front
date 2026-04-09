@@ -216,7 +216,9 @@ const SignupPage: React.FC = () => {
     department: '',
     intro: '',
     idealType: '',
-    idealTags: [] as string[],
+    personalityTag: '',
+    faceTypeTag: '',
+    datingStyleTag: '',
     emailUsername: '',
     instagramId: '',
     bankName: '',
@@ -239,7 +241,6 @@ const SignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [openTermKey, setOpenTermKey] = useState<TermsKey | null>(null);
-  const [tagInput, setTagInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSendEmail = async (): Promise<void> => {
@@ -308,34 +309,39 @@ const SignupPage: React.FC = () => {
     }));
   };
 
-  // 이상형 태그 관련 helpers
-  const addTag = (): void => {
-    const t = tagInput.trim();
-    if (!t) return;
-    if (formData.idealTags && formData.idealTags.includes(t)) {
-      setTagInput('');
-      return;
-    }
-    setFormData((prev) => ({
-      ...prev,
-      idealTags: [...(prev.idealTags || []), t],
-    }));
-    setTagInput('');
-  };
+  // 태그 옵션 (백엔드 enum에 맞춘 목록)
+  const PERSONALITY_TAGS = [
+    { value: 'ACTIVE', label: '활발한' },
+    { value: 'QUIET', label: '조용한' },
+    { value: 'AFFECTIONATE', label: '다정한' },
+    { value: 'INDEPENDENT', label: '독립적인' },
+    { value: 'FUNNY', label: '유머있는' },
+    { value: 'SERIOUS', label: '진지한' },
+    { value: 'OPTIMISTIC', label: '긍정적인' },
+    { value: 'CAREFUL', label: '신중한' },
+  ];
 
-  const removeTag = (tag: string): void => {
-    setFormData((prev) => ({
-      ...prev,
-      idealTags: (prev.idealTags || []).filter((t) => t !== tag),
-    }));
-  };
+  const FACE_TYPE_TAGS = [
+    { value: 'PUPPY', label: '강아지상' },
+    { value: 'CAT', label: '고양이상' },
+    { value: 'BEAR', label: '곰상' },
+    { value: 'FOX', label: '여우상' },
+    { value: 'RABBIT', label: '토끼상' },
+    { value: 'PURE', label: '청순한' },
+    { value: 'CHIC', label: '시크한' },
+    { value: 'WARM', label: '훈훈한' },
+  ];
 
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addTag();
-    }
-  };
+  const DATING_STYLE_TAGS = [
+    { value: 'FREQUENT_CONTACT', label: '자주 연락' },
+    { value: 'MODERATE_CONTACT', label: '적당한 연락' },
+    { value: 'PLANNED_DATE', label: '계획형 데이트' },
+    { value: 'SPONTANEOUS_DATE', label: '즉흥형 데이트' },
+    { value: 'SKINSHIP_LOVER', label: '스킨십 많은' },
+    { value: 'RESPECTFUL_SPACE', label: '각자 시간 존중' },
+    { value: 'EXPRESSIVE', label: '감정 표현 잘함' },
+    { value: 'GROW_TOGETHER', label: '함께 성장' },
+  ];
 
   const passwordsMatch = formData.password === formData.passwordConfirm;
 
@@ -352,11 +358,14 @@ const SignupPage: React.FC = () => {
     !!formData.department &&
     !!formData.instagramId &&
     !!formData.bankName &&
-    !!formData.bankAccountNumber;
+    !!formData.bankAccountNumber &&
+    !!formData.personalityTag &&
+    !!formData.faceTypeTag &&
+    !!formData.datingStyleTag;
 
   const isStep3Valid =
     !!formData.intro &&
-    (!!formData.idealType || (formData.idealTags && formData.idealTags.length > 0));
+    !!formData.idealType;
 
   const nextStep = (): void => {
     if (step === 1 && !isStep1Valid) {
@@ -426,6 +435,9 @@ const SignupPage: React.FC = () => {
         instagramId: formData.instagramId || undefined,
         selfIntroduction: formData.intro || undefined,
         idealDescription: formData.idealType || undefined,
+        personalityTag: formData.personalityTag,
+        faceTypeTag: formData.faceTypeTag,
+        datingStyleTag: formData.datingStyleTag,
         agreedToTerms: requiredTermsAgreed,
         bankName: formData.bankName,
         accountNumber: formData.bankAccountNumber,
@@ -1052,40 +1064,66 @@ const SignupPage: React.FC = () => {
                           className="h-32"
                         />
 
-                        {/* 이상형 태그 */}
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-slate-700">이상형 태그</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="태그 입력 후 Enter 또는 추가 버튼"
-                              value={tagInput}
-                              onChange={(e) => setTagInput(e.target.value)}
-                              onKeyDown={handleTagKeyDown}
-                              className="flex-1 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                            />
-                            <button
-                              type="button"
-                              onClick={addTag}
-                              className="shrink-0 h-10 px-4 rounded-2xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                            >
-                              추가
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {(formData.idealTags || []).map((tag) => (
-                              <span key={tag} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-sm text-slate-700">
-                                <span>#{tag}</span>
+                        {/* 태그 선택: 성격/얼굴형/연애 스타일 */}
+                        <div className="grid grid-cols-1 gap-4">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-700 mb-2">성격 태그</p>
+                            <div className="flex flex-wrap gap-2">
+                              {PERSONALITY_TAGS.map((t) => (
                                 <button
+                                  key={t.value}
                                   type="button"
-                                  onClick={() => removeTag(tag)}
-                                  className="text-xs text-slate-400 hover:text-red-500"
-                                  aria-label={`Remove ${tag}`}
+                                  onClick={() => setFormData({ ...formData, personalityTag: t.value })}
+                                  className={`px-3 py-1 rounded-full text-sm transition-all border ${
+                                    formData.personalityTag === t.value
+                                      ? 'bg-blue-600 text-white border-blue-600'
+                                      : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50'
+                                  }`}
                                 >
-                                  ✕
+                                  {t.label}
                                 </button>
-                              </span>
-                            ))}
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-semibold text-slate-700 mb-2">얼굴형 태그</p>
+                            <div className="flex flex-wrap gap-2">
+                              {FACE_TYPE_TAGS.map((t) => (
+                                <button
+                                  key={t.value}
+                                  type="button"
+                                  onClick={() => setFormData({ ...formData, faceTypeTag: t.value })}
+                                  className={`px-3 py-1 rounded-full text-sm transition-all border ${
+                                    formData.faceTypeTag === t.value
+                                      ? 'bg-pink-500 text-white border-pink-500'
+                                      : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-pink-50'
+                                  }`}
+                                >
+                                  {t.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-semibold text-slate-700 mb-2">연애 스타일 태그</p>
+                            <div className="flex flex-wrap gap-2">
+                              {DATING_STYLE_TAGS.map((t) => (
+                                <button
+                                  key={t.value}
+                                  type="button"
+                                  onClick={() => setFormData({ ...formData, datingStyleTag: t.value })}
+                                  className={`px-3 py-1 rounded-full text-sm transition-all border ${
+                                    formData.datingStyleTag === t.value
+                                      ? 'bg-rose-600 text-white border-rose-600'
+                                      : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-rose-50'
+                                  }`}
+                                >
+                                  {t.label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         </div>
 
