@@ -127,6 +127,9 @@ export interface MemberProfileUpdateRequest {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
+  personalityTag: string;
+  faceTypeTag: string;
+  datingStyleTag: string;
   bankName?: string;
   accountNumber?: string;
 }

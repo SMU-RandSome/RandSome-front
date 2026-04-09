@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Textarea } from '@/components/ui/Textarea';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
@@ -12,7 +13,8 @@ import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api'
 import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
 import { apiClient, getApiErrorMessage } from '@/lib/axios';
-import type { MemberCreateRequest, Gender, Mbti } from '@/types';
+import { DEPARTMENT_OPTIONS } from '@/constants/departments';
+import type { MemberCreateRequest, Gender, Mbti, Department } from '@/types';
 import {
   ChevronLeft,
   CheckCircle2,
@@ -61,6 +63,39 @@ const BANK_OPTIONS = [
   { value: '새마을', label: '새마을금고' },
   { value: '수협', label: '수협은행' },
   { value: '우체국', label: '우체국' },
+];
+
+const PERSONALITY_TAGS = [
+  { value: 'ACTIVE', label: '활발한' },
+  { value: 'QUIET', label: '조용한' },
+  { value: 'AFFECTIONATE', label: '다정한' },
+  { value: 'INDEPENDENT', label: '독립적인' },
+  { value: 'FUNNY', label: '유머있는' },
+  { value: 'SERIOUS', label: '진지한' },
+  { value: 'OPTIMISTIC', label: '긍정적인' },
+  { value: 'CAREFUL', label: '신중한' },
+];
+
+const FACE_TYPE_TAGS = [
+  { value: 'PUPPY', label: '강아지상' },
+  { value: 'CAT', label: '고양이상' },
+  { value: 'BEAR', label: '곰상' },
+  { value: 'FOX', label: '여우상' },
+  { value: 'RABBIT', label: '토끼상' },
+  { value: 'PURE', label: '청순한' },
+  { value: 'CHIC', label: '시크한' },
+  { value: 'WARM', label: '훈훈한' },
+];
+
+const DATING_STYLE_TAGS = [
+  { value: 'FREQUENT_CONTACT', label: '자주 연락' },
+  { value: 'MODERATE_CONTACT', label: '적당한 연락' },
+  { value: 'PLANNED_DATE', label: '계획형 데이트' },
+  { value: 'SPONTANEOUS_DATE', label: '즉흥형 데이트' },
+  { value: 'SKINSHIP_LOVER', label: '스킨십 많은' },
+  { value: 'RESPECTFUL_SPACE', label: '각자 시간 존중' },
+  { value: 'EXPRESSIVE', label: '감정 표현 잘함' },
+  { value: 'GROW_TOGETHER', label: '함께 성장' },
 ];
 
 type SignupStep = 1 | 2 | 3;
@@ -203,6 +238,7 @@ const SignupPage: React.FC = () => {
     realName: '',
     gender: '',
     mbti: '',
+    department: '',
     intro: '',
     idealType: '',
     emailUsername: '',
@@ -211,6 +247,9 @@ const SignupPage: React.FC = () => {
     bankAccountNumber: '',
     password: '',
     passwordConfirm: '',
+    personalityTag: '',
+    faceTypeTag: '',
+    datingStyleTag: '',
     terms: {
       service: false,
       privacy: false,
@@ -307,13 +346,17 @@ const SignupPage: React.FC = () => {
     !!formData.realName &&
     !!formData.gender &&
     !!formData.mbti &&
+    !!formData.department &&
     !!formData.instagramId &&
     !!formData.bankName &&
     !!formData.bankAccountNumber;
 
   const isStep3Valid =
     !!formData.intro &&
-    !!formData.idealType;
+    !!formData.idealType &&
+    !!formData.personalityTag &&
+    !!formData.faceTypeTag &&
+    !!formData.datingStyleTag;
 
   const nextStep = (): void => {
     if (step === 1 && !isStep1Valid) {
@@ -353,9 +396,13 @@ const SignupPage: React.FC = () => {
         legalName: formData.realName,
         gender: formData.gender as Gender,
         mbti: formData.mbti as Mbti,
+        department: formData.department as Department,
         instagramId: formData.instagramId || undefined,
         selfIntroduction: formData.intro || undefined,
         idealDescription: formData.idealType || undefined,
+        personalityTag: formData.personalityTag,
+        faceTypeTag: formData.faceTypeTag,
+        datingStyleTag: formData.datingStyleTag,
         agreedToTerms: requiredTermsAgreed,
         bankName: formData.bankName,
         accountNumber: formData.bankAccountNumber,
@@ -661,12 +708,21 @@ const SignupPage: React.FC = () => {
                 </div>
               </div>
 
-              <Select
+              <CustomSelect
                 label="MBTI"
                 options={MBTI_OPTIONS}
                 value={formData.mbti}
-                onChange={(e) => setFormData({ ...formData, mbti: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, mbti: value })}
                 placeholder="MBTI를 선택해주세요"
+              />
+
+              <SearchableSelect
+                label="학과"
+                options={DEPARTMENT_OPTIONS}
+                value={formData.department}
+                onChange={(value) => setFormData({ ...formData, department: value })}
+                placeholder="학과를 선택해주세요"
+                searchPlaceholder="학과명 검색..."
               />
 
               <Input
@@ -680,11 +736,11 @@ const SignupPage: React.FC = () => {
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-slate-700">환불 계좌번호</p>
                 <p className="text-xs text-slate-400 -mt-1">매칭 실패 시 환불을 위해 입력해주세요.</p>
-                <Select
+                <CustomSelect
                   label=""
                   options={BANK_OPTIONS}
                   value={formData.bankName}
-                  onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, bankName: value })}
                   placeholder="은행 선택"
                 />
                 <input
@@ -713,14 +769,14 @@ const SignupPage: React.FC = () => {
               <p className="text-sm text-slate-400">매칭 성공률을 높이는 핵심 정보입니다!</p>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-6">
               <Textarea
                 label="자기 소개"
                 placeholder="자신을 표현할 수 있는 멋진 소개글을 작성해주세요! (취미, 관심사, 성격 등)"
                 value={formData.intro}
                 onChange={(e) => setFormData({ ...formData, intro: e.target.value })}
                 maxLength={500}
-                className="h-32"
+                className="h-28"
               />
 
               <Textarea
@@ -729,8 +785,77 @@ const SignupPage: React.FC = () => {
                 value={formData.idealType}
                 onChange={(e) => setFormData({ ...formData, idealType: e.target.value })}
                 maxLength={500}
-                className="h-32"
+                className="h-28"
               />
+
+              {/* 나를 표현하는 태그 */}
+              <div className="space-y-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                <div className="mb-2">
+                  <p className="text-sm font-bold text-slate-900 mb-1">나를 표현하는 태그</p>
+                  <p className="text-xs text-slate-500">이상형 매칭에 사용됩니다</p>
+                  <p className="text-xs text-slate-400 mt-1">(각 카테고리에서 1개 선택)</p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-slate-800 mb-2">성격</p>
+                  <div className="flex flex-wrap gap-2">
+                    {PERSONALITY_TAGS.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, personalityTag: value })}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                          formData.personalityTag === value
+                            ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+                            : 'bg-white border border-slate-200 text-slate-500 hover:border-blue-300'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-slate-800 mb-2">외모 스타일</p>
+                  <div className="flex flex-wrap gap-2">
+                    {FACE_TYPE_TAGS.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, faceTypeTag: value })}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                          formData.faceTypeTag === value
+                            ? 'bg-violet-600 text-white shadow-sm shadow-violet-200'
+                            : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-300'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-slate-800 mb-2">연애 스타일</p>
+                  <div className="flex flex-wrap gap-2">
+                    {DATING_STYLE_TAGS.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, datingStyleTag: value })}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                          formData.datingStyleTag === value
+                            ? 'bg-pink-600 text-white shadow-sm shadow-pink-200'
+                            : 'bg-white border border-slate-200 text-slate-500 hover:border-pink-300'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
               <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
                 <p className="text-xs text-blue-700 leading-relaxed font-medium">
