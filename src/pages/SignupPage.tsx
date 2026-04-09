@@ -358,14 +358,14 @@ const SignupPage: React.FC = () => {
     !!formData.department &&
     !!formData.instagramId &&
     !!formData.bankName &&
-    !!formData.bankAccountNumber &&
-    !!formData.personalityTag &&
-    !!formData.faceTypeTag &&
-    !!formData.datingStyleTag;
+    !!formData.bankAccountNumber;
 
   const isStep3Valid =
     !!formData.intro &&
-    !!formData.idealType;
+    !!formData.idealType &&
+    !!formData.personalityTag &&
+    !!formData.faceTypeTag &&
+    !!formData.datingStyleTag;
 
   const nextStep = (): void => {
     if (step === 1 && !isStep1Valid) {
@@ -1019,9 +1019,55 @@ const SignupPage: React.FC = () => {
                           />
                         </div>
 
-                        {/* 태그 선택: 성격/얼굴형/연애 스타일 (프로필 단계로 이동) */}
+
+
+                  {step === 3 && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                      <div className="space-y-1">
+                        <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                          <Sparkles className="text-blue-600" size={20} />
+                          자신을 표현해주세요
+                        </h2>
+                        <p className="text-sm text-slate-400">
+                          매칭 성공률을 높이는 핵심
+                          정보입니다!
+                        </p>
+                      </div>
+
+                      <div className="space-y-5">
+                        <Textarea
+                          label="자기 소개"
+                          placeholder="자신을 표현할 수 있는 멋진 소개글을 작성해주세요! (취미, 관심사, 성격 등)"
+                          value={formData.intro}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              intro: e.target.value,
+                            })
+                          }
+                          maxLength={500}
+                          className="h-32"
+                        />
+
+                        <Textarea
+                          label="이상형"
+                          placeholder="어떤 사람을 찾고 계신가요? (원하는 성격, 스타일 등 자유롭게!)"
+                          value={formData.idealType}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              idealType: e.target.value,
+                            })
+                          }
+                          maxLength={500}
+                          className="h-32"
+                        />
+
+                        {/* 태그 선택: 성격/얼굴형/연애 스타일 (이상형 매칭에 사용됩니다) */}
                         <div className="mt-4">
-                          <p className="text-sm font-semibold text-slate-700 mb-3">프로필 태그 (성격 / 얼굴형 / 연애 스타일)</p>
+                          <p className="text-sm font-semibold text-slate-700 mb-2">프로필 태그</p>
+                          <p className="text-xs text-slate-500 mb-3">선택한 태그는 이상형 기반 매칭에 사용됩니다.</p>
+
                           <div className="grid grid-cols-1 gap-4">
                             <div>
                               <p className="text-sm font-semibold text-slate-600 mb-2">성격 태그</p>
@@ -1084,51 +1130,6 @@ const SignupPage: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 3 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                      <div className="space-y-1">
-                        <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                          <Sparkles className="text-blue-600" size={20} />
-                          자신을 표현해주세요
-                        </h2>
-                        <p className="text-sm text-slate-400">
-                          매칭 성공률을 높이는 핵심
-                          정보입니다!
-                        </p>
-                      </div>
-
-                      <div className="space-y-5">
-                        <Textarea
-                          label="자기 소개"
-                          placeholder="자신을 표현할 수 있는 멋진 소개글을 작성해주세요! (취미, 관심사, 성격 등)"
-                          value={formData.intro}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              intro: e.target.value,
-                            })
-                          }
-                          maxLength={500}
-                          className="h-32"
-                        />
-
-                        <Textarea
-                          label="이상형"
-                          placeholder="어떤 사람을 찾고 계신가요? (원하는 성격, 스타일 등 자유롭게!)"
-                          value={formData.idealType}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              idealType: e.target.value,
-                            })
-                          }
-                          maxLength={500}
-                          className="h-32"
-                        />
 
                         <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
                           <p className="text-xs text-blue-700 leading-relaxed font-medium">
