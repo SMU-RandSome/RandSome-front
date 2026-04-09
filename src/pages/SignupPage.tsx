@@ -1010,13 +1010,79 @@ const SignupPage: React.FC = () => {
                                 /\D/g,
                                 ''
                               );
-                              setFormData({
-                                ...formData,
+                              setFormData(prev => ({
+                                ...prev,
                                 bankAccountNumber: digits,
-                              });
+                              }));
                             }}
                             className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                           />
+                        </div>
+
+                        {/* 태그 선택: 성격/얼굴형/연애 스타일 (프로필 단계로 이동) */}
+                        <div className="mt-4">
+                          <p className="text-sm font-semibold text-slate-700 mb-3">프로필 태그 (성격 / 얼굴형 / 연애 스타일)</p>
+                          <div className="grid grid-cols-1 gap-4">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-600 mb-2">성격 태그</p>
+                              <div className="flex flex-wrap gap-2">
+                                {PERSONALITY_TAGS.map((t) => (
+                                  <button
+                                    key={t.value}
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, personalityTag: t.value }))}
+                                    className={`px-3 py-1 rounded-full text-sm transition-all border ${
+                                      formData.personalityTag === t.value
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50'
+                                    }`}
+                                  >
+                                    {t.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <p className="text-sm font-semibold text-slate-600 mb-2">얼굴형 태그</p>
+                              <div className="flex flex-wrap gap-2">
+                                {FACE_TYPE_TAGS.map((t) => (
+                                  <button
+                                    key={t.value}
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, faceTypeTag: t.value }))}
+                                    className={`px-3 py-1 rounded-full text-sm transition-all border ${
+                                      formData.faceTypeTag === t.value
+                                        ? 'bg-pink-500 text-white border-pink-500'
+                                        : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-pink-50'
+                                    }`}
+                                  >
+                                    {t.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <p className="text-sm font-semibold text-slate-600 mb-2">연애 스타일 태그</p>
+                              <div className="flex flex-wrap gap-2">
+                                {DATING_STYLE_TAGS.map((t) => (
+                                  <button
+                                    key={t.value}
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, datingStyleTag: t.value }))}
+                                    className={`px-3 py-1 rounded-full text-sm transition-all border ${
+                                      formData.datingStyleTag === t.value
+                                        ? 'bg-rose-600 text-white border-rose-600'
+                                        : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-rose-50'
+                                    }`}
+                                  >
+                                    {t.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1063,69 +1129,6 @@ const SignupPage: React.FC = () => {
                           maxLength={500}
                           className="h-32"
                         />
-
-                        {/* 태그 선택: 성격/얼굴형/연애 스타일 */}
-                        <div className="grid grid-cols-1 gap-4">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-700 mb-2">성격 태그</p>
-                            <div className="flex flex-wrap gap-2">
-                              {PERSONALITY_TAGS.map((t) => (
-                                <button
-                                  key={t.value}
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, personalityTag: t.value })}
-                                  className={`px-3 py-1 rounded-full text-sm transition-all border ${
-                                    formData.personalityTag === t.value
-                                      ? 'bg-blue-600 text-white border-blue-600'
-                                      : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50'
-                                  }`}
-                                >
-                                  {t.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <p className="text-sm font-semibold text-slate-700 mb-2">얼굴형 태그</p>
-                            <div className="flex flex-wrap gap-2">
-                              {FACE_TYPE_TAGS.map((t) => (
-                                <button
-                                  key={t.value}
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, faceTypeTag: t.value })}
-                                  className={`px-3 py-1 rounded-full text-sm transition-all border ${
-                                    formData.faceTypeTag === t.value
-                                      ? 'bg-pink-500 text-white border-pink-500'
-                                      : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-pink-50'
-                                  }`}
-                                >
-                                  {t.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <p className="text-sm font-semibold text-slate-700 mb-2">연애 스타일 태그</p>
-                            <div className="flex flex-wrap gap-2">
-                              {DATING_STYLE_TAGS.map((t) => (
-                                <button
-                                  key={t.value}
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, datingStyleTag: t.value })}
-                                  className={`px-3 py-1 rounded-full text-sm transition-all border ${
-                                    formData.datingStyleTag === t.value
-                                      ? 'bg-rose-600 text-white border-rose-600'
-                                      : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-rose-50'
-                                  }`}
-                                >
-                                  {t.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
 
                         <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
                           <p className="text-xs text-blue-700 leading-relaxed font-medium">
