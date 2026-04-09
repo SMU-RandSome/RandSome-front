@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { CustomSelect } from '@/components/ui/CustomSelect';
-import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/store/authStore';
@@ -13,16 +12,7 @@ import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api'
 import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
 import { apiClient, getApiErrorMessage } from '@/lib/axios';
-import { DEPARTMENT_OPTIONS } from '@/constants/departments';
-import type { MemberCreateRequest, Department, Gender, Mbti, ApiResponse } from '@/types';
-import {
-  getRealNameErrorMessage,
-  validateInstagramId,
-  getInstagramIdErrorMessage,
-  validateBankAccount,
-  getBankAccountErrorMessage,
-  getSangmyungEmailErrorMessage,
-} from '@/lib/validation';
+import type { MemberCreateRequest, Gender, Mbti } from '@/types';
 import {
   ChevronLeft,
   CheckCircle2,
@@ -213,12 +203,8 @@ const SignupPage: React.FC = () => {
     realName: '',
     gender: '',
     mbti: '',
-    department: '',
     intro: '',
     idealType: '',
-    personalityTag: '',
-    faceTypeTag: '',
-    datingStyleTag: '',
     emailUsername: '',
     instagramId: '',
     bankName: '',
@@ -309,40 +295,6 @@ const SignupPage: React.FC = () => {
     }));
   };
 
-  // 태그 옵션 (백엔드 enum에 맞춘 목록)
-  const PERSONALITY_TAGS = [
-    { value: 'ACTIVE', label: '활발한' },
-    { value: 'QUIET', label: '조용한' },
-    { value: 'AFFECTIONATE', label: '다정한' },
-    { value: 'INDEPENDENT', label: '독립적인' },
-    { value: 'FUNNY', label: '유머있는' },
-    { value: 'SERIOUS', label: '진지한' },
-    { value: 'OPTIMISTIC', label: '긍정적인' },
-    { value: 'CAREFUL', label: '신중한' },
-  ];
-
-  const FACE_TYPE_TAGS = [
-    { value: 'PUPPY', label: '강아지상' },
-    { value: 'CAT', label: '고양이상' },
-    { value: 'BEAR', label: '곰상' },
-    { value: 'FOX', label: '여우상' },
-    { value: 'RABBIT', label: '토끼상' },
-    { value: 'PURE', label: '청순한' },
-    { value: 'CHIC', label: '시크한' },
-    { value: 'WARM', label: '훈훈한' },
-  ];
-
-  const DATING_STYLE_TAGS = [
-    { value: 'FREQUENT_CONTACT', label: '자주 연락' },
-    { value: 'MODERATE_CONTACT', label: '적당한 연락' },
-    { value: 'PLANNED_DATE', label: '계획형 데이트' },
-    { value: 'SPONTANEOUS_DATE', label: '즉흥형 데이트' },
-    { value: 'SKINSHIP_LOVER', label: '스킨십 많은' },
-    { value: 'RESPECTFUL_SPACE', label: '각자 시간 존중' },
-    { value: 'EXPRESSIVE', label: '감정 표현 잘함' },
-    { value: 'GROW_TOGETHER', label: '함께 성장' },
-  ];
-
   const passwordsMatch = formData.password === formData.passwordConfirm;
 
   const isStep1Valid =
@@ -355,17 +307,13 @@ const SignupPage: React.FC = () => {
     !!formData.realName &&
     !!formData.gender &&
     !!formData.mbti &&
-    !!formData.department &&
     !!formData.instagramId &&
     !!formData.bankName &&
     !!formData.bankAccountNumber;
 
   const isStep3Valid =
     !!formData.intro &&
-    !!formData.idealType &&
-    !!formData.personalityTag &&
-    !!formData.faceTypeTag &&
-    !!formData.datingStyleTag;
+    !!formData.idealType;
 
   const nextStep = (): void => {
     if (step === 1 && !isStep1Valid) {
@@ -396,59 +344,24 @@ const SignupPage: React.FC = () => {
       return;
     }
 
-    // 추가 유효성 검증 (안전망)
-    const email = `${formData.emailUsername}@sangmyung.kr`;
-    const emailError = getSangmyungEmailErrorMessage(email);
-    if (emailError) {
-      toast(emailError, 'error');
-      return;
-    }
-
-    const nameError = getRealNameErrorMessage(formData.realName);
-    if (nameError) {
-      toast(nameError, 'error');
-      return;
-    }
-
-    if (formData.instagramId && !validateInstagramId(formData.instagramId)) {
-      const instagramError = getInstagramIdErrorMessage(formData.instagramId);
-      toast(instagramError ?? '올바른 인스타그램 ID를 입력해주세요.', 'error');
-      return;
-    }
-
-    if (!validateBankAccount(formData.bankAccountNumber)) {
-      const accountError = getBankAccountErrorMessage(formData.bankAccountNumber);
-      toast(accountError ?? '올바른 계좌번호를 입력해주세요.', 'error');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const body: MemberCreateRequest = {
         emailVerificationToken,
-        email,
+        email: `${formData.emailUsername}@sangmyung.kr`,
         password: formData.password,
         legalName: formData.realName,
         gender: formData.gender as Gender,
         mbti: formData.mbti as Mbti,
-        department: formData.department as Department,
         instagramId: formData.instagramId || undefined,
         selfIntroduction: formData.intro || undefined,
         idealDescription: formData.idealType || undefined,
-        personalityTag: formData.personalityTag,
-        faceTypeTag: formData.faceTypeTag,
-        datingStyleTag: formData.datingStyleTag,
         agreedToTerms: requiredTermsAgreed,
         bankName: formData.bankName,
         accountNumber: formData.bankAccountNumber,
       };
 
-      const signupRes = await apiClient.post<ApiResponse<null>>('/v1/members/sign-up', body);
-      
-      // 응답 검증
-      if (!signupRes.data || signupRes.data.result === 'ERROR') {
-        throw new Error(signupRes.data?.error?.message ?? '회원가입에 실패했습니다');
-      }
+      await apiClient.post('/v1/members/sign-up', body);
 
       // 가입 후 자동 로그인
       const tokenRes = await loginApi({ email: body.email, password: body.password });
@@ -494,771 +407,23 @@ const SignupPage: React.FC = () => {
     </div>
   );
 
-  // 웹 환경에서의 레이아웃
-  if (!isPWA) {
-    return (
-      <div className="w-full min-h-screen bg-white relative overflow-hidden">
-        {/* 배경 그라데이션 오브 */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -left-40 w-80 h-80 bg-gradient-to-br from-blue-100/40 to-purple-100/20 rounded-full blur-3xl" />
-          <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-100/40 to-pink-100/20 rounded-full blur-3xl" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 py-16 relative z-10">
-          {/* 네비게이션 */}
-          <div className="mb-8 flex items-center justify-between">
-            <button
-              onClick={prevStep}
-              className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-              aria-label="뒤로 가기"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <div className="text-sm font-bold text-blue-600 bg-blue-50 border border-blue-200 px-4 py-2 rounded-full">
-              Step {step} / 3
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-8">
-            {/* 좌측: 사이드바 (진행 상태) */}
-            <div>
-              <div className="sticky top-20">
-                <h1 className="text-4xl font-black text-slate-900 mb-8">
-                  회원가입
-                </h1>
-
-                {/* 스텝 진행 표시 */}
-                <div className="space-y-3">
-                  {[
-                    {
-                      number: 1,
-                      title: '계정 정보',
-                      description: '이메일 및 비밀번호',
-                    },
-                    {
-                      number: 2,
-                      title: '프로필 정보',
-                      description: '기본 정보 입력',
-                    },
-                    {
-                      number: 3,
-                      title: '자기 소개',
-                      description: '자신을 표현하기',
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.number}
-                      className={`p-4 rounded-xl border transition-all ${
-                        step === item.number
-                          ? 'border-blue-200 bg-blue-50'
-                          : step > item.number
-                            ? 'border-green-200 bg-green-50'
-                            : 'border-slate-200 bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold shrink-0 ${
-                            step > item.number
-                              ? 'bg-green-500 text-white'
-                              : step === item.number
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-400 text-white'
-                          }`}
-                        >
-                          {step > item.number ? (
-                            <Check size={16} />
-                          ) : (
-                            item.number
-                          )}
-                        </div>
-                        <div>
-                          <p
-                            className={`font-bold ${
-                              step >= item.number
-                                ? 'text-slate-900'
-                                : 'text-slate-600'
-                            }`}
-                          >
-                            {item.title}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {item.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 우측: 폼 영역 */}
-            <div className="col-span-2">
-              <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-xl">
-                <div className="overflow-y-auto max-h-[calc(100vh-200px)] pr-4">
-                  {step === 1 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                      <div className="space-y-1">
-                        <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                          <ClipboardCheck className="text-blue-600" size={20} />
-                          계정 정보를 입력해주세요
-                        </h2>
-                        <p className="text-sm text-slate-600">상명대 학생 인증이 필요합니다.</p>
-                      </div>
-
-                      {/* 학교 이메일 인증 */}
-                      <div className="space-y-3">
-                        <label className="block text-sm font-semibold text-white">학교 이메일</label>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`flex flex-1 rounded-2xl border bg-white overflow-hidden transition-all ${
-                              emailVerified
-                                ? 'border-slate-200'
-                                : 'border-slate-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100'
-                            }`}
-                          >
-                            <input
-                              type="text"
-                              placeholder="이메일 아이디"
-                              value={formData.emailUsername}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  emailUsername: e.target.value,
-                                })
-                              }
-                              disabled={emailVerified}
-                              className="flex-1 px-4 py-3.5 text-sm outline-none bg-transparent text-slate-900 placeholder:text-slate-300 disabled:text-slate-400 min-w-0"
-                            />
-                            <span className="px-3 flex items-center text-xs font-bold text-slate-400 bg-slate-50 border-l border-slate-200 shrink-0 whitespace-nowrap">
-                              @sangmyung.kr
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleSendEmail}
-                            disabled={
-                              emailVerified ||
-                              !formData.emailUsername.trim()
-                            }
-                            className={`shrink-0 h-[50px] px-4 rounded-2xl text-sm font-bold transition-all disabled:opacity-50 ${
-                              emailVerified
-                                ? 'bg-green-500 text-white'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
-                          >
-                            {emailVerified ? (
-                              <Check size={20} />
-                            ) : emailSent ? (
-                              '재전송'
-                            ) : (
-                              '인증'
-                            )}
-                          </button>
-                        </div>
-                        <a
-                          href="https://cloud.smu.ac.kr/t/smu.ac.kr"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
-                        >
-                          <span>📧</span>
-                          학교 웹메일 바로가기
-                          <ExternalLink size={12} />
-                        </a>
-                        {emailVerified ? (
-                          <p className="text-xs text-green-600 font-bold flex items-center gap-1">
-                            <CheckCircle2 size={12} /> 인증이
-                            완료되었습니다.
-                          </p>
-                        ) : emailSent && (
-                          <div className="space-y-2">
-                            <p className="text-xs text-blue-600 font-medium">
-                              인증 메일이 발송되었습니다. 코드를
-                              입력해주세요.
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                placeholder="인증코드 입력"
-                                value={verificationCode}
-                                onChange={(e) =>
-                                  setVerificationCode(e.target.value)
-                                }
-                                className="flex-1 px-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                              />
-                              <button
-                                type="button"
-                                onClick={handleVerifyCode}
-                                disabled={!verificationCode.trim()}
-                                className="shrink-0 h-[46px] px-4 rounded-2xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-all"
-                              >
-                                확인
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 비밀번호 */}
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <Input
-                            label="비밀번호"
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="8자 이상 입력해주세요"
-                            value={formData.password}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                password: e.target.value,
-                              })
-                            }
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setShowPassword((v) => !v)
-                            }
-                            className="absolute right-4 top-10 text-slate-400 hover:text-slate-600"
-                          >
-                            {showPassword ? (
-                              <EyeOff size={18} />
-                            ) : (
-                              <Eye size={18} />
-                            )}
-                          </button>
-                        </div>
-
-                        <div className="relative">
-                          <Input
-                            label="비밀번호 확인"
-                            type={
-                              showPasswordConfirm
-                                ? 'text'
-                                : 'password'
-                            }
-                            placeholder="다시 한번 입력해주세요"
-                            value={formData.passwordConfirm}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                passwordConfirm: e.target.value,
-                              })
-                            }
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setShowPasswordConfirm((v) => !v)
-                            }
-                            className="absolute right-4 top-10 text-slate-400 hover:text-slate-600"
-                          >
-                            {showPasswordConfirm ? (
-                              <EyeOff size={18} />
-                            ) : (
-                              <Eye size={18} />
-                            )}
-                          </button>
-                        </div>
-
-                        {formData.passwordConfirm.length > 0 && (
-                          <div className="flex items-center gap-1.5 px-1">
-                            {passwordsMatch &&
-                            formData.password.length >= 8 ? (
-                              <span className="text-[11px] text-green-600 font-bold flex items-center gap-1">
-                                <CheckCircle2 size={12} />
-                                비밀번호가 일치합니다.
-                              </span>
-                            ) : (
-                              <span className="text-[11px] text-red-500 font-bold">
-                                {!passwordsMatch
-                                  ? '비밀번호가 일치하지 않습니다.'
-                                  : '8자 이상 입력해주세요.'}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 약관 동의 */}
-                      <div className="space-y-2">
-                        {/* 전체 동의 */}
-                        <button
-                          type="button"
-                          onClick={toggleAllTerms}
-                          className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-blue-300 transition-colors"
-                        >
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              allTermsAgreed
-                                ? 'bg-blue-600 border-blue-600'
-                                : 'border-slate-300'
-                            }`}
-                          >
-                            {allTermsAgreed && (
-                              <Check
-                                size={12}
-                                className="text-white"
-                                strokeWidth={3}
-                              />
-                            )}
-                          </div>
-                          <span className="font-bold text-slate-900 text-sm">
-                            전체 동의
-                          </span>
-                        </button>
-
-                        <div className="border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100">
-                          {TERMS_ITEMS.map((item) => (
-                            <div
-                              key={item.key}
-                              className="flex items-center gap-3 px-4 py-3 bg-white"
-                            >
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  toggleTerm(item.key)
-                                }
-                                className="flex items-center gap-3 flex-1 text-left"
-                              >
-                                <div
-                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                    formData.terms[item.key]
-                                      ? 'bg-blue-600 border-blue-600'
-                                      : 'border-slate-300'
-                                  }`}
-                                >
-                                  {formData.terms[item.key] && (
-                                    <Check
-                                      size={10}
-                                      className="text-white"
-                                      strokeWidth={3}
-                                    />
-                                  )}
-                                </div>
-                                <span className="text-xs text-slate-700">
-                                  {item.label}{' '}
-                                  <span
-                                    className={`font-bold ${
-                                      item.required
-                                        ? 'text-blue-500'
-                                        : 'text-slate-400'
-                                    }`}
-                                  >
-                                    (
-                                    {item.required
-                                      ? '필수'
-                                      : '선택'}
-                                    )
-                                  </span>
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setOpenTermKey(item.key)
-                                }
-                                className="shrink-0 text-slate-400 hover:text-slate-600"
-                                aria-label="약관 내용 보기"
-                              >
-                                <ChevronRight size={16} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 2 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                      <div className="space-y-1">
-                        <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                          <UserCircle2 className="text-blue-600" size={20} />
-                          프로필 정보를 알려주세요
-                        </h2>
-                        <p className="text-sm text-slate-400">
-                          매칭 및 본인 확인을 위해
-                          사용됩니다.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-5">
-                        <Input
-                          label="실명"
-                          placeholder="홍길동"
-                          value={formData.realName}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              realName: e.target.value,
-                            })
-                          }
-                          helperText="송금 확인을 위해 정확히 입력해주세요."
-                        />
-
-                        <div className="space-y-2">
-                          <p className="block text-sm font-semibold text-white">
-                            성별
-                          </p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setFormData({
-                                  ...formData,
-                                  gender: 'MALE',
-                                })
-                              }
-                              className={`h-12 rounded-2xl border-2 font-bold transition-all ${
-                                formData.gender === 'MALE'
-                                  ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
-                                  : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
-                              }`}
-                            >
-                              남성
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setFormData({
-                                  ...formData,
-                                  gender: 'FEMALE',
-                                })
-                              }
-                              className={`h-12 rounded-2xl border-2 font-bold transition-all ${
-                                formData.gender === 'FEMALE'
-                                  ? 'border-pink-500 bg-pink-50 text-pink-700 shadow-sm'
-                                  : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
-                              }`}
-                            >
-                              여성
-                            </button>
-                          </div>
-                        </div>
-
-                        <CustomSelect
-                          label="MBTI"
-                          options={MBTI_OPTIONS}
-                          value={formData.mbti}
-                          onChange={(value) =>
-                            setFormData({
-                              ...formData,
-                              mbti: value,
-                            })
-                          }
-                          placeholder="MBTI를 선택해주세요"
-                        />
-
-                        <SearchableSelect
-                          label="학과"
-                          options={DEPARTMENT_OPTIONS}
-                          value={formData.department}
-                          onChange={(value) =>
-                            setFormData({
-                              ...formData,
-                              department: value,
-                            })
-                          }
-                          placeholder="학과를 선택해주세요"
-                          searchPlaceholder="학과명 검색..."
-                        />
-
-                        <Input
-                          label="인스타그램 ID"
-                          placeholder="아이디만 입력해주세요 (예: randsome_official)"
-                          value={formData.instagramId}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              instagramId: e.target.value,
-                            })
-                          }
-                        />
-
-                        {/* 환불 계좌 */}
-                        <div className="space-y-2">
-                          <p className="text-sm font-semibold text-slate-700">
-                            환불 계좌번호
-                          </p>
-                          <p className="text-xs text-slate-400 -mt-1">
-                            매칭 실패 시 환불을 위해
-                            입력해주세요.
-                          </p>
-                          <SearchableSelect
-                            label=""
-                            options={BANK_OPTIONS}
-                            value={formData.bankName}
-                            onChange={(value) =>
-                              setFormData({
-                                ...formData,
-                                bankName: value,
-                              })
-                            }
-                            placeholder="은행 선택"
-                            searchPlaceholder="은행명 검색..."
-                          />
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="계좌번호 (숫자만 입력)"
-                            value={formData.bankAccountNumber}
-                            onChange={(e) => {
-                              const digits = e.target.value.replace(
-                                /\D/g,
-                                ''
-                              );
-                              setFormData(prev => ({
-                                ...prev,
-                                bankAccountNumber: digits,
-                              }));
-                            }}
-                            className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          />
-                        </div>
-
-
-
-                  {step === 3 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                      <div className="space-y-1">
-                        <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                          <Sparkles className="text-blue-600" size={20} />
-                          자신을 표현해주세요
-                        </h2>
-                        <p className="text-sm text-slate-400">
-                          매칭 성공률을 높이는 핵심
-                          정보입니다!
-                        </p>
-                      </div>
-
-                      <div className="space-y-5">
-                        <Textarea
-                          label="자기 소개"
-                          placeholder="자신을 표현할 수 있는 멋진 소개글을 작성해주세요! (취미, 관심사, 성격 등)"
-                          value={formData.intro}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              intro: e.target.value,
-                            })
-                          }
-                          maxLength={500}
-                          className="h-32"
-                        />
-
-                        <Textarea
-                          label="이상형"
-                          placeholder="어떤 사람을 찾고 계신가요? (원하는 성격, 스타일 등 자유롭게!)"
-                          value={formData.idealType}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              idealType: e.target.value,
-                            })
-                          }
-                          maxLength={500}
-                          className="h-32"
-                        />
-
-                        {/* 태그 선택: 성격/얼굴형/연애 스타일 (이상형 매칭에 사용됩니다) */}
-                        <div className="mt-4">
-                          <p className="text-sm font-semibold text-slate-700 mb-2">프로필 태그</p>
-                          <p className="text-xs text-slate-500 mb-3">선택한 태그는 이상형 기반 매칭에 사용됩니다.</p>
-
-                          <div className="grid grid-cols-1 gap-4">
-                            <div>
-                              <p className="text-sm font-semibold text-slate-600 mb-2">성격 태그</p>
-                              <div className="flex flex-wrap gap-2">
-                                {PERSONALITY_TAGS.map((t) => (
-                                  <button
-                                    key={t.value}
-                                    type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, personalityTag: t.value }))}
-                                    className={`px-3 py-1 rounded-full text-sm transition-all border ${
-                                      formData.personalityTag === t.value
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-blue-50'
-                                    }`}
-                                  >
-                                    {t.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <p className="text-sm font-semibold text-slate-600 mb-2">얼굴형 태그</p>
-                              <div className="flex flex-wrap gap-2">
-                                {FACE_TYPE_TAGS.map((t) => (
-                                  <button
-                                    key={t.value}
-                                    type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, faceTypeTag: t.value }))}
-                                    className={`px-3 py-1 rounded-full text-sm transition-all border ${
-                                      formData.faceTypeTag === t.value
-                                        ? 'bg-pink-500 text-white border-pink-500'
-                                        : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-pink-50'
-                                    }`}
-                                  >
-                                    {t.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <p className="text-sm font-semibold text-slate-600 mb-2">연애 스타일 태그</p>
-                              <div className="flex flex-wrap gap-2">
-                                {DATING_STYLE_TAGS.map((t) => (
-                                  <button
-                                    key={t.value}
-                                    type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, datingStyleTag: t.value }))}
-                                    className={`px-3 py-1 rounded-full text-sm transition-all border ${
-                                      formData.datingStyleTag === t.value
-                                        ? 'bg-rose-600 text-white border-rose-600'
-                                        : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-rose-50'
-                                    }`}
-                                  >
-                                    {t.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                          <p className="text-xs text-blue-700 leading-relaxed font-medium">
-                            💡{' '}
-                            <strong>작성 팁:</strong>{' '}
-                            상세하게 적을수록 나와 잘
-                            맞는 사람을 만날 확률이
-                            높아집니다!
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 버튼 영역 */}
-                <div className="mt-8 pt-6 border-t border-slate-100 flex gap-3">
-                  {step > 1 && (
-                    <button
-                      onClick={prevStep}
-                      className="flex-1 h-12 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
-                    >
-                      이전
-                    </button>
-                  )}
-                  <Button
-                    fullWidth={step === 1}
-                    size="lg"
-                    className={`${step === 1 ? 'w-full' : 'flex-[2]'} h-12 text-sm font-bold`}
-                    onClick={
-                      step === 3 ? handleSubmit : nextStep
-                    }
-                    disabled={
-                      isSubmitting ||
-                      (step === 1 && !isStep1Valid) ||
-                      (step === 2 && !isStep2Valid) ||
-                      (step === 3 && !isStep3Valid)
-                    }
-                  >
-                    {step === 3
-                      ? isSubmitting
-                        ? '가입 중...'
-                        : '가입 완료하기'
-                      : '다음 단계'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 약관 상세 모달 (웹) */}
-        {openTerm && (
-          <div className="fixed inset-0 z-50 flex justify-center items-center px-5">
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setOpenTermKey(null)}
-            />
-            <div className="relative w-full bg-white flex flex-col max-h-[85vh] max-w-[540px] rounded-3xl">
-              <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">
-                    {openTerm.label}
-                  </h3>
-                  <span
-                    className={`text-xs font-bold ${
-                      openTerm.required
-                        ? 'text-blue-500'
-                        : 'text-slate-400'
-                    }`}
-                  >
-                    {openTerm.required ? '필수 동의' : '선택 동의'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setOpenTermKey(null)}
-                  className="p-1 text-slate-400 hover:text-slate-700"
-                  aria-label="닫기"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="overflow-y-auto px-6 py-4 flex-1">
-                {openTerm.content}
-              </div>
-              <div className="px-6 pb-8 pt-4 border-t border-slate-100 shrink-0">
-                <button
-                  onClick={() => {
-                    toggleTerm(openTerm.key);
-                    setOpenTermKey(null);
-                  }}
-                  className={`w-full h-12 rounded-2xl font-semibold text-sm transition-colors ${
-                    formData.terms[openTerm.key]
-                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {formData.terms[openTerm.key]
-                    ? '동의 취소'
-                    : '동의하기'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // 모바일 환경에서의 레이아웃
   return (
     <MobileLayout>
-      {isPWA && (
-        <header className="sticky top-0 z-50 bg-white border-b border-slate-100 px-4 h-14 flex items-center">
-          <button
-            onClick={prevStep}
-            className="p-2 -ml-2 text-slate-600 hover:bg-slate-50 rounded-full"
-            aria-label="뒤로 가기"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <h1 className="text-lg font-bold text-slate-900 ml-2">회원가입</h1>
-          <div className="ml-auto text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-            Step {step} / 3
-          </div>
-        </header>
-      )}
+      <header className="sticky top-0 z-50 bg-white border-b border-slate-100 px-4 h-14 flex items-center">
+        <button
+          onClick={prevStep}
+          className="p-2 -ml-2 text-slate-600 hover:bg-slate-50 rounded-full"
+          aria-label="뒤로 가기"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <h1 className="text-lg font-bold text-slate-900 ml-2">회원가입</h1>
+        <div className="ml-auto text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+          Step {step} / 3
+        </div>
+      </header>
 
-      <div className={`flex-1 overflow-y-auto p-6 ${isPWA ? 'pb-32' : 'pb-12'}`}>
+      <div className={`flex-1 overflow-y-auto p-6 ${isPWA ? 'pb-32' : 'max-w-lg mx-auto w-full pb-12'}`}>
         {renderStepIndicator()}
 
         {step === 1 && (
@@ -1268,12 +433,12 @@ const SignupPage: React.FC = () => {
                 <ClipboardCheck className="text-blue-600" size={20} />
                 계정 정보를 입력해주세요
               </h2>
-              <p className="text-sm text-slate-600">상명대 학생 인증이 필요합니다.</p>
+              <p className="text-sm text-slate-400">상명대 학생 인증이 필요합니다.</p>
             </div>
 
             {/* 학교 이메일 인증 */}
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-white">학교 이메일</label>
+              <label className="block text-sm font-semibold text-slate-700">학교 이메일</label>
               <div className="flex items-center gap-2">
                 <div className={`flex flex-1 rounded-2xl border bg-white overflow-hidden transition-all ${
                   emailVerified
@@ -1469,7 +634,7 @@ const SignupPage: React.FC = () => {
               />
 
               <div className="space-y-2">
-                <p className="block text-sm font-semibold text-white">성별</p>
+                <p className="block text-sm font-semibold text-slate-700">성별</p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -1496,21 +661,12 @@ const SignupPage: React.FC = () => {
                 </div>
               </div>
 
-              <CustomSelect
+              <Select
                 label="MBTI"
                 options={MBTI_OPTIONS}
                 value={formData.mbti}
-                onChange={(value) => setFormData({ ...formData, mbti: value })}
+                onChange={(e) => setFormData({ ...formData, mbti: e.target.value })}
                 placeholder="MBTI를 선택해주세요"
-              />
-
-              <SearchableSelect
-                label="학과"
-                options={DEPARTMENT_OPTIONS}
-                value={formData.department}
-                onChange={(value) => setFormData({ ...formData, department: value })}
-                placeholder="학과를 선택해주세요"
-                searchPlaceholder="학과명 검색..."
               />
 
               <Input
@@ -1524,13 +680,12 @@ const SignupPage: React.FC = () => {
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-slate-700">환불 계좌번호</p>
                 <p className="text-xs text-slate-400 -mt-1">매칭 실패 시 환불을 위해 입력해주세요.</p>
-                <SearchableSelect
+                <Select
                   label=""
                   options={BANK_OPTIONS}
                   value={formData.bankName}
-                  onChange={(value) => setFormData({ ...formData, bankName: value })}
+                  onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                   placeholder="은행 선택"
-                  searchPlaceholder="은행명 검색..."
                 />
                 <input
                   type="text"
@@ -1587,8 +742,13 @@ const SignupPage: React.FC = () => {
         )}
       </div>
 
-      {isPWA && (
-        <div className="fixed bottom-0 w-full max-w-[430px] p-5 bg-white border-t border-slate-100 z-50">
+      <div
+        className={
+          isPWA
+            ? 'fixed bottom-0 w-full max-w-[430px] p-5 bg-white border-t border-slate-100 z-50'
+            : 'mt-8 pb-8'
+        }
+      >
         <div className="flex gap-3">
           {step > 1 && (
             <button
@@ -1613,14 +773,19 @@ const SignupPage: React.FC = () => {
             {step === 3 ? (isSubmitting ? '가입 중...' : '가입 완료하기') : '다음 단계'}
           </Button>
         </div>
-        </div>
-      )}
+      </div>
 
-      {/* 약관 상세 모달 - 모바일 */}
-      {isPWA && openTerm && (
-        <div className="fixed inset-0 z-50 flex justify-center items-end">
+      {/* 약관 상세 모달 */}
+      {openTerm && (
+        <div
+          className={`fixed inset-0 z-50 flex justify-center ${isPWA ? 'items-end' : 'items-center px-5'}`}
+        >
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpenTermKey(null)} />
-          <div className="relative w-full bg-white flex flex-col max-h-[85vh] max-w-[430px] rounded-t-3xl">
+          <div
+            className={`relative w-full bg-white flex flex-col max-h-[85vh] ${
+              isPWA ? 'max-w-[430px] rounded-t-3xl' : 'max-w-[540px] rounded-3xl'
+            }`}
+          >
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
               <div>
                 <h3 className="font-bold text-slate-900 text-base">{openTerm.label}</h3>
