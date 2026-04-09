@@ -111,6 +111,7 @@ export interface MemberProfile {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
+  idealTags?: string[];
   bankName?: string;
   accountNumber?: string;
   candidateRegistrationStatus: CandidateRegistrationStatus;
@@ -139,6 +140,7 @@ export interface MemberCreateRequest {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
+  idealTags?: string[];
   agreedToTerms: boolean;
   bankName: string;
   accountNumber: string;

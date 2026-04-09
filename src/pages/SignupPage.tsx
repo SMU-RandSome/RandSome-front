@@ -216,6 +216,7 @@ const SignupPage: React.FC = () => {
     department: '',
     intro: '',
     idealType: '',
+    idealTags: [] as string[],
     emailUsername: '',
     instagramId: '',
     bankName: '',
@@ -238,6 +239,7 @@ const SignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [openTermKey, setOpenTermKey] = useState<TermsKey | null>(null);
+  const [tagInput, setTagInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSendEmail = async (): Promise<void> => {
@@ -306,6 +308,35 @@ const SignupPage: React.FC = () => {
     }));
   };
 
+  // 이상형 태그 관련 helpers
+  const addTag = (): void => {
+    const t = tagInput.trim();
+    if (!t) return;
+    if (formData.idealTags && formData.idealTags.includes(t)) {
+      setTagInput('');
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      idealTags: [...(prev.idealTags || []), t],
+    }));
+    setTagInput('');
+  };
+
+  const removeTag = (tag: string): void => {
+    setFormData((prev) => ({
+      ...prev,
+      idealTags: (prev.idealTags || []).filter((t) => t !== tag),
+    }));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
+    }
+  };
+
   const passwordsMatch = formData.password === formData.passwordConfirm;
 
   const isStep1Valid =
@@ -325,7 +356,7 @@ const SignupPage: React.FC = () => {
 
   const isStep3Valid =
     !!formData.intro &&
-    !!formData.idealType;
+    (!!formData.idealType || (formData.idealTags && formData.idealTags.length > 0));
 
   const nextStep = (): void => {
     if (step === 1 && !isStep1Valid) {
@@ -1020,6 +1051,43 @@ const SignupPage: React.FC = () => {
                           maxLength={500}
                           className="h-32"
                         />
+
+                        {/* 이상형 태그 */}
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-slate-700">이상형 태그</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="태그 입력 후 Enter 또는 추가 버튼"
+                              value={tagInput}
+                              onChange={(e) => setTagInput(e.target.value)}
+                              onKeyDown={handleTagKeyDown}
+                              className="flex-1 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            />
+                            <button
+                              type="button"
+                              onClick={addTag}
+                              className="shrink-0 h-10 px-4 rounded-2xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              추가
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {(formData.idealTags || []).map((tag) => (
+                              <span key={tag} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-sm text-slate-700">
+                                <span>#{tag}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeTag(tag)}
+                                  className="text-xs text-slate-400 hover:text-red-500"
+                                  aria-label={`Remove ${tag}`}
+                                >
+                                  ✕
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
 
                         <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
                           <p className="text-xs text-blue-700 leading-relaxed font-medium">
