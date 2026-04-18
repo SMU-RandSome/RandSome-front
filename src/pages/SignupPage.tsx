@@ -83,7 +83,7 @@ const DATING_STYLE_TAGS = [
 
 type SignupStep = 1 | 2 | 3;
 
-type TermsKey = 'service' | 'privacy' | 'refund' | 'disclaimer' | 'profilePublic';
+type TermsKey = 'service' | 'privacy' | 'disclaimer' | 'profilePublic';
 
 interface TermsItem {
   key: TermsKey;
@@ -135,36 +135,6 @@ const TERMS_ITEMS: TermsItem[] = [
           <p>서비스 종료 후 일정 기간 내 파기</p>
         </div>
         <p className="text-xs text-slate-400">※ 개인정보 수집 및 이용에 동의하지 않을 권리가 있으며, 동의하지 않을 경우 서비스 이용이 제한될 수 있습니다.</p>
-      </div>
-    ),
-  },
-  {
-    key: 'refund',
-    label: '환불 처리를 위한 정보 제공 동의',
-    required: true,
-    content: (
-      <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
-        <p>서비스 운영 중 불가피한 사유로 환불이 필요한 경우를 대비하여 다음 정보를 수집할 수 있습니다.</p>
-        <div>
-          <p className="font-semibold text-slate-800 mb-1">수집 항목</p>
-          <p>실명, 계좌번호</p>
-        </div>
-        <div>
-          <p className="font-semibold text-slate-800 mb-1">환불이 가능한 경우</p>
-          <ul className="space-y-1 list-none">
-            <li>• 서비스 장애로 인해 매칭이 정상적으로 진행되지 않은 경우</li>
-            <li>• 운영자의 판단에 따라 서비스 제공이 불가능한 경우</li>
-          </ul>
-        </div>
-        <div>
-          <p className="font-semibold text-slate-800 mb-1">환불이 불가능한 경우</p>
-          <ul className="space-y-1 list-none">
-            <li>• 단순 변심</li>
-            <li>• 매칭 결과에 대한 개인적 불만</li>
-            <li>• 사용자의 정보 입력 오류</li>
-          </ul>
-        </div>
-        <p className="text-xs text-slate-400">해당 정보는 환불 처리 목적에 한하여 사용되며 관리자에게만 노출됩니다. 환불 처리 완료 또는 서비스 종료 시 즉시 파기됩니다.</p>
       </div>
     ),
   },
@@ -234,7 +204,6 @@ const SignupPage: React.FC = () => {
     terms: {
       service: false,
       privacy: false,
-      refund: false,
       disclaimer: false,
       profilePublic: false,
     },
@@ -288,7 +257,6 @@ const SignupPage: React.FC = () => {
   const requiredTermsAgreed =
     formData.terms.service &&
     formData.terms.privacy &&
-    formData.terms.refund &&
     formData.terms.disclaimer &&
     formData.terms.profilePublic;
 
@@ -301,7 +269,6 @@ const SignupPage: React.FC = () => {
       terms: {
         service: next,
         privacy: next,
-        refund: next,
         disclaimer: next,
         profilePublic: next,
       },
@@ -653,7 +620,7 @@ const SignupPage: React.FC = () => {
                 placeholder="홍길동"
                 value={formData.realName}
                 onChange={(e) => setFormData({ ...formData, realName: e.target.value })}
-                helperText="송금 확인을 위해 정확히 입력해주세요."
+                helperText="회원 정보 확인용으로 사용됩니다."
               />
 
               <div className="space-y-2">
