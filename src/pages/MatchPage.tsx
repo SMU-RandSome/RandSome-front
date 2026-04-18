@@ -3,24 +3,19 @@ import { useSearchParams } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/Button';
-import { PaymentModal } from '@/components/ui/PaymentModal';
 import { useToast } from '@/components/ui/Toast';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useAuth } from '@/store/authStore';
 import { registerCandidate } from '@/features/candidate/api';
 import { applyMatching } from '@/features/matching/api';
 import { getApiErrorMessage } from '@/lib/axios';
-import { Heart, UserPlus, ArrowRight, Check, Zap, Sparkles } from 'lucide-react';
+import type { PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
+import { Heart, UserPlus, ArrowRight, Check, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type MatchView = 'hub' | 'register' | 'find';
-type MatchStep = 'select-type' | 'select-count';
+type MatchStep = 'select-type' | 'select-count' | 'select-tags';
 type MatchType = 'random' | 'ideal';
-
-const PRICE_PER_PERSON: Record<MatchType, number> = {
-  random: 1000,
-  ideal: 1500,
-};
 
 const MatchPage: React.FC = () => {
   const { toast } = useToast();
@@ -39,36 +34,45 @@ const MatchPage: React.FC = () => {
   const [step, setStep] = useState<MatchStep>('select-type');
   const [matchType, setMatchType] = useState<MatchType | null>(null);
   const [count, setCount] = useState(1);
-  const [showPayment, setShowPayment] = useState(false);
-  const [showRegisterPayment, setShowRegisterPayment] = useState(false);
+  const [personalityTag, setPersonalityTag] = useState<PersonalityTag | ''>('');
+  const [faceTypeTag, setFaceTypeTag] = useState<FaceTypeTag | ''>('');
+  const [datingStyleTag, setDatingStyleTag] = useState<DatingStyleTag | ''>('');
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmMode, setConfirmMode] = useState<'register' | 'match' | null>(null);
 
   const reset = (): void => {
     setView('hub');
     setStep('select-type');
     setMatchType(null);
     setCount(1);
+    setPersonalityTag('');
+    setFaceTypeTag('');
+    setDatingStyleTag('');
   };
 
-  const handleRegisterConfirm = async (): Promise<void> => {
+  const handleConfirm = async (): Promise<void> => {
     try {
-      await registerCandidate();
-      toast('후보 등록 신청이 완료되었습니다! 관리자 승인을 기다려주세요.', 'success');
-      setShowRegisterPayment(false);
-      reset();
-    } catch (err) {
-      toast(getApiErrorMessage(err), 'error');
-    }
-  };
-
-  const handlePaymentConfirm = async (): Promise<void> => {
-    if (!matchType) return;
-    try {
-      await applyMatching({
-        matchingType: matchType === 'random' ? 'RANDOM' : 'IDEAL',
-        applicationCount: count,
-      });
-      toast('매칭 신청이 완료되었습니다! 설레는 만남을 기다려주세요.', 'success');
-      setShowPayment(false);
+      if (confirmMode === 'register') {
+        await registerCandidate();
+        toast('후보 등록 신청이 완료되었습니다! 관리자 승인을 기다려주세요.', 'success');
+      } else if (confirmMode === 'match' && matchType) {
+        await applyMatching({
+          matchingType: matchType === 'random' ? 'RANDOM' : 'IDEAL',
+          applicationCount: count,
+          ...(matchType === 'ideal' && personalityTag && {
+            preferredPersonalityTag: personalityTag as PersonalityTag,
+          }),
+          ...(matchType === 'ideal' && faceTypeTag && {
+            preferredFaceTypeTag: faceTypeTag as FaceTypeTag,
+          }),
+          ...(matchType === 'ideal' && datingStyleTag && {
+            preferredDatingStyleTag: datingStyleTag as DatingStyleTag,
+          }),
+        });
+        toast('매칭 신청이 완료되었습니다! 설레는 만남을 기다려주세요.', 'success');
+      }
+      setShowConfirm(false);
+      setConfirmMode(null);
       reset();
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
@@ -187,15 +191,6 @@ const MatchPage: React.FC = () => {
         </div>
 
         <div className="bg-slate-50 rounded-3xl p-6 mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-xl">
-              📢
-            </div>
-            <div>
-              <p className="font-bold text-slate-900">등록비 2,000원</p>
-              <p className="text-xs text-slate-500">축제 기간 동안 유지됩니다</p>
-            </div>
-          </div>
           <ul className="space-y-3">
             {[
               '내 프로필이 전체 매칭 풀에 등록됩니다.',
@@ -215,10 +210,13 @@ const MatchPage: React.FC = () => {
         <Button
           fullWidth
           size="lg"
-          onClick={() => setShowRegisterPayment(true)}
+          onClick={() => {
+            setConfirmMode('register');
+            setShowConfirm(true);
+          }}
           className="rounded-2xl h-14 text-lg shadow-lg shadow-blue-500/20"
         >
-          2,000원 결제하고 등록하기
+          등록 신청하기
         </Button>
         <Button
           fullWidth
@@ -229,13 +227,6 @@ const MatchPage: React.FC = () => {
           다음에 할게요
         </Button>
       </div>
-
-      <PaymentModal
-        isOpen={showRegisterPayment}
-        onClose={() => setShowRegisterPayment(false)}
-        onConfirm={handleRegisterConfirm}
-        amount={2000}
-      />
     </div>
   );
 
@@ -286,13 +277,6 @@ const MatchPage: React.FC = () => {
                     {type === 'random' ? '운명에 맡겨보세요!' : '취향저격 상대를 찾아드려요'}
                   </p>
                 </div>
-                <div className="text-right">
-                  <span
-                    className={`block font-bold ${type === 'random' ? 'text-blue-600' : 'text-pink-600'}`}
-                  >
-                    {PRICE_PER_PERSON[type].toLocaleString()}원/명
-                  </span>
-                </div>
               </div>
             </button>
           ))}
@@ -306,7 +290,7 @@ const MatchPage: React.FC = () => {
         <Button
           className="flex-[2] h-14 rounded-2xl text-lg shadow-lg shadow-slate-200"
           disabled={!matchType}
-          onClick={() => setStep('select-count')}
+          onClick={() => setStep(matchType === 'ideal' ? 'select-tags' : 'select-count')}
         >
           다음으로
         </Button>
@@ -316,15 +300,14 @@ const MatchPage: React.FC = () => {
 
   const renderFindStep2 = (): React.ReactNode => {
     if (!matchType) return null;
-    const pricePerPerson = PRICE_PER_PERSON[matchType];
-    const totalPrice = pricePerPerson * count;
+    const stepNum = matchType === 'ideal' ? 'Step 3' : 'Step 2';
 
     return (
       <div className="p-5 h-full flex flex-col bg-white">
         <div className="flex-1">
           <div className="mb-8">
             <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold mb-2">
-              Step 2
+              {stepNum}
             </span>
             <h2 className="text-2xl font-bold text-slate-900 leading-tight">
               몇 명을
@@ -354,19 +337,149 @@ const MatchPage: React.FC = () => {
                 +
               </button>
             </div>
-
-            <div className="w-full h-px bg-slate-200 mb-6" />
-
-            <div className="flex justify-between items-center w-full px-4">
-              <span className="text-slate-500 font-medium">총 결제 금액</span>
-              <span className="text-2xl font-bold text-blue-600">
-                {totalPrice.toLocaleString()}원
-              </span>
-            </div>
           </div>
         </div>
 
         <div className="flex gap-3 pb-6">
+          <Button
+            variant="ghost"
+            className="flex-1 h-14 rounded-2xl text-slate-500"
+            onClick={() => setStep(matchType === 'ideal' ? 'select-tags' : 'select-type')}
+          >
+            이전
+          </Button>
+          <Button
+            className="flex-[2] h-14 rounded-2xl text-lg shadow-lg shadow-blue-500/20 bg-blue-500 hover:bg-blue-600"
+            onClick={() => {
+              setConfirmMode('match');
+              setShowConfirm(true);
+            }}
+          >
+            신청하기
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFindStep3 = (): React.ReactNode => {
+    if (!matchType || matchType !== 'ideal') return null;
+
+    const PERSONALITY_TAGS = [
+      { value: 'ACTIVE' as const, label: '활발한' },
+      { value: 'QUIET' as const, label: '조용한' },
+      { value: 'AFFECTIONATE' as const, label: '다정한' },
+      { value: 'INDEPENDENT' as const, label: '독립적인' },
+      { value: 'FUNNY' as const, label: '유머있는' },
+      { value: 'SERIOUS' as const, label: '진지한' },
+      { value: 'OPTIMISTIC' as const, label: '긍정적인' },
+      { value: 'CAREFUL' as const, label: '신중한' },
+    ];
+
+    const FACE_TYPE_TAGS = [
+      { value: 'PUPPY' as const, label: '강아지상' },
+      { value: 'CAT' as const, label: '고양이상' },
+      { value: 'BEAR' as const, label: '곰상' },
+      { value: 'FOX' as const, label: '여우상' },
+      { value: 'RABBIT' as const, label: '토끼상' },
+      { value: 'PURE' as const, label: '청순한' },
+      { value: 'CHIC' as const, label: '시크한' },
+      { value: 'WARM' as const, label: '훈훈한' },
+    ];
+
+    const DATING_STYLE_TAGS = [
+      { value: 'FREQUENT_CONTACT' as const, label: '자주 연락' },
+      { value: 'MODERATE_CONTACT' as const, label: '적당한 연락' },
+      { value: 'PLANNED_DATE' as const, label: '계획형 데이트' },
+      { value: 'SPONTANEOUS_DATE' as const, label: '즉흥형 데이트' },
+      { value: 'SKINSHIP_LOVER' as const, label: '스킨십 많은' },
+      { value: 'RESPECTFUL_SPACE' as const, label: '각자 시간 존중' },
+      { value: 'EXPRESSIVE' as const, label: '감정 표현 잘함' },
+      { value: 'GROW_TOGETHER' as const, label: '함께 성장' },
+    ];
+
+    return (
+      <div className="p-5 h-full flex flex-col bg-white overflow-y-auto">
+        <div className="flex-1">
+          <div className="mb-8">
+            <span className="inline-block px-3 py-1 rounded-full bg-pink-50 text-pink-600 text-xs font-bold mb-2">
+              Step 2
+            </span>
+            <h2 className="text-2xl font-bold text-slate-900 leading-tight">
+              선호 스타일을
+              <br />
+              <span className="text-pink-500">알려주세요!</span>
+            </h2>
+            <p className="text-sm text-slate-500 mt-2">이상형 매칭에 활용됩니다 (선택사항)</p>
+          </div>
+
+          <div className="space-y-6">
+            {/* 성격 */}
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">성격</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PERSONALITY_TAGS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPersonalityTag(personalityTag === value ? '' : value)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                      personalityTag === value
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-blue-50 text-blue-500 hover:bg-blue-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 외모 */}
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">외모 스타일</p>
+              <div className="flex flex-wrap gap-1.5">
+                {FACE_TYPE_TAGS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setFaceTypeTag(faceTypeTag === value ? '' : value)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                      faceTypeTag === value
+                        ? 'bg-violet-500 text-white'
+                        : 'bg-violet-50 text-violet-500 hover:bg-violet-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 연애 스타일 */}
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">연애 스타일</p>
+              <div className="flex flex-wrap gap-1.5">
+                {DATING_STYLE_TAGS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setDatingStyleTag(datingStyleTag === value ? '' : value)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                      datingStyleTag === value
+                        ? 'bg-pink-500 text-white'
+                        : 'bg-pink-50 text-pink-500 hover:bg-pink-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 pb-6 pt-4">
           <Button
             variant="ghost"
             className="flex-1 h-14 rounded-2xl text-slate-500"
@@ -375,20 +488,12 @@ const MatchPage: React.FC = () => {
             이전
           </Button>
           <Button
-            className="flex-[2] h-14 rounded-2xl text-lg shadow-lg shadow-blue-500/20 bg-blue-500 hover:bg-blue-600"
-            onClick={() => setShowPayment(true)}
+            className="flex-[2] h-14 rounded-2xl text-lg shadow-lg shadow-pink-500/20 bg-pink-500 hover:bg-pink-600"
+            onClick={() => setStep('select-count')}
           >
-            <Zap size={18} className="mr-2 fill-white" />
-            결제하기
+            다음으로
           </Button>
         </div>
-
-        <PaymentModal
-          isOpen={showPayment}
-          onClose={() => setShowPayment(false)}
-          onConfirm={handlePaymentConfirm}
-          amount={totalPrice}
-        />
       </div>
     );
   };
@@ -416,12 +521,58 @@ const MatchPage: React.FC = () => {
             {view === 'hub' && renderHub()}
             {view === 'register' && renderRegister()}
             {view === 'find' && step === 'select-type' && renderFindStep1()}
+            {view === 'find' && step === 'select-tags' && renderFindStep3()}
             {view === 'find' && step === 'select-count' && renderFindStep2()}
           </motion.div>
         </AnimatePresence>
       </div>
 
       <BottomNav />
+
+      {/* 확인 모달 */}
+      <AnimatePresence>
+        {showConfirm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black z-[60]"
+              onClick={() => setShowConfirm(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-3xl w-[calc(100%-2rem)] max-w-[380px] p-6"
+            >
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                {confirmMode === 'register' ? '후보 등록 신청' : '매칭 신청'}
+              </h3>
+              <p className="text-sm text-slate-600 mb-6">
+                {confirmMode === 'register'
+                  ? '후보로 등록하시겠어요?'
+                  : `${count}명의 ${matchType === 'random' ? '무작위' : '이상형'} 매칭을 신청하시겠어요?`}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-bold shadow-lg hover:shadow-xl transition-all"
+                >
+                  확인
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </MobileLayout>
   );
 };
