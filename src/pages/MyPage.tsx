@@ -382,27 +382,9 @@ const MyPage: React.FC = () => {
 
           <div className="h-px bg-slate-100" />
 
-          {/* 3. 환불 처리 정보 */}
+          {/* 3. 운영 및 면책 */}
           <section>
-            <h3 className="font-bold text-slate-900 mb-2">3. 환불 처리를 위한 정보 제공 동의 (필수)</h3>
-            <p className="text-slate-500 text-xs mb-2">서비스 운영 중 불가피한 사유로 환불이 필요한 경우를 대비해 실명 및 계좌번호를 수집할 수 있습니다. 해당 정보는 환불 처리 목적에 한하여 사용되며 관리자에게만 노출됩니다.</p>
-            <div className="space-y-2">
-              <div>
-                <p className="font-semibold text-slate-800 text-xs mb-0.5">환불 가능한 경우</p>
-                <p className="text-slate-500 text-xs">서비스 장애로 매칭이 정상 진행되지 않은 경우 / 운영자 판단에 따라 서비스 제공이 불가능한 경우</p>
-              </div>
-              <div>
-                <p className="font-semibold text-slate-800 text-xs mb-0.5">환불 불가능한 경우</p>
-                <p className="text-slate-500 text-xs">단순 변심 / 매칭 결과에 대한 개인적 불만 / 사용자의 정보 입력 오류</p>
-              </div>
-            </div>
-          </section>
-
-          <div className="h-px bg-slate-100" />
-
-          {/* 4. 운영 및 면책 */}
-          <section>
-            <h3 className="font-bold text-slate-900 mb-2">4. 운영 및 면책 동의 (필수)</h3>
+            <h3 className="font-bold text-slate-900 mb-2">3. 운영 및 면책 동의 (필수)</h3>
             <ul className="space-y-1.5">
               {[
                 '매칭은 랜덤 알고리즘 또는 추천 방식으로 진행됩니다.',
@@ -420,9 +402,9 @@ const MyPage: React.FC = () => {
 
           <div className="h-px bg-slate-100" />
 
-          {/* 5. 프로필 정보 공개 */}
+          {/* 4. 프로필 정보 공개 */}
           <section>
-            <h3 className="font-bold text-slate-900 mb-2">5. 프로필 정보 공개 동의 (필수)</h3>
+            <h3 className="font-bold text-slate-900 mb-2">4. 프로필 정보 공개 동의 (필수)</h3>
             <p className="text-slate-500 text-xs mb-2">매칭 서비스 특성상 다음 정보가 매칭된 상대방에게 공개될 수 있습니다.</p>
             <p className="text-slate-500 text-xs mb-2">닉네임 / 인스타그램 ID / 자기소개 / MBTI</p>
             <p className="text-xs text-slate-400">해당 정보는 매칭 결과가 생성된 사용자에게만 공개됩니다.</p>
