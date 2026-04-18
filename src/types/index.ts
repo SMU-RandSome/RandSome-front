@@ -4,6 +4,14 @@ export type Gender = 'MALE' | 'FEMALE';
 
 export type UserRole = 'ROLE_MEMBER' | 'ROLE_CANDIDATE' | 'ROLE_ADMIN';
 
+// --- 태그 (v2) ---
+
+export type PersonalityTag = 'ACTIVE' | 'QUIET' | 'AFFECTIONATE' | 'INDEPENDENT' | 'FUNNY' | 'SERIOUS' | 'OPTIMISTIC' | 'CAREFUL';
+
+export type FaceTypeTag = 'PUPPY' | 'CAT' | 'BEAR' | 'FOX' | 'RABBIT' | 'PURE' | 'CHIC' | 'WARM';
+
+export type DatingStyleTag = 'FREQUENT_CONTACT' | 'MODERATE_CONTACT' | 'PLANNED_DATE' | 'SPONTANEOUS_DATE' | 'SKINSHIP_LOVER' | 'RESPECTFUL_SPACE' | 'EXPRESSIVE' | 'GROW_TOGETHER';
+
 export type Mbti =
   | 'ISTJ' | 'ISFJ' | 'INFJ' | 'INTJ'
   | 'ISTP' | 'ISFP' | 'INFP' | 'INTP'
@@ -111,11 +119,9 @@ export interface MemberProfile {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  personalityTag?: string;
-  faceTypeTag?: string;
-  datingStyleTag?: string;
-  bankName?: string;
-  accountNumber?: string;
+  personalityTag: PersonalityTag;
+  faceTypeTag: FaceTypeTag;
+  datingStyleTag: DatingStyleTag;
   candidateRegistrationStatus: CandidateRegistrationStatus;
   exposureCount: number;
 }
@@ -127,11 +133,9 @@ export interface MemberProfileUpdateRequest {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  personalityTag: string;
-  faceTypeTag: string;
-  datingStyleTag: string;
-  bankName?: string;
-  accountNumber?: string;
+  personalityTag: PersonalityTag;
+  faceTypeTag: FaceTypeTag;
+  datingStyleTag: DatingStyleTag;
 }
 
 export interface MemberCreateRequest {
@@ -145,12 +149,10 @@ export interface MemberCreateRequest {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  personalityTag: string;
-  faceTypeTag: string;
-  datingStyleTag: string;
+  personalityTag: PersonalityTag;
+  faceTypeTag: FaceTypeTag;
+  datingStyleTag: DatingStyleTag;
   agreedToTerms: boolean;
-  bankName: string;
-  accountNumber: string;
 }
 
 // authStore에서 사용하는 로그인된 사용자 타입
@@ -200,22 +202,30 @@ export interface FeedItem {
 
 export type MatchingType = 'RANDOM' | 'IDEAL';
 
-export type MatchingApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN';
+export type MatchingApplicationStatus = 'PENDING' | 'SUCCESS' | 'CANCELLED';
 
 export interface MatchingApplicationRequest {
   matchingType: MatchingType;
   applicationCount: number;
+  preferredPersonalityTag?: PersonalityTag;
+  preferredFaceTypeTag?: FaceTypeTag;
+  preferredDatingStyleTag?: DatingStyleTag;
+}
+
+export interface MatchingApplicationResponse {
+  matchingApplicationId: number;
+  requestedCount: number;
+  matchedCount: number;
+  refundedTickets: number;
+  isPartialMatch: boolean;
 }
 
 export interface MatchingHistoryItem {
   id: number;
-  matchingTypeLabel: string;
+  matchingType: MatchingType;
   applicationStatus: MatchingApplicationStatus;
   appliedAt: string;
   applicationCount: number;
-  approvedAt?: string;
-  rejectedAt?: string;
-  rejectedReason?: string;
 }
 
 export interface MatchingResultDetailItem {
@@ -226,25 +236,127 @@ export interface MatchingResultDetailItem {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
+  personalityTag: PersonalityTag;
+  faceTypeTag: FaceTypeTag;
+  datingStyleTag: DatingStyleTag;
 }
 
-// --- 결제 ---
+// --- 티켓 (v2) ---
 
-export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'REJECTED';
+export type TicketType = 'RANDOM' | 'IDEAL';
 
-export type PaymentFilterStatus = 'PENDING' | 'PROCESSED';
+export type TicketActionType = 'EARN' | 'USE' | 'REFUND';
 
-export type PaymentType = 'CANDIDATE_REGISTRATION' | 'RANDOM_MATCHING' | 'IDEAL_TYPE_MATCHING';
+export type TicketSource = 'JOIN' | 'ATTENDANCE' | 'COUPON' | 'MATCHING' | 'PARTIAL_MATCH_REFUND' | 'NO_MATCH_REFUND' | 'ADMIN';
 
-export interface PaymentPreviewItem {
-  paymentId: number;
-  memberName: string;
-  paymentType: PaymentType;
-  paymentStatus: PaymentStatus;
+export interface TicketBalanceResponse {
+  randomTickets: number;
+  idealTickets: number;
+}
+
+export interface TicketHistoryItem {
+  id: number;
+  ticketType: TicketType;
+  actionType: TicketActionType;
+  source: TicketSource;
   amount: number;
-  applicationCount?: number;
-  rejectedReason?: string;
-  applyAt: string;
+  description: string;
+  createdAt: string;
+}
+
+// --- 쿠폰 (v2) ---
+
+export type CouponStatus = 'AVAILABLE' | 'USED' | 'EXPIRED';
+
+export type CouponEventType = 'HAPPY_HOUR' | 'SECRET_CODE';
+
+export type CouponEventStatus = 'DRAFT' | 'ACTIVE' | 'ENDED';
+
+export interface CouponItem {
+  id: number;
+  eventId: number;
+  eventName: string;
+  status: CouponStatus;
+  ticketType: TicketType;
+  rewardAmount: number;
+  expiresAt: string;
+}
+
+export interface CouponEventPreviewItem {
+  id: number;
+  name: string;
+  description: string;
+  status: CouponEventStatus;
+  type: CouponEventType;
+  rewardTicketType: TicketType;
+  rewardAmount: number;
+  startsAt: string;
+  expiresAt: string;
+  couponExpiresAt: string;
+}
+
+export interface CouponEventDetailItem extends CouponEventPreviewItem {
+  secretCode?: string;
+}
+
+export interface CouponEventRegisterRequest {
+  name: string;
+  description: string;
+  type: CouponEventType;
+  rewardTicketType: TicketType;
+  rewardAmount: number;
+  startsAt: string;
+  expiresAt: string;
+  couponExpiresAt: string;
+  secretCode?: string;
+}
+
+// --- 출석 (v2) ---
+
+export interface AttendanceResponse {
+  totalDays: number;
+  attendedDays: number;
+  attendanceDates: string[];
+}
+
+// --- 신고 (v2) ---
+
+export type ReportReason = 'INAPPROPRIATE_CONTENT' | 'PLAGIARIZED_PROFILE' | 'FAKE_PROFILE' | 'HARASSMENT' | 'SCAM' | 'OTHER';
+
+export type ReportStatus = 'PENDING' | 'RESOLVED' | 'REJECTED';
+
+export interface ReportCreateRequest {
+  targetMemberId: number;
+  reason: ReportReason;
+  description: string;
+}
+
+export interface ReportItem {
+  id: number;
+  reporterId: number;
+  targetMemberId: number;
+  reason: ReportReason;
+  description: string;
+  status: ReportStatus;
+  createdAt: string;
+}
+
+export interface ReportDetailItem extends ReportItem {
+  reporterNickname: string;
+  targetNickname: string;
+  targetActiveSuspensionCount: number;
+}
+
+// --- QR (v2) ---
+
+export interface QrResponse {
+  qrToken: string;
+  qrImageUrl: string;
+}
+
+export interface AdminQrVerifyRequest {
+  qrToken: string;
+  ticketType: TicketType;
 }
 
 // --- 관리자 ---
@@ -252,11 +364,6 @@ export interface PaymentPreviewItem {
 export interface CandidateGenderCountResponse {
   maleCount: number;
   femaleCount: number;
-}
-
-export interface PaymentStatusStatisticsResponse {
-  pendingCount: number;
-  processedCount: number;
 }
 
 export interface DashboardResponse {
@@ -285,8 +392,9 @@ export interface AdminMemberDetail {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  bankName?: string;
-  accountNumber?: string;
+  personalityTag: PersonalityTag;
+  faceTypeTag: FaceTypeTag;
+  datingStyleTag: DatingStyleTag;
 }
 
 export interface PageResponse<T> {
@@ -298,6 +406,8 @@ export interface PageResponse<T> {
   hasPrevious: boolean;
 }
 
-export interface PaymentRejectRequest {
-  rejectedReason: string;
+export interface CursorPageResponse<T> {
+  content: T[];
+  hasNext: boolean;
+  cursor?: string;
 }

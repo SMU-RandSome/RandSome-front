@@ -23,16 +23,16 @@ const mockWithdraw = vi.mocked(withdrawMatching);
 
 const makePending = (id = 1): MatchingHistoryItem => ({
   id,
-  matchingTypeLabel: '무작위 매칭',
+  matchingType: 'RANDOM',
   applicationStatus: 'PENDING',
   appliedAt: '2024-01-15T12:00:00',
   applicationCount: 2,
 });
 
-const makeApproved = (id = 2): MatchingHistoryItem => ({
+const makeSuccess = (id = 2): MatchingHistoryItem => ({
   id,
-  matchingTypeLabel: '이상형 기반 매칭',
-  applicationStatus: 'APPROVED',
+  matchingType: 'IDEAL',
+  applicationStatus: 'SUCCESS',
   appliedAt: '2024-01-16T12:00:00',
   applicationCount: 3,
 });
@@ -44,42 +44,42 @@ describe('RequestsPage', () => {
     mockWithdraw.mockResolvedValue({ result: 'SUCCESS', data: null, error: null });
   });
 
-  it('탭 3개(대기중·완료·거절)가 렌더링됨', () => {
+  it('탭 3개(처리중·완료·취소)가 렌더링됨', () => {
     renderWithProviders(<RequestsPage />);
-    expect(screen.getByText('대기중')).toBeInTheDocument();
+    expect(screen.getByText('처리중')).toBeInTheDocument();
     expect(screen.getByText('완료')).toBeInTheDocument();
-    expect(screen.getByText('거절')).toBeInTheDocument();
+    expect(screen.getByText('취소')).toBeInTheDocument();
   });
 
-  it('마운트 시 PENDING 상태로 API 호출', async () => {
+  it('마운트 시 API 호출', async () => {
     renderWithProviders(<RequestsPage />);
-    await waitFor(() => expect(mockGetHistory).toHaveBeenCalledWith('PENDING'));
+    await waitFor(() => expect(mockGetHistory).toHaveBeenCalled());
   });
 
-  it('빈 데이터 응답 시 대기중 빈 상태 메시지 표시', async () => {
+  it('빈 데이터 응답 시 처리중 빈 상태 메시지 표시', async () => {
     renderWithProviders(<RequestsPage />);
     await waitFor(() =>
-      expect(screen.getByText('대기중인 신청이 없어요')).toBeInTheDocument(),
+      expect(screen.getByText('처리중인 신청이 없어요')).toBeInTheDocument(),
     );
   });
 
-  it('PENDING 아이템 렌더링 — 승인 대기 뱃지 표시', async () => {
+  it('PENDING 아이템 렌더링 — 처리중 뱃지 표시', async () => {
     mockGetHistory.mockResolvedValue({ result: 'SUCCESS', data: [makePending()], error: null });
     renderWithProviders(<RequestsPage />);
     await waitFor(() => {
-      expect(screen.getByText('무작위 매칭')).toBeInTheDocument();
-      expect(screen.getByText('관리자 승인 대기중')).toBeInTheDocument();
+      expect(screen.getByText('랜덤 매칭')).toBeInTheDocument();
+      expect(screen.getByText('2명')).toBeInTheDocument();
     });
   });
 
-  it('APPROVED 아이템에 "매칭 결과 보기" 버튼 표시', async () => {
-    mockGetHistory.mockImplementation((status) => {
-      if (status === 'APPROVED')
-        return Promise.resolve({ result: 'SUCCESS', data: [makeApproved()], error: null });
-      return Promise.resolve({ result: 'SUCCESS', data: [], error: null });
+  it('SUCCESS 아이템에 "매칭 결과 보기" 버튼 표시', async () => {
+    mockGetHistory.mockResolvedValue({
+      result: 'SUCCESS',
+      data: [makePending(), makeSuccess()],
+      error: null
     });
     renderWithProviders(<RequestsPage />);
-    await waitFor(() => expect(screen.getByText('대기중인 신청이 없어요')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('처리중')).toBeInTheDocument());
 
     fireEvent.click(screen.getByText('완료'));
     await waitFor(() =>
@@ -88,13 +88,13 @@ describe('RequestsPage', () => {
   });
 
   it('"매칭 결과 보기" 클릭 시 /requests/detail로 이동', async () => {
-    mockGetHistory.mockImplementation((status) => {
-      if (status === 'APPROVED')
-        return Promise.resolve({ result: 'SUCCESS', data: [makeApproved()], error: null });
-      return Promise.resolve({ result: 'SUCCESS', data: [], error: null });
+    mockGetHistory.mockResolvedValue({
+      result: 'SUCCESS',
+      data: [makePending(), makeSuccess()],
+      error: null
     });
     renderWithProviders(<RequestsPage />);
-    await waitFor(() => expect(screen.getByText('대기중인 신청이 없어요')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('처리중')).toBeInTheDocument());
 
     fireEvent.click(screen.getByText('완료'));
     await waitFor(() =>
@@ -126,41 +126,44 @@ describe('RequestsPage', () => {
     await waitFor(() => expect(mockGetHistory).toHaveBeenCalledTimes(2));
   });
 
-  it('탭 클릭 시 해당 상태로 API 재호출', async () => {
+  it('탭 클릭 시 데이터가 클라이언트 측에서 필터링됨', async () => {
+    const allData = [makePending(), makeSuccess()];
+    mockGetHistory.mockResolvedValue({
+      result: 'SUCCESS',
+      data: allData,
+      error: null
+    });
     renderWithProviders(<RequestsPage />);
-    await waitFor(() => expect(mockGetHistory).toHaveBeenCalledWith('PENDING'));
 
+    // 처리중 탭 (기본값)
+    await waitFor(() => expect(screen.getByText('처리중')).toBeInTheDocument());
+    expect(screen.getByText('2명')).toBeInTheDocument();
+
+    // 완료 탭 클릭
     fireEvent.click(screen.getByText('완료'));
-    await waitFor(() => expect(mockGetHistory).toHaveBeenCalledWith('APPROVED'));
+    await waitFor(() => expect(screen.getByText('3명 매칭 완료')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText('거절'));
-    await waitFor(() => expect(mockGetHistory).toHaveBeenCalledWith('REJECTED'));
+    // 취소 탭 클릭 (빈 상태)
+    fireEvent.click(screen.getByText('취소'));
+    await waitFor(() => expect(screen.getByText('취소된 신청이 없어요')).toBeInTheDocument());
   });
 
-  describe('취소 시트', () => {
+  describe('취소 모달', () => {
     beforeEach(() => {
       mockGetHistory.mockResolvedValue({ result: 'SUCCESS', data: [makePending()], error: null });
     });
 
-    it('"취소하기" 클릭 시 바텀 시트 열림', async () => {
+    it('"취소하기" 클릭 시 모달 열림', async () => {
       renderWithProviders(<RequestsPage />);
       await waitFor(() => expect(screen.getByText('취소하기')).toBeInTheDocument());
       fireEvent.click(screen.getByText('취소하기'));
       expect(screen.getByText('신청 취소')).toBeInTheDocument();
     });
 
-    it('취소 사유 미선택 시 "취소 확인" 버튼 비활성화', async () => {
+    it('모달 확인 — "취소 확인" 버튼 활성화', async () => {
       renderWithProviders(<RequestsPage />);
       await waitFor(() => expect(screen.getByText('취소하기')).toBeInTheDocument());
       fireEvent.click(screen.getByText('취소하기'));
-      expect(screen.getByRole('button', { name: '취소 확인' })).toBeDisabled();
-    });
-
-    it('취소 사유 선택 시 "취소 확인" 버튼 활성화', async () => {
-      renderWithProviders(<RequestsPage />);
-      await waitFor(() => expect(screen.getByText('취소하기')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('취소하기'));
-      fireEvent.click(screen.getByText('실수로 신청했어요'));
       expect(screen.getByRole('button', { name: '취소 확인' })).not.toBeDisabled();
     });
 
@@ -168,7 +171,6 @@ describe('RequestsPage', () => {
       renderWithProviders(<RequestsPage />);
       await waitFor(() => expect(screen.getByText('취소하기')).toBeInTheDocument());
       fireEvent.click(screen.getByText('취소하기'));
-      fireEvent.click(screen.getByText('실수로 신청했어요'));
       fireEvent.click(screen.getByRole('button', { name: '취소 확인' }));
       await waitFor(() => expect(mockWithdraw).toHaveBeenCalledWith(1));
     });
@@ -177,10 +179,9 @@ describe('RequestsPage', () => {
       renderWithProviders(<RequestsPage />);
       await waitFor(() => expect(screen.getByText('취소하기')).toBeInTheDocument());
       fireEvent.click(screen.getByText('취소하기'));
-      fireEvent.click(screen.getByText('실수로 신청했어요'));
       fireEvent.click(screen.getByRole('button', { name: '취소 확인' }));
       await waitFor(() =>
-        expect(screen.queryByText('관리자 승인 대기중')).not.toBeInTheDocument(),
+        expect(screen.getByText('처리중인 신청이 없어요')).toBeInTheDocument(),
       );
     });
 
@@ -189,11 +190,10 @@ describe('RequestsPage', () => {
       renderWithProviders(<RequestsPage />);
       await waitFor(() => expect(screen.getByText('취소하기')).toBeInTheDocument());
       fireEvent.click(screen.getByText('취소하기'));
-      fireEvent.click(screen.getByText('실수로 신청했어요'));
       fireEvent.click(screen.getByRole('button', { name: '취소 확인' }));
       await waitFor(() =>
         expect(
-          screen.getByText('신청 취소에 실패했습니다. 다시 시도해주세요.'),
+          screen.getByText('오류가 발생했습니다.'),
         ).toBeInTheDocument(),
       );
     });

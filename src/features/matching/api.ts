@@ -2,25 +2,25 @@ import { apiClient } from '@/lib/axios';
 import type {
   ApiResponse,
   MatchingApplicationRequest,
+  MatchingApplicationResponse,
   MatchingHistoryItem,
-  MatchingApplicationStatus,
   MatchingResultDetailItem,
 } from '@/types';
 
-export const applyMatching = (body: MatchingApplicationRequest): Promise<ApiResponse<null>> =>
-  apiClient.post<ApiResponse<null>>('/v1/matching', body).then((r) => r.data);
+export const applyMatching = (body: MatchingApplicationRequest): Promise<ApiResponse<MatchingApplicationResponse>> =>
+  apiClient.post<ApiResponse<MatchingApplicationResponse>>('/v1/matchings', body).then((r) => r.data);
 
-export const getMatchingHistory = (status?: MatchingApplicationStatus): Promise<ApiResponse<MatchingHistoryItem[]>> =>
+export const getMatchingHistory = (): Promise<ApiResponse<MatchingHistoryItem[]>> =>
   apiClient
-    .get<ApiResponse<MatchingHistoryItem[]>>('/v1/matching/applications', { params: status ? { status } : undefined })
+    .get<ApiResponse<MatchingHistoryItem[]>>('/v1/matchings')
     .then((r) => r.data);
 
 export const withdrawMatching = (applicationId: number): Promise<ApiResponse<null>> =>
   apiClient
-    .post<ApiResponse<null>>(`/v1/matching/applications/${applicationId}/cancel`)
+    .post<ApiResponse<null>>(`/v1/matchings/applications/${applicationId}/cancel`)
     .then((r) => r.data);
 
 export const getMatchingResult = (applicationId: number): Promise<ApiResponse<MatchingResultDetailItem[]>> =>
   apiClient
-    .get<ApiResponse<MatchingResultDetailItem[]>>(`/v1/matching/applications/${applicationId}/approved`)
+    .get<ApiResponse<MatchingResultDetailItem[]>>(`/v1/matchings/applications/${applicationId}`)
     .then((r) => r.data);

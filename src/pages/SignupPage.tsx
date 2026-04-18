@@ -48,23 +48,6 @@ const MBTI_OPTIONS = [
   { value: 'ENTJ', label: 'ENTJ' },
 ];
 
-const BANK_OPTIONS = [
-  { value: '국민', label: '국민은행' },
-  { value: '신한', label: '신한은행' },
-  { value: '우리', label: '우리은행' },
-  { value: '하나', label: '하나은행' },
-  { value: 'IBK기업', label: 'IBK기업은행' },
-  { value: 'NH농협', label: 'NH농협은행' },
-  { value: '카카오', label: '카카오뱅크' },
-  { value: '토스', label: '토스뱅크' },
-  { value: '케이', label: '케이뱅크' },
-  { value: 'SC제일', label: 'SC제일은행' },
-  { value: '씨티', label: '씨티은행' },
-  { value: '새마을', label: '새마을금고' },
-  { value: '수협', label: '수협은행' },
-  { value: '우체국', label: '우체국' },
-];
-
 const PERSONALITY_TAGS = [
   { value: 'ACTIVE', label: '활발한' },
   { value: 'QUIET', label: '조용한' },
@@ -243,8 +226,6 @@ const SignupPage: React.FC = () => {
     idealType: '',
     emailUsername: '',
     instagramId: '',
-    bankName: '',
-    bankAccountNumber: '',
     password: '',
     passwordConfirm: '',
     personalityTag: '',
@@ -346,10 +327,7 @@ const SignupPage: React.FC = () => {
     !!formData.realName &&
     !!formData.gender &&
     !!formData.mbti &&
-    !!formData.department &&
-    !!formData.instagramId &&
-    !!formData.bankName &&
-    !!formData.bankAccountNumber;
+    !!formData.department;
 
   const isStep3Valid =
     !!formData.intro &&
@@ -400,12 +378,10 @@ const SignupPage: React.FC = () => {
         instagramId: formData.instagramId || undefined,
         selfIntroduction: formData.intro || undefined,
         idealDescription: formData.idealType || undefined,
-        personalityTag: formData.personalityTag,
-        faceTypeTag: formData.faceTypeTag,
-        datingStyleTag: formData.datingStyleTag,
+        personalityTag: formData.personalityTag as any,
+        faceTypeTag: formData.faceTypeTag as any,
+        datingStyleTag: formData.datingStyleTag as any,
         agreedToTerms: requiredTermsAgreed,
-        bankName: formData.bankName,
-        accountNumber: formData.bankAccountNumber,
       };
 
       await apiClient.post('/v1/members/sign-up', body);
@@ -731,30 +707,6 @@ const SignupPage: React.FC = () => {
                 value={formData.instagramId}
                 onChange={(e) => setFormData({ ...formData, instagramId: e.target.value })}
               />
-
-              {/* 환불 계좌 */}
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-slate-700">환불 계좌번호</p>
-                <p className="text-xs text-slate-400 -mt-1">매칭 실패 시 환불을 위해 입력해주세요.</p>
-                <CustomSelect
-                  label=""
-                  options={BANK_OPTIONS}
-                  value={formData.bankName}
-                  onChange={(value) => setFormData({ ...formData, bankName: value })}
-                  placeholder="은행 선택"
-                />
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="계좌번호 (숫자만 입력)"
-                  value={formData.bankAccountNumber}
-                  onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, '');
-                    setFormData({ ...formData, bankAccountNumber: digits });
-                  }}
-                  className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
             </div>
           </div>
         )}

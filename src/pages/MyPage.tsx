@@ -15,32 +15,13 @@ import {
   getRealNameErrorMessage,
   validateInstagramId,
   getInstagramIdErrorMessage,
-  validateBankAccount,
-  getBankAccountErrorMessage,
 } from '@/lib/validation';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/useFcmToken';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import type { Department, MemberProfile, Mbti } from '@/types';
-import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, CreditCard } from 'lucide-react';
+import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-const BANK_OPTIONS = [
-  { value: '국민', label: '국민은행' },
-  { value: '신한', label: '신한은행' },
-  { value: '우리', label: '우리은행' },
-  { value: '하나', label: '하나은행' },
-  { value: 'IBK기업', label: 'IBK기업은행' },
-  { value: 'NH농협', label: 'NH농협은행' },
-  { value: '카카오', label: '카카오뱅크' },
-  { value: '토스', label: '토스뱅크' },
-  { value: '케이', label: '케이뱅크' },
-  { value: 'SC제일', label: 'SC제일은행' },
-  { value: '씨티', label: '씨티은행' },
-  { value: '새마을', label: '새마을금고' },
-  { value: '수협', label: '수협은행' },
-  { value: '우체국', label: '우체국' },
-];
 
 // 컴포넌트 외부 정의 — 매 렌더마다 React 엘리먼트 재생성 방지
 const CANDIDATE_STATUS_CONFIG = {
@@ -143,8 +124,6 @@ interface EditForm {
   personalityTag: string;
   faceTypeTag: string;
   datingStyleTag: string;
-  bankName: string;
-  accountNumber: string;
 }
 
 interface ModalState {
@@ -173,11 +152,9 @@ const MyPage: React.FC = () => {
     instagramId: user?.instagramId ?? '',
     selfIntroduction: user?.selfIntroduction ?? '',
     idealDescription: user?.idealDescription ?? '',
-    personalityTag: user?.personalityTag ?? '',
-    faceTypeTag: user?.faceTypeTag ?? '',
-    datingStyleTag: user?.datingStyleTag ?? '',
-    bankName: user?.bankName ?? '',
-    accountNumber: user?.accountNumber ?? '',
+    personalityTag: (user?.personalityTag as any) ?? '',
+    faceTypeTag: (user?.faceTypeTag as any) ?? '',
+    datingStyleTag: (user?.datingStyleTag as any) ?? '',
   });
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', content: null });
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -211,11 +188,9 @@ const MyPage: React.FC = () => {
             instagramId: res.data.instagramId ?? '',
             selfIntroduction: res.data.selfIntroduction ?? '',
             idealDescription: res.data.idealDescription ?? '',
-            personalityTag: res.data.personalityTag ?? '',
-            faceTypeTag: res.data.faceTypeTag ?? '',
-            datingStyleTag: res.data.datingStyleTag ?? '',
-            bankName: res.data.bankName ?? '',
-            accountNumber: res.data.accountNumber ?? '',
+            personalityTag: (res.data.personalityTag as any) ?? '',
+            faceTypeTag: (res.data.faceTypeTag as any) ?? '',
+            datingStyleTag: (res.data.datingStyleTag as any) ?? '',
           });
         }
       })
@@ -318,12 +293,6 @@ const MyPage: React.FC = () => {
       return;
     }
 
-    if (editForm.accountNumber && !validateBankAccount(editForm.accountNumber)) {
-      const accountError = getBankAccountErrorMessage(editForm.accountNumber);
-      toast(accountError ?? '올바른 계좌번호를 입력해주세요.', 'error');
-      return;
-    }
-
     setIsSaving(true);
     try {
       // 디버그: 전송할 데이터 확인
@@ -340,11 +309,9 @@ const MyPage: React.FC = () => {
         instagramId: editForm.instagramId || undefined,
         selfIntroduction: editForm.selfIntroduction || undefined,
         idealDescription: editForm.idealDescription || undefined,
-        personalityTag: editForm.personalityTag,
-        faceTypeTag: editForm.faceTypeTag,
-        datingStyleTag: editForm.datingStyleTag,
-        bankName: editForm.bankName || undefined,
-        accountNumber: editForm.accountNumber || undefined,
+        personalityTag: editForm.personalityTag as any,
+        faceTypeTag: editForm.faceTypeTag as any,
+        datingStyleTag: editForm.datingStyleTag as any,
       });
       // 저장 후 최신 프로필 다시 조회
       const res = await getMyProfile();
@@ -669,31 +636,6 @@ const MyPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 은행 */}
-                <SearchableSelect
-                  label=""
-                  options={BANK_OPTIONS}
-                  value={editForm.bankName}
-                  onChange={(value) => setEditForm({ ...editForm, bankName: value })}
-                  placeholder="은행 선택"
-                  searchPlaceholder="은행명 검색..."
-                  className="mb-0"
-                />
-
-                {/* 계좌번호 */}
-                <div className="group">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">계좌번호</label>
-                  <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
-                    <CreditCard size={15} className="text-slate-300 shrink-0 group-focus-within:text-blue-400 transition-colors" />
-                    <input
-                      value={editForm.accountNumber}
-                      onChange={(e) => setEditForm({ ...editForm, accountNumber: e.target.value })}
-                      placeholder="계좌번호 (- 제외)"
-                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-300"
-                    />
-                  </div>
-                </div>
-
                 {/* 버튼 */}
                 <div className="flex gap-2.5 pt-1">
                   <button
@@ -777,14 +719,6 @@ const MyPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                  </div>
-                )}
-                {(displayProfile?.bankName ?? displayProfile?.accountNumber) && (
-                  <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">환불 계좌</p>
-                    <p className="text-slate-700 text-sm">
-                      {[displayProfile?.bankName, displayProfile?.accountNumber].filter(Boolean).join(' ')}
-                    </p>
                   </div>
                 )}
               </div>

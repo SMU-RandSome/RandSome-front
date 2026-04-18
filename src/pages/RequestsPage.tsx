@@ -7,11 +7,15 @@ import { useDisplayMode } from '@/store/displayModeStore';
 import { getMatchingHistory, withdrawMatching } from '@/features/matching/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import { useToast } from '@/components/ui/Toast';
-import type { MatchingHistoryItem, MatchingApplicationStatus } from '@/types';
+import type { MatchingHistoryItem, MatchingType } from '@/types';
 import { Heart, Dice5, Calendar, CheckCircle2, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabType = 'PENDING' | 'APPROVED' | 'REJECTED';
+type TabType = 'PENDING' | 'SUCCESS' | 'CANCELLED';
+
+const getMatchingTypeLabel = (type: MatchingType): string => {
+  return type === 'RANDOM' ? '랜덤 매칭' : '이상형 매칭';
+};
 
 const RequestsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,10 +32,11 @@ const RequestsPage: React.FC = () => {
     let cancelled = false;
     setIsLoading(true);
     setLoadError(false);
-    getMatchingHistory(currentTab as MatchingApplicationStatus)
+    getMatchingHistory()
       .then((res) => {
         if (cancelled) return;
-        setItems(res.data ?? []);
+        const filtered = (res.data ?? []).filter((item) => item.applicationStatus === currentTab);
+        setItems(filtered);
       })
       .catch(() => {
         if (cancelled) return;
@@ -65,9 +70,9 @@ const RequestsPage: React.FC = () => {
   };
 
   const TABS: { id: TabType; label: string }[] = [
-    { id: 'PENDING', label: '대기중' },
-    { id: 'APPROVED', label: '완료' },
-    { id: 'REJECTED', label: '거절' },
+    { id: 'PENDING', label: '처리중' },
+    { id: 'SUCCESS', label: '완료' },
+    { id: 'CANCELLED', label: '취소' },
   ];
 
   const formatDate = (iso: string): string => {
@@ -142,18 +147,18 @@ const RequestsPage: React.FC = () => {
             >
               {items.length === 0 ? (
                 <EmptyState
-                  icon={<span>{currentTab === 'PENDING' ? '⏳' : currentTab === 'APPROVED' ? '💌' : '✅'}</span>}
+                  icon={<span>{currentTab === 'PENDING' ? '⏳' : currentTab === 'SUCCESS' ? '💌' : '❌'}</span>}
                   title={
                     currentTab === 'PENDING'
-                      ? '대기중인 신청이 없어요'
-                      : currentTab === 'APPROVED'
+                      ? '처리중인 신청이 없어요'
+                      : currentTab === 'SUCCESS'
                       ? '완료된 신청이 없어요'
-                      : '거절된 신청이 없어요'
+                      : '취소된 신청이 없어요'
                   }
                   description={
                     currentTab === 'PENDING'
                       ? '새로운 매칭을 신청해보세요!'
-                      : currentTab === 'APPROVED'
+                      : currentTab === 'SUCCESS'
                       ? '설레는 인연이 곧 찾아올 거예요!'
                       : '모든 신청이 순조롭게 진행되고 있어요!'
                   }
@@ -233,10 +238,10 @@ const MatchingHistoryCard: React.FC<{
   onWithdraw: () => void;
   formatDate: (iso: string) => string;
 }> = ({ item, onViewResult, onWithdraw, formatDate }) => {
-  const isApproved = item.applicationStatus === 'APPROVED';
-  const isRejected = item.applicationStatus === 'REJECTED';
+  const isSuccess = item.applicationStatus === 'SUCCESS';
+  const isCancelled = item.applicationStatus === 'CANCELLED';
   const isPending = item.applicationStatus === 'PENDING';
-  const isIdeal = item.matchingTypeLabel.includes('이상형');
+  const isIdeal = item.matchingType === 'IDEAL';
 
   return (
     <motion.div
@@ -246,9 +251,9 @@ const MatchingHistoryCard: React.FC<{
       className={`rounded-2xl shadow-[0_1px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.07)] border relative overflow-hidden transition-shadow duration-300 ${
         isPending
           ? 'bg-orange-50/80 backdrop-blur-sm border-orange-200/80 border-l-4 border-l-orange-400'
-          : isApproved
+          : isSuccess
           ? 'bg-white/90 backdrop-blur-sm border-slate-100/80 border-l-4 border-l-green-400'
-          : 'bg-white/70 backdrop-blur-sm border-red-100/80 opacity-70'
+          : 'bg-white/70 backdrop-blur-sm border-slate-100/80 opacity-70'
       }`}
     >
       <div className="p-4">
@@ -259,19 +264,19 @@ const MatchingHistoryCard: React.FC<{
                 ? isIdeal
                   ? 'bg-pink-100 text-pink-500'
                   : 'bg-orange-100 text-orange-500'
-                : isApproved
+                : isSuccess
                 ? isIdeal
                   ? 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md shadow-pink-200/40'
                   : 'bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-md shadow-blue-200/40'
-                : 'bg-red-50 text-red-400'
+                : 'bg-slate-50 text-slate-400'
             }`}
           >
-            {isRejected ? (
+            {isCancelled ? (
               <XCircle size={20} />
-            ) : isApproved && !isIdeal ? (
+            ) : isSuccess && !isIdeal ? (
               <CheckCircle2 size={20} />
             ) : isIdeal ? (
-              <Heart size={20} fill={isApproved ? 'currentColor' : 'none'} />
+              <Heart size={20} fill={isSuccess ? 'currentColor' : 'none'} />
             ) : (
               <Dice5 size={20} />
             )}
@@ -280,7 +285,7 @@ const MatchingHistoryCard: React.FC<{
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start mb-1.5">
               <h3 className="font-bold text-slate-900 text-sm truncate pr-2">
-                {item.matchingTypeLabel}
+                {getMatchingTypeLabel(item.matchingType)}
               </h3>
               <span className="text-[10px] text-slate-400 shrink-0 flex items-center gap-1 bg-white/70 px-1.5 py-0.5 rounded-md">
                 <Calendar size={10} /> {formatDate(item.appliedAt)}
@@ -293,22 +298,22 @@ const MatchingHistoryCard: React.FC<{
                   <>
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 bg-orange-100 px-2.5 py-1 rounded-full">
                       <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-                      관리자 승인 대기중
+                      처리중
                     </span>
                     <span className="text-xs font-semibold text-orange-500">
                       {item.applicationCount}명
                     </span>
                   </>
                 )}
-                {isApproved && (
+                {isSuccess && (
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
                     <CheckCircle2 size={11} />
                     {item.applicationCount}명 매칭 완료
                   </span>
                 )}
-                {isRejected && (
-                  <span className="text-xs text-red-500 font-medium">
-                    {item.rejectedReason ?? '거절됨'}
+                {isCancelled && (
+                  <span className="text-xs text-slate-400 font-medium">
+                    취소됨
                   </span>
                 )}
               </div>
@@ -325,7 +330,7 @@ const MatchingHistoryCard: React.FC<{
           </div>
         </div>
 
-        {isApproved && (
+        {isSuccess && (
           <button
             onClick={onViewResult}
             className={`w-full mt-3 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 active:opacity-80 hover:shadow-md ${
