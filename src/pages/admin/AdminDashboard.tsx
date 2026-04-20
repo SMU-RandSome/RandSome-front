@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
@@ -22,7 +22,9 @@ import type {
 import { X, ChevronRight, Search, ChevronLeft, Megaphone, Plus, CheckCircle2, XCircle, Dice5, Heart } from 'lucide-react';
 import { getApiErrorMessage } from '@/lib/axios';
 
-type AdminTab = 'members' | 'requests' | 'announcements';
+const CouponEventsTab = React.lazy(() => import('@/features/admin/components/CouponEventsTab'));
+
+type AdminTab = 'members' | 'requests' | 'announcements' | 'coupon-events';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -498,6 +500,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'members', label: '회원 관리' },
     { id: 'requests', label: '매칭 신청' },
     { id: 'announcements', label: '공지사항' },
+    { id: 'coupon-events', label: '쿠폰 이벤트' },
   ];
 
   const searchPlaceholder = '닉네임 또는 실명 검색';
@@ -585,6 +588,11 @@ const AdminDashboard: React.FC = () => {
             {activeTab === 'members' && renderMembers()}
             {activeTab === 'requests' && renderMatchingApplications()}
             {activeTab === 'announcements' && renderAnnouncements()}
+            {activeTab === 'coupon-events' && (
+              <Suspense fallback={<div className="h-28 bg-slate-50 rounded-2xl animate-pulse mt-4" />}>
+                <CouponEventsTab />
+              </Suspense>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
