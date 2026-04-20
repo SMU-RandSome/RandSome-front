@@ -9,18 +9,20 @@ import {
   getAdminMemberDetail,
   getCandidateGenderCount,
   registerAnnouncement,
+  getAdminMatchingApplications,
 } from '@/features/admin/api';
 import { getAnnouncements } from '@/features/announcement/api';
 import type {
   AdminMemberListItem,
   AdminMemberDetail,
+  AdminMatchingApplicationItem,
   CandidateGenderCountResponse,
   Announcement,
 } from '@/types';
-import { X, ChevronRight, Search, ChevronLeft, Megaphone, Plus } from 'lucide-react';
+import { X, ChevronRight, Search, ChevronLeft, Megaphone, Plus, CheckCircle2, XCircle, Dice5, Heart } from 'lucide-react';
 import { getApiErrorMessage } from '@/lib/axios';
 
-type AdminTab = 'members' | 'announcements';
+type AdminTab = 'members' | 'requests' | 'announcements';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -76,6 +78,12 @@ const AdminDashboard: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [restrictedMemberIds, setRestrictedMemberIds] = useState<Set<number>>(new Set());
 
+  // 매칭 신청
+  const [matchingApplications, setMatchingApplications] = useState<AdminMatchingApplicationItem[]>([]);
+  const [matchingTotalPages, setMatchingTotalPages] = useState(1);
+  const [matchingPage, setMatchingPage] = useState(1);
+  const [matchingLoading, setMatchingLoading] = useState(false);
+
   // 공지사항
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
@@ -114,6 +122,19 @@ const AdminDashboard: React.FC = () => {
       .finally(() => setMembersLoading(false));
   }, [toast]);
 
+  const fetchMatchingApplications = useCallback((page: number): void => {
+    setMatchingLoading(true);
+    getAdminMatchingApplications({ page: page - 1, size: ITEMS_PER_PAGE })
+      .then((res) => {
+        if (res.data) {
+          setMatchingApplications(res.data.content);
+          setMatchingTotalPages(res.data.totalPages);
+        }
+      })
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
+      .finally(() => setMatchingLoading(false));
+  }, [toast]);
+
   const fetchAnnouncements = useCallback((): void => {
     setAnnouncementsLoading(true);
     getAnnouncements()
@@ -150,6 +171,12 @@ const AdminDashboard: React.FC = () => {
   }, [activeTab, currentPage, searchTerm, fetchMembers]);
 
   useEffect(() => {
+    if (activeTab === 'requests') {
+      fetchMatchingApplications(matchingPage);
+    }
+  }, [activeTab, matchingPage, fetchMatchingApplications]);
+
+  useEffect(() => {
     if (activeTab === 'announcements') {
       fetchAnnouncements();
     }
@@ -164,6 +191,7 @@ const AdminDashboard: React.FC = () => {
     setActiveTab(tab);
     setSearchTerm('');
     setCurrentPage(1);
+    setMatchingPage(1);
   };
 
   const handleSearchChange = (value: string): void => {
@@ -297,6 +325,96 @@ const AdminDashboard: React.FC = () => {
     </div>
   );
 
+  const renderMatchingApplications = (): React.ReactNode => (
+    <div className="flex flex-col h-full pt-4">
+      {matchingLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 bg-slate-50 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="divide-y divide-slate-100">
+            {matchingApplications.length === 0 ? (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-sm text-slate-400 py-16"
+              >
+                매칭 신청 내역이 없습니다.
+              </motion.p>
+            ) : (
+              matchingApplications.map((app, i) => {
+                const isSuccess = app.applicationStatus === 'SUCCESS';
+                const isCancelled = app.applicationStatus === 'CANCELLED';
+                const isIdeal = app.matchingType === 'IDEAL';
+                return (
+                  <motion.div
+                    key={app.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: i * 0.04 }}
+                    className="py-3 flex items-center gap-3"
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      isSuccess
+                        ? isIdeal
+                          ? 'bg-pink-100 text-pink-500'
+                          : 'bg-green-100 text-green-600'
+                        : isCancelled
+                        ? 'bg-slate-100 text-slate-400'
+                        : 'bg-orange-100 text-orange-500'
+                    }`}>
+                      {isCancelled ? (
+                        <XCircle size={16} />
+                      ) : isIdeal ? (
+                        <Heart size={16} fill={isSuccess ? 'currentColor' : 'none'} />
+                      ) : (
+                        isSuccess ? <CheckCircle2 size={16} /> : <Dice5 size={16} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{app.memberNickname}</p>
+                        <span className="text-xs text-slate-400 shrink-0">{app.matchingType === 'IDEAL' ? '이상형' : '랜덤'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {app.applicationStatus === 'PENDING' && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                            처리중
+                          </span>
+                        )}
+                        {isSuccess && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 size={9} />
+                            완료 · {app.applicationCount}명
+                          </span>
+                        )}
+                        {isCancelled && (
+                          <span className="text-[10px] text-slate-400 font-medium">취소됨</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-400 shrink-0">
+                      {new Date(app.appliedAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                    </p>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+          <Pagination
+            currentPage={matchingPage}
+            totalPages={matchingTotalPages}
+            onPageChange={setMatchingPage}
+          />
+        </>
+      )}
+    </div>
+  );
+
   const renderAnnouncements = (): React.ReactNode => (
     <div className="pt-4 space-y-4">
       {/* 등록 폼 */}
@@ -378,6 +496,7 @@ const AdminDashboard: React.FC = () => {
   // ── 탭 정의 ──────────────────────────────────────────────────
   const TABS: { id: AdminTab; label: string }[] = [
     { id: 'members', label: '회원 관리' },
+    { id: 'requests', label: '매칭 신청' },
     { id: 'announcements', label: '공지사항' },
   ];
 
@@ -425,7 +544,7 @@ const AdminDashboard: React.FC = () => {
         ))}
       </div>
 
-      {activeTab !== 'announcements' && (
+      {activeTab === 'members' && (
         <div className="px-5 py-3 bg-white border-b border-slate-50 sticky top-[98px] z-30">
           <div className="relative">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -464,6 +583,7 @@ const AdminDashboard: React.FC = () => {
             transition={{ duration: 0.18 }}
           >
             {activeTab === 'members' && renderMembers()}
+            {activeTab === 'requests' && renderMatchingApplications()}
             {activeTab === 'announcements' && renderAnnouncements()}
           </motion.div>
         </AnimatePresence>
