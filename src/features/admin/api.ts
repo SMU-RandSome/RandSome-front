@@ -5,6 +5,7 @@ import type {
   AdminMemberDetail,
   AdminMatchingItem,
   PageResponse,
+  CursorSlice,
   CandidateGenderCountResponse,
   AnnouncementRegisterRequest,
   AdminQrVerifyRequest,
@@ -14,6 +15,9 @@ import type {
   AdminReportListItem,
   AdminReportDetailResponse,
   ReportStatusFilter,
+  AdminCandidateRegistrationItem,
+  CandidateRegistrationFilter,
+  RestrictionRequest,
   Gender,
 } from '@/types';
 
@@ -25,6 +29,36 @@ export const getAdminMembers = (params?: { page?: number; size?: number }): Prom
 export const getAdminMemberDetail = (memberId: number): Promise<ApiResponse<AdminMemberDetail>> =>
   apiClient
     .get<ApiResponse<AdminMemberDetail>>(`/v1/admin/members/${memberId}`)
+    .then((r) => r.data);
+
+export const suspendAdminMember = (memberId: number, body: RestrictionRequest): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/members/${memberId}/suspensions`, body)
+    .then((r) => r.data);
+
+// --- 후보자 등록 관리 ---
+
+export const getAdminCandidateRegistrations = (params?: {
+  filter?: CandidateRegistrationFilter;
+  keyword?: string;
+  lastId?: number;
+  size?: number;
+}): Promise<ApiResponse<CursorSlice<AdminCandidateRegistrationItem>>> =>
+  apiClient
+    .get<ApiResponse<CursorSlice<AdminCandidateRegistrationItem>>>('/v1/admin/candidate-registrations', { params })
+    .then((r) => r.data);
+
+export const approveAdminCandidateRegistration = (candidateRegistrationId: number): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/candidate-registrations/${candidateRegistrationId}/approve`)
+    .then((r) => r.data);
+
+export const rejectAdminCandidateRegistration = (
+  candidateRegistrationId: number,
+  body: { reason: string },
+): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/candidate-registrations/${candidateRegistrationId}/reject`, body)
     .then((r) => r.data);
 
 export const getCandidateGenderCount = (): Promise<ApiResponse<CandidateGenderCountResponse>> =>

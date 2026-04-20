@@ -105,7 +105,7 @@ export interface TokenReissueRequest {
 
 // --- 회원 ---
 
-export type CandidateRegistrationStatus = 'NOT_APPLIED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN';
+export type CandidateRegistrationStatus = 'NOT_APPLIED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN' | 'CANCELED';
 
 export interface MemberProfile {
   id: number;
@@ -202,7 +202,7 @@ export interface FeedItem {
 
 export type MatchingType = 'RANDOM' | 'IDEAL';
 
-export type MatchingApplicationStatus = 'PENDING' | 'SUCCESS' | 'CANCELLED';
+export type MatchingApplicationStatus = 'PENDING' | 'SUCCESS' | 'PARTIAL_MATCH' | 'FAILED' | 'CANCELLED';
 
 export interface MatchingApplicationRequest {
   matchingType: MatchingType;
@@ -390,7 +390,27 @@ export interface AdminMatchingItem {
   matchingType: MatchingType;
   applicationCount: number;
   applicationStatus: MatchingApplicationStatus;
+  matchedCount: number;
   createdAt: string;
+}
+
+export interface AdminCandidateRegistrationItem {
+  id: number;
+  memberId: number;
+  memberNickname: string;
+  memberLegalName: string;
+  registrationStatus: CandidateRegistrationStatus;
+  createdAt: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  rejectedReason?: string;
+  withdrawnAt?: string;
+}
+
+export type CandidateRegistrationFilter = 'PENDING' | 'COMPLETED';
+
+export interface RestrictionRequest {
+  reason: string;
 }
 
 export interface CandidateGenderCountResponse {

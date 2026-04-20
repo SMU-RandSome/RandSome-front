@@ -25,9 +25,9 @@ const AdminQrPage = React.lazy(() => import('@/pages/admin/AdminQrPage'));
 const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
 
 const PageLoader: React.FC = () => (
-  <div className="min-h-screen bg-gray-100 flex justify-center items-start">
-    <div className="w-full max-w-[430px] min-h-screen bg-slate-50 flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin" />
+  <div className="min-h-screen mesh-surface flex justify-center items-start">
+    <div className="w-full max-w-2xl min-h-screen bg-member flex items-center justify-center border-x border-slate-200/40">
+      <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
     </div>
   </div>
 );

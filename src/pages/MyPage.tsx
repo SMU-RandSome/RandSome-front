@@ -22,7 +22,8 @@ import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/u
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS, PERSONALITY_TAG_LABELS, FACE_TYPE_TAG_LABELS, DATING_STYLE_TAG_LABELS } from '@/constants/tags';
 import type { Department, MemberProfile, Mbti, TicketBalanceResponse, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
-import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, Ticket, QrCode, CalendarCheck, History } from 'lucide-react';
+import { MobileHeader } from '@/components/layout/MobileHeader';
+import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, Ticket, QrCode, History, Settings, Shield, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // 태그 상수는 src/constants/tags.ts 에서 import됩니다.
@@ -58,6 +59,13 @@ const CANDIDATE_STATUS_CONFIG = {
     clickable: true,
   },
   WITHDRAWN: {
+    icon: <UserX size={20} />,
+    iconBg: 'bg-slate-100 text-slate-400',
+    title: '후보 등록 취소됨',
+    description: '다시 신청하려면 탭을 눌러주세요.',
+    clickable: true,
+  },
+  CANCELED: {
     icon: <UserX size={20} />,
     iconBg: 'bg-slate-100 text-slate-400',
     title: '후보 등록 취소됨',
@@ -379,359 +387,140 @@ const MyPage: React.FC = () => {
   const statusConfig = CANDIDATE_STATUS_CONFIG[candidateStatus];
 
   return (
-    <MobileLayout>
-      {isPWA && (
-        <header className="sticky top-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] px-4 h-14 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-slate-900">마이페이지</h1>
-          <button
-            onClick={handleLogout}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
-            aria-label="로그아웃"
-          >
-            <LogOut size={20} />
+    <MobileLayout className="!bg-transparent">
+      <div className="flex-1 flex flex-col bg-member relative overflow-hidden min-h-screen">
+      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
+      <MobileHeader
+        title="마이페이지"
+        right={
+          <button className="p-1" aria-label="설정">
+            <Settings size={20} className="text-slate-500" />
           </button>
-        </header>
-      )}
+        }
+      />
 
       <div className={`flex-1 overflow-y-auto p-5 ${isPWA ? 'pb-24' : 'pb-8'}`}>
-        {/* 프로필 카드 */}
-        <div className="rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.05)] border border-slate-100/80 mb-6 overflow-hidden">
-          {/* 그라디언트 헤더 — morphing orbs */}
-          <div className="mesh-hero h-20 relative overflow-hidden">
-            {displayProfile?.gender === 'FEMALE' ? (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-br from-pink-400/25 to-rose-500/20" />
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-pink-300/15 to-rose-400/10 rounded-full blur-2xl animate-morph pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-br from-fuchsia-400/12 to-pink-500/8 rounded-full blur-xl animate-morph pointer-events-none" style={{ animationDelay: '-3s' }} />
-              </>
-            ) : (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/25 to-indigo-600/20" />
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-400/15 to-pink-400/10 rounded-full blur-2xl animate-morph pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-br from-blue-400/12 to-indigo-500/8 rounded-full blur-xl animate-morph pointer-events-none" style={{ animationDelay: '-3s' }} />
-              </>
-            )}
-          </div>
-          <div className="bg-white/90 backdrop-blur-sm px-6 pb-6 text-center relative">
-            {/* 아바타 — 헤더와 겹치도록 */}
-            <div className={`w-20 h-20 -mt-10 mx-auto mb-3 rounded-2xl flex items-center justify-center text-white font-display text-3xl shadow-xl ${displayProfile?.gender === 'FEMALE' ? 'bg-gradient-to-br from-pink-400 to-rose-500 shadow-pink-300/40' : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-300/40'}`}>
+        {/* 프로필 카드 with stats */}
+        <div
+          className="rounded-3xl p-5 pb-0 shadow-[0_6px_28px_rgba(0,0,0,0.08)] relative overflow-hidden mb-3.5"
+          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+        >
+          <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full opacity-[0.07] pointer-events-none" style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', filter: 'blur(28px)' }} />
+          <button
+            onClick={() => setIsEditing(true)}
+            className="absolute top-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center z-10"
+            style={{ background: 'rgba(59,130,246,.1)', border: '1px solid rgba(59,130,246,.15)' }}
+            aria-label="프로필 수정"
+          >
+            <Edit2 size={14} className="text-blue-600" />
+          </button>
+          <div className="flex items-center gap-3.5 relative mb-4">
+            <div
+              className="w-[66px] h-[66px] rounded-[22px] flex items-center justify-center font-display text-[28px] text-slate-700 shrink-0"
+              style={{ background: 'linear-gradient(135deg, #c7d2fe, #fbcfe8)', boxShadow: '0 4px 16px rgba(0,0,0,.12)' }}
+            >
               {(displayProfile?.nickname ?? '?')[0]}
             </div>
-
-          {isEditing ? (
-            <div className="text-left -mx-6 -mb-6">
-              {/* 상단 그라디언트 바 */}
-              <div className="h-0.5 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mb-6" />
-
-              <div className="px-6 pb-8 space-y-7">
-                {/* MBTI 칩 그리드 */}
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">MBTI</p>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {MBTI_OPTIONS.map(({ value }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setEditForm({ ...editForm, mbti: value as Mbti })}
-                        className={`py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors duration-150 ${
-                          editForm.mbti === value
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200/50'
-                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200 active:bg-slate-300'
-                        }`}
-                      >
-                        {value}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 실명 */}
-                <div className="group">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">실명</label>
-                  <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
-                    <User size={15} className="text-slate-300 shrink-0 group-focus-within:text-blue-400 transition-colors" />
-                    <input
-                      value={editForm.legalName}
-                      onChange={(e) => setEditForm({ ...editForm, legalName: e.target.value })}
-                      placeholder="홍길동"
-                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-300"
-                    />
-                  </div>
-                </div>
-
-                {/* 학과 */}
-                <SearchableSelect
-                  label=""
-                  options={DEPARTMENT_OPTIONS}
-                  value={editForm.department}
-                  onChange={(value) => setEditForm({ ...editForm, department: value as Department | '' })}
-                  placeholder="학과 선택"
-                  searchPlaceholder="학과명 검색..."
-                  className="mb-0"
-                />
-
-                {/* 인스타그램 */}
-                <div className="group">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">인스타그램</label>
-                  <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
-                    <AtSign size={15} className="text-slate-300 shrink-0 group-focus-within:text-blue-400 transition-colors" />
-                    <input
-                      value={editForm.instagramId}
-                      onChange={(e) => setEditForm({ ...editForm, instagramId: e.target.value })}
-                      placeholder="my_insta  (@ 제외)"
-                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-300"
-                    />
-                  </div>
-                </div>
-
-                {/* 한줄 소개 */}
-                <div className="group">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">한줄 소개</label>
-                  <div className="flex items-start gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-violet-400 focus-within:bg-white transition-all">
-                    <Smile size={15} className="text-slate-300 shrink-0 mt-0.5 group-focus-within:text-violet-400 transition-colors" />
-                    <textarea
-                      value={editForm.selfIntroduction}
-                      onChange={(e) => setEditForm({ ...editForm, selfIntroduction: e.target.value })}
-                      placeholder="나를 한 마디로 표현하면?"
-                      rows={2}
-                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none resize-none placeholder:text-slate-300 leading-relaxed"
-                    />
-                  </div>
-                </div>
-
-                {/* 이상형 */}
-                <div className="group">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">나의 이상형</label>
-                  <div className="flex items-start gap-3 bg-pink-50/60 rounded-2xl px-4 py-3.5 ring-1 ring-pink-100 focus-within:ring-2 focus-within:ring-pink-400 focus-within:bg-white transition-all">
-                    <Heart size={15} className="text-pink-300 shrink-0 mt-0.5 group-focus-within:text-pink-500 transition-colors" />
-                    <textarea
-                      value={editForm.idealDescription}
-                      onChange={(e) => setEditForm({ ...editForm, idealDescription: e.target.value })}
-                      placeholder="어떤 사람을 찾고 계신가요?"
-                      rows={2}
-                      className="flex-1 bg-transparent text-sm text-slate-800 outline-none resize-none placeholder:text-pink-200 leading-relaxed"
-                    />
-                  </div>
-                </div>
-
-                {/* 나를 표현하는 태그 */}
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">나를 표현하는 태그</p>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs font-semibold text-slate-500 mb-2">성격</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {PERSONALITY_TAGS.map(({ value, label }) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => setEditForm({ ...editForm, personalityTag: editForm.personalityTag === value ? '' : value })}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${
-                              editForm.personalityTag === value
-                                ? 'bg-blue-500 text-white shadow-sm'
-                                : 'bg-blue-50 text-blue-500 hover:bg-blue-100'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-slate-500 mb-2">외모 스타일</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {FACE_TYPE_TAGS.map(({ value, label }) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => setEditForm({ ...editForm, faceTypeTag: editForm.faceTypeTag === value ? '' : value })}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${
-                              editForm.faceTypeTag === value
-                                ? 'bg-violet-500 text-white shadow-sm'
-                                : 'bg-violet-50 text-violet-500 hover:bg-violet-100'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-slate-500 mb-2">연애 스타일</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {DATING_STYLE_TAGS.map(({ value, label }) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => setEditForm({ ...editForm, datingStyleTag: editForm.datingStyleTag === value ? '' : value })}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${
-                              editForm.datingStyleTag === value
-                                ? 'bg-pink-500 text-white shadow-sm'
-                                : 'bg-pink-50 text-pink-500 hover:bg-pink-100'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 버튼 */}
-                <div className="flex gap-2.5 pt-1">
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-bold shadow-lg shadow-blue-200/60 hover:shadow-xl hover:shadow-blue-200/60 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:scale-100"
-                  >
-                    {isSaving ? '저장 중...' : '저장하기'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <h2 className="text-xl font-bold text-slate-900 mb-1">{displayProfile?.nickname}</h2>
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-lg text-slate-900">{displayProfile?.nickname}</p>
+              <p className="text-[12.5px] text-slate-500 mt-0.5">
+                {displayProfile?.gender === 'MALE' ? '남성' : '여성'} · {DEPARTMENT_OPTIONS.find((o) => o.value === displayProfile?.department || o.label === displayProfile?.department)?.label ?? displayProfile?.department ?? ''}
+              </p>
+              <div className="flex gap-1.5 mt-2 flex-wrap">
+                {candidateStatus === 'APPROVED' && (
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: 'rgba(59,130,246,.1)', color: '#1d4ed8', border: '1px solid rgba(59,130,246,.2)' }}>
+                    후보 등록됨
+                  </span>
+                )}
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: 'rgba(236,72,153,.1)', color: '#db2777', border: '1px solid rgba(236,72,153,.2)' }}>
                   {displayProfile?.mbti}
                 </span>
-                {displayProfile?.department && (
-                  <span className="inline-block px-3 py-1 bg-violet-100 text-violet-700 text-xs font-bold rounded-full">
-                    {DEPARTMENT_OPTIONS.find((option) => option.value === displayProfile.department)?.label ?? displayProfile.department}
-                  </span>
-                )}
-                {displayProfile?.gender && (
-                  <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${displayProfile.gender === 'MALE' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
-                    {displayProfile.gender === 'MALE' ? '남성' : '여성'}
-                  </span>
-                )}
-                {candidateStatus === 'APPROVED' && (
-                  <span className="inline-block px-3 py-1 bg-green-100 text-green-600 text-xs font-bold rounded-full">
-                    후보자
-                  </span>
-                )}
-                {candidateStatus === 'PENDING' && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-600 text-xs font-bold rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                    승인 대기중
-                  </span>
-                )}
               </div>
-
-              <div className="text-left space-y-3 mb-6">
-                <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">한줄 소개</p>
-                  <p className="text-slate-700 text-sm leading-relaxed">
-                    {displayProfile?.selfIntroduction
-                      ? `"${displayProfile.selfIntroduction}"`
-                      : <span className="text-slate-300 italic">소개글을 작성해주세요</span>}
-                  </p>
+              {(displayProfile?.personalityTag || displayProfile?.faceTypeTag || displayProfile?.datingStyleTag) && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {displayProfile?.personalityTag && (
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-600">
+                      {PERSONALITY_TAG_LABELS[displayProfile.personalityTag]}
+                    </span>
+                  )}
+                  {displayProfile?.faceTypeTag && (
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-violet-50 text-violet-600">
+                      {FACE_TYPE_TAG_LABELS[displayProfile.faceTypeTag]}
+                    </span>
+                  )}
+                  {displayProfile?.datingStyleTag && (
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-pink-50 text-pink-600">
+                      {DATING_STYLE_TAG_LABELS[displayProfile.datingStyleTag]}
+                    </span>
+                  )}
                 </div>
-                <div className="p-4 rounded-2xl border border-pink-100 bg-pink-50/40">
-                  <p className="text-[10px] font-bold text-pink-400 uppercase tracking-wider mb-1.5">나의 이상형</p>
-                  <p className="text-slate-700 text-sm leading-relaxed">
-                    {displayProfile?.idealDescription ?? <span className="text-slate-300 italic">이상형을 작성해주세요</span>}
-                  </p>
-                </div>
-                {(displayProfile?.personalityTag || displayProfile?.faceTypeTag || displayProfile?.datingStyleTag) && (
-                  <div className="px-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">나를 표현하는 태그</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {displayProfile.personalityTag && (
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                          {PERSONALITY_TAG_LABELS[displayProfile.personalityTag] ?? displayProfile.personalityTag}
-                        </span>
-                      )}
-                      {displayProfile.faceTypeTag && (
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-700">
-                          {FACE_TYPE_TAG_LABELS[displayProfile.faceTypeTag] ?? displayProfile.faceTypeTag}
-                        </span>
-                      )}
-                      {displayProfile.datingStyleTag && (
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-700">
-                          {DATING_STYLE_TAG_LABELS[displayProfile.datingStyleTag] ?? displayProfile.datingStyleTag}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
+              )}
+            </div>
+          </div>
+          {/* Stats row */}
+          <div className="flex border-t border-slate-200/60 py-3.5">
+            {[
+              { label: '노출 횟수', value: String(displayProfile?.exposureCount ?? 0), cls: 'text-blue-500' },
+              { label: '보낸 신청', value: '-', cls: 'gt' },
+              { label: '매칭 성공', value: '-', cls: 'wt' },
+            ].map(({ label, value, cls }, i) => (
+              <div key={label} className="flex-1 text-center" style={{ borderRight: i < 2 ? '1px solid rgba(226,232,240,.6)' : 'none' }}>
+                <p className={`font-display text-[26px] leading-none ${cls}`}>{value}</p>
+                <p className="text-[10.5px] text-slate-400 mt-1 font-medium">{label}</p>
               </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="mx-auto flex items-center gap-2"
-                onClick={() => setIsEditing(true)}
-              >
-                <Edit2 size={14} /> 프로필 수정
-              </Button>
-            </>
-          )}
+            ))}
           </div>
         </div>
 
-        {/* 티켓 잔고 */}
+        {/* 티켓 카드 — gradient design v4 */}
         {ticketBalance && (
-          <div className="grid grid-cols-2 gap-3 mb-5">
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-[0_1px_12px_rgba(0,0,0,0.04)] border border-slate-100/80">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
-                  <Ticket size={16} className="text-blue-500" />
+          <div className="grid grid-cols-2 gap-3 mb-3.5">
+            <div className="rounded-[18px] p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)', boxShadow: '0 6px 24px rgba(59,130,246,.3)' }}>
+              <div className="absolute -top-2.5 -right-2.5 opacity-[0.12]"><Ticket size={70} className="text-white" /></div>
+              <div className="relative">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Ticket size={16} className="text-white/80" />
+                  <span className="text-xs font-semibold text-white/80">랜덤권</span>
                 </div>
-                <span className="text-xs font-bold text-slate-400">랜덤권</span>
+                <p className="font-display text-[26px] text-white leading-none">{ticketBalance.randomTicketCount}<span className="text-[10px] font-normal ml-1">장</span></p>
               </div>
-              <p className="text-2xl font-black text-slate-900">{ticketBalance.randomTicketCount}<span className="text-sm font-bold text-slate-400 ml-1">장</span></p>
             </div>
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-[0_1px_12px_rgba(0,0,0,0.04)] border border-slate-100/80">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-xl bg-pink-100 flex items-center justify-center">
-                  <Ticket size={16} className="text-pink-500" />
+            <div className="rounded-[18px] p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #ec4899, #f43f5e)', boxShadow: '0 6px 24px rgba(236,72,153,.3)' }}>
+              <div className="absolute -top-2.5 -right-2.5 opacity-[0.12]"><Ticket size={70} className="text-white" /></div>
+              <div className="relative">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Ticket size={16} className="text-white/80" />
+                  <span className="text-xs font-semibold text-white/80">이상형권</span>
                 </div>
-                <span className="text-xs font-bold text-slate-400">이상형권</span>
+                <p className="font-display text-[26px] text-white leading-none">{ticketBalance.idealTicketCount}<span className="text-[10px] font-normal ml-1">장</span></p>
               </div>
-              <p className="text-2xl font-black text-slate-900">{ticketBalance.idealTicketCount}<span className="text-sm font-bold text-slate-400 ml-1">장</span></p>
             </div>
           </div>
         )}
 
-        {/* 후보 상태 */}
+        {/* 후보 상태 banner */}
         <div
           onClick={statusConfig.clickable ? () => navigate('/match') : undefined}
-          className={`bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-[0_1px_12px_rgba(0,0,0,0.04)] border border-slate-100/80 mb-5 flex items-center justify-between transition-all duration-200 ${
-            statusConfig.clickable ? 'cursor-pointer hover:shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 active:scale-[0.99]' : ''
+          className={`rounded-[18px] p-[14px_18px] flex items-center gap-3 mb-3 transition-all ${
+            statusConfig.clickable ? 'cursor-pointer' : ''
           }`}
+          style={{ background: 'linear-gradient(135deg, rgba(59,130,246,.08), rgba(99,102,241,.08))', border: '1px solid rgba(59,130,246,.15)', boxShadow: '0 2px 12px rgba(0,0,0,.04)' }}
         >
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${statusConfig.iconBg}`}>
-              {statusConfig.icon}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-900 truncate">{statusConfig.title}</p>
-              <p className="text-xs text-slate-400 truncate">{statusConfig.description}</p>
-            </div>
+          <div className={`w-[42px] h-[42px] rounded-[14px] flex items-center justify-center shrink-0 ${statusConfig.iconBg}`}>
+            {statusConfig.icon}
           </div>
-          {statusConfig.clickable && <ChevronRight size={16} className="text-slate-300 shrink-0" />}
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm text-slate-900 truncate">{statusConfig.title}</p>
+            <p className="text-xs text-slate-500 mt-0.5 truncate">{statusConfig.description}</p>
+          </div>
+          {statusConfig.clickable && <ChevronRight size={18} className="text-slate-400 shrink-0" />}
           {candidateStatus === 'APPROVED' && (
-            <div className="flex items-center gap-2 shrink-0 ml-2">
-              <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg">
-                <Eye size={12} className="text-blue-500" />
-                <span className="text-xs font-bold text-blue-600">노출 {displayProfile?.exposureCount ?? 0}회</span>
-              </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowWithdrawConfirm(true); }}
-                className="text-xs text-rose-400 font-medium hover:text-rose-500 transition-colors"
-              >
-                철회
-              </button>
-            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowWithdrawConfirm(true); }}
+              className="text-xs text-rose-400 font-medium hover:text-rose-500 transition-colors shrink-0"
+            >
+              철회
+            </button>
           )}
           {candidateStatus === 'PENDING' && (
             <button
@@ -743,71 +532,97 @@ const MyPage: React.FC = () => {
           )}
         </div>
 
-        {/* 메뉴 */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-100/80 shadow-[0_1px_12px_rgba(0,0,0,0.04)] overflow-hidden divide-y divide-slate-50">
+        {/* 활동 섹션 */}
+        <p className="text-[11px] font-bold text-slate-400 tracking-[.08em] uppercase mb-2 ml-1">활동</p>
+        <div
+          className="rounded-[18px] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.05)] mb-5"
+          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+        >
           {[
-            { label: '출석 체크', icon: <CalendarCheck size={16} className="text-slate-400" />, onClick: () => navigate('/attendance') },
-            { label: '내 쿠폰', icon: <Ticket size={16} className="text-slate-400" />, onClick: () => navigate('/coupons') },
-            { label: '티켓 이력', icon: <History size={16} className="text-slate-400" />, onClick: () => navigate('/tickets/history') },
-            { label: 'QR 코드', icon: <QrCode size={16} className="text-slate-400" />, onClick: () => navigate('/qr') },
-            { label: '비밀번호 변경', icon: null, onClick: () => setShowPasswordChange(true) },
-            { label: '이용약관', icon: null, onClick: openTerms },
-          ].map(({ label, icon, onClick }) => (
+            { label: '내 쿠폰', icon: <Ticket size={16} className="text-purple-700" />, bg: 'rgba(139,92,246,.1)', onClick: () => navigate('/coupons') },
+            { label: '티켓 이력', icon: <History size={16} className="text-green-700" />, bg: 'rgba(34,197,94,.1)', onClick: () => navigate('/tickets/history') },
+            { label: 'QR 코드', icon: <QrCode size={16} className="text-slate-700" />, bg: 'rgba(15,23,42,.08)', onClick: () => navigate('/qr') },
+          ].map(({ label, icon, bg, onClick }, i, arr) => (
             <button
               key={label}
               onClick={onClick}
-              className="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors"
+              className="w-full p-[15px_18px] flex items-center gap-3 hover:bg-slate-50/80 transition-colors"
+              style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(226,232,240,.6)' : 'none' }}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="w-[33px] h-[33px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: bg }}>
                 {icon}
-                <span className="text-slate-700 font-medium text-sm">{label}</span>
               </div>
-              <ChevronRight size={16} className="text-slate-300" />
+              <span className="flex-1 text-left text-sm font-medium text-slate-700">{label}</span>
+              <ChevronRight size={14} className="text-slate-400" />
             </button>
           ))}
+        </div>
+
+        {/* 설정 섹션 */}
+        <p className="text-[11px] font-bold text-slate-400 tracking-[.08em] uppercase mb-2 ml-1">설정</p>
+        <div
+          className="rounded-[18px] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.05)]"
+          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+        >
+          {/* 비밀번호 변경 */}
+          <button
+            onClick={() => setShowPasswordChange(true)}
+            className="w-full p-[15px_18px] flex items-center gap-3 hover:bg-slate-50/80 transition-colors"
+            style={{ borderBottom: '1px solid rgba(226,232,240,.6)' }}
+          >
+            <div className="w-[33px] h-[33px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: 'rgba(251,191,36,.12)' }}>
+              <Lock size={16} className="text-amber-700" />
+            </div>
+            <span className="flex-1 text-left text-sm font-medium text-slate-700">비밀번호 변경</span>
+            <ChevronRight size={14} className="text-slate-400" />
+          </button>
 
           {/* 알림 설정 토글 */}
           {typeof Notification !== 'undefined' && (
             <button
               onClick={() => void handleNotificationToggle()}
               disabled={notifLoading}
-              className="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors disabled:opacity-60"
+              className="w-full p-[15px_18px] flex items-center gap-3 hover:bg-slate-50/80 transition-colors disabled:opacity-60"
+              style={{ borderBottom: '1px solid rgba(226,232,240,.6)' }}
             >
-              <div className="flex items-center gap-3">
-                {notifEnabled ? (
-                  <Bell size={16} className="text-blue-500" />
-                ) : (
-                  <BellOff size={16} className="text-slate-400" />
-                )}
-                <div className="text-left">
-                  <span className="text-slate-700 font-medium text-sm">푸시 알림</span>
-                </div>
+              <div className="w-[33px] h-[33px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: notifEnabled ? 'rgba(59,130,246,.1)' : 'rgba(148,163,184,.1)' }}>
+                {notifEnabled ? <Bell size={16} className="text-blue-600" /> : <BellOff size={16} className="text-slate-400" />}
               </div>
-              {/* 토글 스위치 */}
-              <div
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 ${
-                  notifEnabled ? 'bg-blue-500' : 'bg-slate-200'
-                }`}
-              >
-                <div
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                    notifEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                  }`}
-                />
+              <span className="flex-1 text-left text-sm font-medium text-slate-700">푸시 알림</span>
+              <div className={`relative w-[46px] h-[27px] rounded-full transition-colors duration-200 shrink-0 ${notifEnabled ? 'bg-blue-600' : 'bg-slate-200'}`} style={{ boxShadow: notifEnabled ? '0 2px 8px rgba(37,99,235,.35)' : 'none' }}>
+                <div className={`absolute top-[2.5px] w-[22px] h-[22px] bg-white rounded-full shadow transition-all duration-200 ${notifEnabled ? 'left-[21px]' : 'left-[2.5px]'}`} />
               </div>
             </button>
           )}
+
+          {/* 이용약관 */}
+          <button
+            onClick={openTerms}
+            className="w-full p-[15px_18px] flex items-center gap-3 hover:bg-slate-50/80 transition-colors"
+            style={{ borderBottom: '1px solid rgba(226,232,240,.6)' }}
+          >
+            <div className="w-[33px] h-[33px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: 'rgba(99,102,241,.1)' }}>
+              <Shield size={16} className="text-indigo-500" />
+            </div>
+            <span className="flex-1 text-left text-sm font-medium text-slate-700">이용약관</span>
+            <ChevronRight size={14} className="text-slate-400" />
+          </button>
+
+          {/* 로그아웃 */}
+          <button
+            onClick={handleLogout}
+            className="w-full p-[15px_18px] flex items-center gap-3 hover:bg-slate-50/80 transition-colors"
+          >
+            <div className="w-[33px] h-[33px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,.1)' }}>
+              <LogOut size={16} className="text-red-600" />
+            </div>
+            <span className="flex-1 text-left text-sm font-medium text-red-600">로그아웃</span>
+          </button>
         </div>
 
-        <div className="mt-8 text-center space-y-1.5">
-          <button
-            onClick={() => navigate('/about')}
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-2"
-          >
-            개발팀 소개
-          </button>
-          <p className="text-xs text-slate-300">Randsome v1.0.0</p>
-        </div>
+        <p className="text-center text-slate-400 text-[11px] mt-5">Randsome v2.0 · SMU Festival 2026 Archive</p>
+      </div>
+
       </div>
 
       <Modal
@@ -903,6 +718,18 @@ const MyPage: React.FC = () => {
       </AnimatePresence>
 
       <AnimatePresence>
+        {isEditing && (
+          <EditProfileSheet
+            editForm={editForm}
+            setEditForm={setEditForm}
+            isSaving={isSaving}
+            onSave={() => void handleSave()}
+            onClose={() => setIsEditing(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {showPasswordChange && (
           <PasswordChangeSheet
             userEmail={user?.email ?? ''}
@@ -912,9 +739,191 @@ const MyPage: React.FC = () => {
       </AnimatePresence>
 
       <BottomNav />
+      </div>
     </MobileLayout>
   );
 };
+
+interface EditProfileSheetProps {
+  editForm: EditForm;
+  setEditForm: React.Dispatch<React.SetStateAction<EditForm>>;
+  isSaving: boolean;
+  onSave: () => void;
+  onClose: () => void;
+}
+
+const EditProfileSheet: React.FC<EditProfileSheetProps> = ({ editForm, setEditForm, isSaving, onSave, onClose }) => (
+  <>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 0.5 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black z-[60]"
+      onClick={onClose}
+    />
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 40 }}
+      transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+      className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl w-full max-h-[90vh] flex flex-col"
+    >
+      <div className="px-6 pt-4 pb-3 shrink-0">
+        <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4" />
+        <div className="h-0.5 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full" />
+      </div>
+
+      <div className="overflow-y-auto px-6 pb-10 space-y-7">
+        {/* MBTI */}
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">MBTI</p>
+          <div className="grid grid-cols-4 gap-1.5">
+            {MBTI_OPTIONS.map(({ value }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setEditForm((f) => ({ ...f, mbti: value as Mbti }))}
+                className={`py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors duration-150 ${
+                  editForm.mbti === value
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200/50'
+                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 실명 */}
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">실명</label>
+          <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
+            <User size={15} className="text-slate-300 shrink-0" />
+            <input
+              value={editForm.legalName}
+              onChange={(e) => setEditForm((f) => ({ ...f, legalName: e.target.value }))}
+              placeholder="홍길동"
+              className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-300"
+            />
+          </div>
+        </div>
+
+        {/* 학과 */}
+        <SearchableSelect
+          label=""
+          options={DEPARTMENT_OPTIONS}
+          value={editForm.department}
+          onChange={(value) => setEditForm((f) => ({ ...f, department: value as Department | '' }))}
+          placeholder="학과 선택"
+          searchPlaceholder="학과명 검색..."
+          className="mb-0"
+        />
+
+        {/* 인스타그램 */}
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">인스타그램</label>
+          <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
+            <AtSign size={15} className="text-slate-300 shrink-0" />
+            <input
+              value={editForm.instagramId}
+              onChange={(e) => setEditForm((f) => ({ ...f, instagramId: e.target.value }))}
+              placeholder="my_insta  (@ 제외)"
+              className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-300"
+            />
+          </div>
+        </div>
+
+        {/* 한줄 소개 */}
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">한줄 소개</label>
+          <div className="flex items-start gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-violet-400 focus-within:bg-white transition-all">
+            <Smile size={15} className="text-slate-300 shrink-0 mt-0.5" />
+            <textarea
+              value={editForm.selfIntroduction}
+              onChange={(e) => setEditForm((f) => ({ ...f, selfIntroduction: e.target.value }))}
+              placeholder="나를 한 마디로 표현하면?"
+              rows={2}
+              className="flex-1 bg-transparent text-sm text-slate-800 outline-none resize-none placeholder:text-slate-300 leading-relaxed"
+            />
+          </div>
+        </div>
+
+        {/* 이상형 */}
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">나의 이상형</label>
+          <div className="flex items-start gap-3 bg-pink-50/60 rounded-2xl px-4 py-3.5 ring-1 ring-pink-100 focus-within:ring-2 focus-within:ring-pink-400 focus-within:bg-white transition-all">
+            <Heart size={15} className="text-pink-300 shrink-0 mt-0.5" />
+            <textarea
+              value={editForm.idealDescription}
+              onChange={(e) => setEditForm((f) => ({ ...f, idealDescription: e.target.value }))}
+              placeholder="어떤 사람을 찾고 계신가요?"
+              rows={2}
+              className="flex-1 bg-transparent text-sm text-slate-800 outline-none resize-none placeholder:text-pink-200 leading-relaxed"
+            />
+          </div>
+        </div>
+
+        {/* 태그 */}
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">나를 표현하는 태그</p>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 mb-2">성격</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PERSONALITY_TAGS.map(({ value, label }) => (
+                  <button key={value} type="button"
+                    onClick={() => setEditForm((f) => ({ ...f, personalityTag: f.personalityTag === value ? '' : value }))}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${editForm.personalityTag === value ? 'bg-blue-500 text-white shadow-sm' : 'bg-blue-50 text-blue-500 hover:bg-blue-100'}`}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 mb-2">외모 스타일</p>
+              <div className="flex flex-wrap gap-1.5">
+                {FACE_TYPE_TAGS.map(({ value, label }) => (
+                  <button key={value} type="button"
+                    onClick={() => setEditForm((f) => ({ ...f, faceTypeTag: f.faceTypeTag === value ? '' : value }))}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${editForm.faceTypeTag === value ? 'bg-violet-500 text-white shadow-sm' : 'bg-violet-50 text-violet-500 hover:bg-violet-100'}`}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 mb-2">연애 스타일</p>
+              <div className="flex flex-wrap gap-1.5">
+                {DATING_STYLE_TAGS.map(({ value, label }) => (
+                  <button key={value} type="button"
+                    onClick={() => setEditForm((f) => ({ ...f, datingStyleTag: f.datingStyleTag === value ? '' : value }))}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-150 ${editForm.datingStyleTag === value ? 'bg-pink-500 text-white shadow-sm' : 'bg-pink-50 text-pink-500 hover:bg-pink-100'}`}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 저장/취소 버튼 */}
+        <div className="flex gap-2.5 pt-1">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
+          >
+            취소
+          </button>
+          <button
+            onClick={onSave}
+            disabled={isSaving}
+            className="flex-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-bold shadow-lg shadow-blue-200/60 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:scale-100"
+          >
+            {isSaving ? '저장 중...' : '저장하기'}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  </>
+);
 
 type PwStep = 'send' | 'verify' | 'newpw';
 

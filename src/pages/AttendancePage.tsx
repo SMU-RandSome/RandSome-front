@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
+import { BottomNav } from '@/components/layout/BottomNav';
+import { Orbs } from '@/components/ui/Orbs';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useToast } from '@/components/ui/Toast';
 import { getAttendance, checkAttendance } from '@/features/attendance/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import type { AttendanceResponse } from '@/types';
-import { ChevronLeft, CalendarCheck, Ticket, CheckCircle2 } from 'lucide-react';
+import { MobileHeader } from '@/components/layout/MobileHeader';
+import { CalendarCheck, Ticket, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const AttendancePage: React.FC = () => {
-  const navigate = useNavigate();
   const { isPWA } = useDisplayMode();
   const { toast } = useToast();
   const [attendance, setAttendance] = useState<AttendanceResponse | null>(null);
@@ -68,25 +69,21 @@ const AttendancePage: React.FC = () => {
   );
 
   return (
-    <MobileLayout>
-      <header className="sticky top-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] px-4 h-14 flex items-center gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-1.5 -ml-1 rounded-xl hover:bg-slate-100 transition-colors"
-          aria-label="뒤로가기"
-        >
-          <ChevronLeft size={22} className="text-slate-700" />
-        </button>
-        <h1 className="text-lg font-bold text-slate-900 flex-1">출석 체크</h1>
-      </header>
+    <MobileLayout className="!bg-transparent">
+      <div className="flex-1 flex flex-col bg-member relative overflow-hidden min-h-screen">
+      <Orbs />
 
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isPWA ? 'pb-8' : 'pb-6'}`}>
+      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
+      <MobileHeader title="출석 체크" />
+
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 relative z-10 ${isPWA ? 'pb-24' : 'pb-8'}`}>
         {/* 출석 현황 카드 */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-gradient-to-br from-indigo-500 to-blue-600 rounded-3xl p-5 text-white shadow-lg shadow-blue-200/40"
+          className="rounded-3xl p-5 text-white shadow-lg shadow-blue-200/40"
+          style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)' }}
         >
           <div className="flex items-center gap-2 mb-4">
             <CalendarCheck size={20} />
@@ -115,7 +112,8 @@ const AttendancePage: React.FC = () => {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-white/90 backdrop-blur-sm rounded-3xl p-5 border border-slate-100/80 shadow-[0_1px_12px_rgba(0,0,0,0.04)]"
+          className="rounded-3xl p-5"
+          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
         >
           <p className="text-sm font-bold text-slate-700 mb-3 text-center">
             {year}년 {month + 1}월
@@ -141,13 +139,14 @@ const AttendancePage: React.FC = () => {
               return (
                 <div key={day} className="flex items-center justify-center aspect-square">
                   <div
-                    className={`w-8 h-8 flex items-center justify-center rounded-full text-[13px] font-semibold transition-colors ${
+                    className={`w-9 h-9 flex items-center justify-center rounded-xl text-[13px] font-semibold transition-colors ${
                       isAttended
-                        ? 'bg-blue-500 text-white shadow-sm shadow-blue-200'
+                        ? 'text-white shadow-sm shadow-blue-200/50'
                         : isToday
-                        ? 'ring-2 ring-blue-300 text-blue-600'
+                        ? 'border-2 border-blue-400 text-blue-600'
                         : 'text-slate-600'
                     }`}
+                    style={isAttended ? { background: 'linear-gradient(135deg, #2563eb, #6366f1)' } : undefined}
                   >
                     {isAttended ? <CheckCircle2 size={15} strokeWidth={2.5} /> : day}
                   </div>
@@ -169,8 +168,9 @@ const AttendancePage: React.FC = () => {
             className={`w-full py-4 rounded-2xl text-base font-bold transition-all duration-200 ${
               isCheckedToday
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-300/60 active:opacity-80'
+                : 'text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-300/60 active:opacity-80'
             }`}
+            style={!isCheckedToday ? { background: 'linear-gradient(135deg, #2563eb, #6366f1)' } : undefined}
           >
             {isChecking ? (
               <span className="flex items-center justify-center gap-2">
@@ -196,6 +196,9 @@ const AttendancePage: React.FC = () => {
             </p>
           )}
         </motion.div>
+      </div>
+      </div>
+      <BottomNav />
       </div>
     </MobileLayout>
   );

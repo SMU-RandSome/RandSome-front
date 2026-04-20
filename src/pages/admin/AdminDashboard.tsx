@@ -1,7 +1,6 @@
 import React, { Suspense, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/store/authStore';
 import {
@@ -15,9 +14,11 @@ import {
   resolveAdminReport,
   rejectAdminReport,
   restoreAdminMember,
+  suspendAdminMember,
 } from '@/features/admin/api';
 import { getAnnouncements } from '@/features/announcement/api';
 import type {
+  Gender,
   AdminMemberListItem,
   AdminMemberDetail,
   AdminMatchingItem,
@@ -32,13 +33,15 @@ import type {
 import {
   X, ChevronRight, Search, ChevronLeft, Megaphone, Plus,
   CheckCircle2, XCircle, Dice5, Heart, Flag, RotateCcw, QrCode,
+  Users, Tag, LogOut, ShieldCheck, UserCheck, AlertTriangle, Menu,
 } from 'lucide-react';
 import { getApiErrorMessage } from '@/lib/axios';
 
 const CouponEventsTab = React.lazy(() => import('@/features/admin/components/CouponEventsTab'));
+const CandidateRegistrationsTab = React.lazy(() => import('@/features/admin/components/CandidateRegistrationsTab'));
 
-type AdminTab = 'members' | 'requests' | 'announcements' | 'coupon-events' | 'reports';
-type AdminReportFilter = 'ALL' | ReportStatusFilter | ReportStatus;
+type AdminTab = 'members' | 'candidates' | 'requests' | 'announcements' | 'coupon-events' | 'reports';
+type AdminReportFilter = 'ALL' | ReportStatusFilter;
 
 const ITEMS_PER_PAGE = 5;
 
@@ -66,34 +69,86 @@ const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
 };
 
 // ── 페이지네이션 ───────────────────────────────────────────────
+const PAGE_WINDOW = 5;
+
 const Pagination: React.FC<{
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }> = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
+
+  const half = Math.floor(PAGE_WINDOW / 2);
+  const start = Math.max(1, Math.min(currentPage - half, totalPages - PAGE_WINDOW + 1));
+  const end = Math.min(totalPages, start + PAGE_WINDOW - 1);
+  const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+
   return (
-    <div className="flex items-center justify-center gap-2 mt-8 pb-4">
+    <div className="flex items-center justify-center gap-1 mt-8 pb-4">
       <button
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
         className="p-2 rounded-lg border border-slate-200 disabled:opacity-30 text-slate-600 transition-colors hover:bg-slate-50"
+        aria-label="이전 페이지"
       >
         <ChevronLeft size={16} />
       </button>
-      <span className="text-sm font-medium text-slate-600 px-2">
-        {currentPage} / {totalPages}
-      </span>
+      {start > 1 && (
+        <>
+          <button
+            onClick={() => onPageChange(1)}
+            className="w-8 h-8 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+          >
+            1
+          </button>
+          {start > 2 && <span className="px-1 text-slate-400 text-sm">…</span>}
+        </>
+      )}
+      {pages.map((p) => (
+        <button
+          key={p}
+          onClick={() => onPageChange(p)}
+          className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+            p === currentPage
+              ? 'bg-slate-900 text-white'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          {p}
+        </button>
+      ))}
+      {end < totalPages && (
+        <>
+          {end < totalPages - 1 && <span className="px-1 text-slate-400 text-sm">…</span>}
+          <button
+            onClick={() => onPageChange(totalPages)}
+            className="w-8 h-8 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+          >
+            {totalPages}
+          </button>
+        </>
+      )}
       <button
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
         className="p-2 rounded-lg border border-slate-200 disabled:opacity-30 text-slate-600 transition-colors hover:bg-slate-50"
+        aria-label="다음 페이지"
       >
         <ChevronRight size={16} />
       </button>
     </div>
   );
 };
+
+// ── 사이드바 탭 정의 ──────────────────────────────────────────
+const SIDEBAR_TABS: { id: AdminTab; label: string; icon: React.ElementType; description: string }[] = [
+  { id: 'members',      label: '회원 관리',     icon: Users,     description: '가입 회원 및 후보자 관리' },
+  { id: 'candidates',   label: '후보 신청',     icon: UserCheck, description: '후보 등록 신청 승인/거절' },
+  { id: 'requests',     label: '매칭 신청',     icon: Heart,     description: '매칭 신청 내역 확인' },
+  { id: 'announcements',label: '공지사항',      icon: Megaphone, description: '공지사항 등록 및 조회' },
+  { id: 'coupon-events',label: '쿠폰 이벤트',   icon: Tag,       description: '쿠폰 이벤트 관리' },
+  { id: 'reports',      label: '신고 관리',     icon: Flag,      description: '신고 처리 및 회원 복구' },
+];
 
 // ── 메인 컴포넌트 ──────────────────────────────────────────────
 const AdminDashboard: React.FC = () => {
@@ -104,6 +159,7 @@ const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('members');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // 통계
   const [candidateStats, setCandidateStats] = useState<CandidateGenderCountResponse | null>(null);
@@ -114,13 +170,19 @@ const AdminDashboard: React.FC = () => {
   const [membersLoading, setMembersLoading] = useState(false);
   const [selectedMemberDetail, setSelectedMemberDetail] = useState<AdminMemberDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [restrictedMemberIds, setRestrictedMemberIds] = useState<Set<number>>(new Set());
+  const [suspendReason, setSuspendReason] = useState('');
+  const [showSuspendForm, setShowSuspendForm] = useState(false);
+  const [suspendLoading, setSuspendLoading] = useState(false);
 
   // 매칭 신청
   const [matchingApplications, setMatchingApplications] = useState<AdminMatchingItem[]>([]);
   const [matchingTotalPages, setMatchingTotalPages] = useState(1);
   const [matchingPage, setMatchingPage] = useState(1);
   const [matchingLoading, setMatchingLoading] = useState(false);
+  const [matchingSort, setMatchingSort] = useState<'LATEST' | 'OLDEST'>('LATEST');
+  const [matchingKeyword, setMatchingKeyword] = useState('');
+  const [matchingDate, setMatchingDate] = useState('');
+  const [matchingGender, setMatchingGender] = useState<Gender | ''>('');
 
   // 공지사항
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -168,9 +230,22 @@ const AdminDashboard: React.FC = () => {
       .finally(() => setMembersLoading(false));
   }, [toast]);
 
-  const fetchMatchingApplications = useCallback((page: number): void => {
+  const fetchMatchingApplications = useCallback((
+    page: number,
+    sort: 'LATEST' | 'OLDEST',
+    keyword: string,
+    date: string,
+    gender: Gender | '',
+  ): void => {
     setMatchingLoading(true);
-    getAdminMatchingApplications({ page: page - 1, size: ITEMS_PER_PAGE })
+    getAdminMatchingApplications({
+      page,
+      size: ITEMS_PER_PAGE,
+      sort,
+      keyword: keyword || undefined,
+      date: date || undefined,
+      gender: gender || undefined,
+    })
       .then((res) => {
         if (res.data) {
           setMatchingApplications(res.data.content);
@@ -191,17 +266,9 @@ const AdminDashboard: React.FC = () => {
 
   const fetchReports = useCallback((status: AdminReportFilter): void => {
     setReportsLoading(true);
-    const statusFilterMap: Record<string, ReportStatusFilter> = {
-      PENDING: 'PENDING',
-      IN_REVIEW: 'IN_REVIEW',
-      RESOLVED: 'COMPLETED',
-      REJECTED: 'COMPLETED',
-    };
-    getAdminReports(status !== 'ALL' ? { statusFilter: statusFilterMap[status] ?? 'PENDING' } : undefined)
+    getAdminReports(status !== 'ALL' ? { statusFilter: status } : undefined)
       .then((res) => {
-        if (res.data) {
-          setReports(res.data);
-        }
+        if (res.data) setReports(res.data);
       })
       .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
       .finally(() => setReportsLoading(false));
@@ -274,7 +341,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // 초기 통계 로드
   useEffect(() => {
     fetchCandidateStats();
   }, [fetchCandidateStats]);
@@ -287,9 +353,9 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'requests') {
-      fetchMatchingApplications(matchingPage);
+      fetchMatchingApplications(matchingPage, matchingSort, matchingKeyword, matchingDate, matchingGender);
     }
-  }, [activeTab, matchingPage, fetchMatchingApplications]);
+  }, [activeTab, matchingPage, matchingSort, matchingKeyword, matchingDate, matchingGender, fetchMatchingApplications]);
 
   useEffect(() => {
     if (activeTab === 'announcements') {
@@ -313,6 +379,11 @@ const AdminDashboard: React.FC = () => {
     setSearchTerm('');
     setCurrentPage(1);
     setMatchingPage(1);
+    setMatchingSort('LATEST');
+    setMatchingKeyword('');
+    setMatchingDate('');
+    setMatchingGender('');
+    setDrawerOpen(false);
   };
 
   const handleSearchChange = (value: string): void => {
@@ -323,6 +394,8 @@ const AdminDashboard: React.FC = () => {
   // ── 회원 상세 ────────────────────────────────────────────────
   const handleMemberClick = async (memberId: number): Promise<void> => {
     setDetailLoading(true);
+    setShowSuspendForm(false);
+    setSuspendReason('');
     try {
       const res = await getAdminMemberDetail(memberId);
       if (res.data) setSelectedMemberDetail(res.data);
@@ -333,27 +406,35 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // 더미 — 백엔드 연동 시 API 호출로 교체
-  const handleToggleRestrict = (memberId: number): void => {
-    const isRestricted = restrictedMemberIds.has(memberId);
-    setRestrictedMemberIds((prev) => {
-      const next = new Set(prev);
-      if (isRestricted) next.delete(memberId);
-      else next.add(memberId);
-      return next;
-    });
-    toast(isRestricted ? '제한이 해제되었습니다.' : '회원이 제한 처리되었습니다.', 'info');
+  const handleSuspendMember = async (memberId: number): Promise<void> => {
+    if (!suspendReason.trim()) {
+      toast('정지 사유를 입력해주세요.', 'error');
+      return;
+    }
+    setSuspendLoading(true);
+    try {
+      await suspendAdminMember(memberId, { reason: suspendReason.trim() });
+      toast('회원이 정지 처리되었습니다.', 'success');
+      setSuspendReason('');
+      setShowSuspendForm(false);
+      setSelectedMemberDetail(null);
+      fetchMembers(currentPage, searchTerm);
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setSuspendLoading(false);
+    }
   };
 
   // ── 렌더 함수 ────────────────────────────────────────────────
   const renderMembers = (): React.ReactNode => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* 후보자 성비 현황 */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.05 }}
-        className="pt-4 mb-4"
+        className="mb-5"
       >
         <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
           <p className="text-[10px] font-bold text-slate-400 mb-3">후보자 현황</p>
@@ -366,7 +447,7 @@ const AdminDashboard: React.FC = () => {
             return (
               <div className="flex items-center gap-4">
                 <div className="text-center min-w-[52px]">
-                  <p className="text-2xl font-black text-slate-900">{total}</p>
+                  <p className="font-display text-[26px] text-slate-900 leading-none">{total}</p>
                   <p className="text-[10px] text-slate-400">전체</p>
                 </div>
                 <div className="flex-1">
@@ -409,7 +490,7 @@ const AdminDashboard: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: i * 0.04 }}
                   onClick={() => handleMemberClick(member.id)}
-                  className="w-full py-3 flex items-center gap-3 text-left hover:bg-slate-50 -mx-5 px-5 transition-colors"
+                  className="w-full py-3 flex items-center gap-3 text-left hover:bg-slate-50 transition-colors rounded-lg px-2"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -421,11 +502,6 @@ const AdminDashboard: React.FC = () => {
                       }`}>
                         {member.role === 'ROLE_CANDIDATE' ? '후보자' : '일반'}
                       </span>
-                      {restrictedMemberIds.has(member.id) && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-50 text-red-500">
-                          제한
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {member.legalName} · {member.gender === 'MALE' ? '남' : '여'} · {member.mbti}
@@ -447,7 +523,79 @@ const AdminDashboard: React.FC = () => {
   );
 
   const renderMatchingApplications = (): React.ReactNode => (
-    <div className="flex flex-col h-full pt-4">
+    <div className="flex flex-col">
+      {/* 필터 영역 */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="flex flex-wrap gap-2 mb-4"
+      >
+        {/* 정렬 */}
+        <div className="flex gap-1.5">
+          {(['LATEST', 'OLDEST'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => { setMatchingSort(s); setMatchingPage(1); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                matchingSort === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {s === 'LATEST' ? '최신순' : '오래된순'}
+            </button>
+          ))}
+        </div>
+
+        {/* 성별 */}
+        <div className="flex gap-1.5">
+          {([['', '전체'], ['MALE', '남'], ['FEMALE', '여']] as [Gender | '', string][]).map(([g, label]) => (
+            <button
+              key={g}
+              onClick={() => { setMatchingGender(g); setMatchingPage(1); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                matchingGender === g ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* 날짜 */}
+        <input
+          type="date"
+          value={matchingDate}
+          onChange={(e) => { setMatchingDate(e.target.value); setMatchingPage(1); }}
+          className="h-8 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-slate-400 transition-colors"
+        />
+
+        {/* 키워드 */}
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={matchingKeyword}
+            onChange={(e) => { setMatchingKeyword(e.target.value); setMatchingPage(1); }}
+            placeholder="닉네임 또는 실명"
+            className="h-8 pl-8 pr-8 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors w-40"
+          />
+          <AnimatePresence>
+            {matchingKeyword && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                transition={{ duration: 0.15 }}
+                onClick={() => { setMatchingKeyword(''); setMatchingPage(1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center bg-slate-200 text-slate-500 rounded-full"
+              >
+                <X size={9} />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+
       {matchingLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -468,8 +616,21 @@ const AdminDashboard: React.FC = () => {
             ) : (
               matchingApplications.map((app, i) => {
                 const isSuccess = app.applicationStatus === 'SUCCESS';
+                const isPartial = app.applicationStatus === 'PARTIAL_MATCH';
+                const isFailed = app.applicationStatus === 'FAILED';
                 const isCancelled = app.applicationStatus === 'CANCELLED';
                 const isIdeal = app.matchingType === 'IDEAL';
+
+                const iconBg = isSuccess
+                  ? isIdeal ? 'bg-pink-100 text-pink-500' : 'bg-green-100 text-green-600'
+                  : isPartial
+                  ? 'bg-amber-100 text-amber-600'
+                  : isFailed
+                  ? 'bg-red-100 text-red-500'
+                  : isCancelled
+                  ? 'bg-slate-100 text-slate-400'
+                  : 'bg-orange-100 text-orange-500';
+
                 return (
                   <motion.div
                     key={app.id}
@@ -478,21 +639,13 @@ const AdminDashboard: React.FC = () => {
                     transition={{ duration: 0.2, delay: i * 0.04 }}
                     className="py-3 flex items-center gap-3"
                   >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      isSuccess
-                        ? isIdeal
-                          ? 'bg-pink-100 text-pink-500'
-                          : 'bg-green-100 text-green-600'
-                        : isCancelled
-                        ? 'bg-slate-100 text-slate-400'
-                        : 'bg-orange-100 text-orange-500'
-                    }`}>
-                      {isCancelled ? (
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+                      {isCancelled || isFailed ? (
                         <XCircle size={16} />
                       ) : isIdeal ? (
-                        <Heart size={16} fill={isSuccess ? 'currentColor' : 'none'} />
+                        <Heart size={16} fill={isSuccess || isPartial ? 'currentColor' : 'none'} />
                       ) : (
-                        isSuccess ? <CheckCircle2 size={16} /> : <Dice5 size={16} />
+                        isSuccess || isPartial ? <CheckCircle2 size={16} /> : <Dice5 size={16} />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -510,7 +663,19 @@ const AdminDashboard: React.FC = () => {
                         {isSuccess && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
                             <CheckCircle2 size={9} />
-                            완료 · {app.applicationCount}명
+                            완료 · {app.matchedCount}/{app.applicationCount}명
+                          </span>
+                        )}
+                        {isPartial && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 size={9} />
+                            부분 매칭 · {app.matchedCount}/{app.applicationCount}명
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                            <XCircle size={9} />
+                            매칭 실패
                           </span>
                         )}
                         {isCancelled && (
@@ -537,8 +702,7 @@ const AdminDashboard: React.FC = () => {
   );
 
   const renderAnnouncements = (): React.ReactNode => (
-    <div className="pt-4 space-y-4">
-      {/* 등록 폼 */}
+    <div className="space-y-4">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -571,7 +735,6 @@ const AdminDashboard: React.FC = () => {
         </button>
       </motion.div>
 
-      {/* 목록 */}
       <div>
         <p className="text-xs font-bold text-slate-400 mb-3">등록된 공지사항 ({announcements.length})</p>
         {announcementsLoading ? (
@@ -619,13 +782,11 @@ const AdminDashboard: React.FC = () => {
       { value: 'ALL', label: '전체' },
       { value: 'PENDING', label: '대기 중' },
       { value: 'IN_REVIEW', label: '검토 중' },
-      { value: 'RESOLVED', label: '처리됨' },
-      { value: 'REJECTED', label: '거절됨' },
+      { value: 'COMPLETED', label: '처리 완료' },
     ];
 
     return (
-      <div className="flex flex-col h-full pt-4">
-        {/* 상태 필터 */}
+      <div className="flex flex-col">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -656,182 +817,300 @@ const AdminDashboard: React.FC = () => {
             ))}
           </div>
         ) : (
-          <>
-            <div className="divide-y divide-slate-100">
-              {reports.length === 0 ? (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center text-sm text-slate-400 py-16"
+          <div className="divide-y divide-slate-100">
+            {reports.length === 0 ? (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-sm text-slate-400 py-16"
+              >
+                신고 내역이 없습니다.
+              </motion.p>
+            ) : (
+              reports.map((report, i) => (
+                <motion.button
+                  key={report.id}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2, delay: i * 0.04 }}
+                  onClick={() => handleReportClick(report.id)}
+                  className="w-full py-3 flex items-center gap-3 text-left hover:bg-slate-50 transition-colors rounded-lg px-2"
                 >
-                  신고 내역이 없습니다.
-                </motion.p>
-              ) : (
-                reports.map((report, i) => (
-                  <motion.button
-                    key={report.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2, delay: i * 0.04 }}
-                    onClick={() => handleReportClick(report.id)}
-                    className="w-full py-3 flex items-center gap-3 text-left hover:bg-slate-50 -mx-5 px-5 transition-colors"
-                  >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      report.reportStatus === 'PENDING'
-                        ? 'bg-orange-100 text-orange-500'
-                        : report.reportStatus === 'RESOLVED'
-                        ? 'bg-green-100 text-green-600'
-                        : report.reportStatus === 'IN_REVIEW'
-                        ? 'bg-blue-100 text-blue-500'
-                        : 'bg-slate-100 text-slate-400'
-                    }`}>
-                      <Flag size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-900 truncate">
-                          {REPORT_REASON_LABELS[report.reason]}
-                        </p>
-                        <span className={`shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded ${REPORT_STATUS_COLORS[report.reportStatus]}`}>
-                          {REPORT_STATUS_LABELS[report.reportStatus]}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-0.5 truncate">{report.reporterNickname} → {report.reportedMemberNickname}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-[10px] text-slate-400">
-                        {new Date(report.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    report.reportStatus === 'PENDING'
+                      ? 'bg-orange-100 text-orange-500'
+                      : report.reportStatus === 'RESOLVED'
+                      ? 'bg-green-100 text-green-600'
+                      : report.reportStatus === 'IN_REVIEW'
+                      ? 'bg-blue-100 text-blue-500'
+                      : 'bg-slate-100 text-slate-400'
+                  }`}>
+                    <Flag size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-900 truncate">
+                        {REPORT_REASON_LABELS[report.reason]}
                       </p>
-                      <ChevronRight size={14} className="text-slate-300 ml-auto mt-1" />
+                      <span className={`shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded ${REPORT_STATUS_COLORS[report.reportStatus]}`}>
+                        {REPORT_STATUS_LABELS[report.reportStatus]}
+                      </span>
                     </div>
-                  </motion.button>
-                ))
-              )}
-            </div>
-          </>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">{report.reporterNickname} → {report.reportedMemberNickname}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-[10px] text-slate-400">
+                      {new Date(report.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                    </p>
+                    <ChevronRight size={14} className="text-slate-300 ml-auto mt-1" />
+                  </div>
+                </motion.button>
+              ))
+            )}
+          </div>
         )}
       </div>
     );
   };
 
-  // ── 탭 정의 ──────────────────────────────────────────────────
-  const TABS: { id: AdminTab; label: string }[] = [
-    { id: 'members', label: '회원 관리' },
-    { id: 'requests', label: '매칭 신청' },
-    { id: 'announcements', label: '공지사항' },
-    { id: 'coupon-events', label: '쿠폰 이벤트' },
-    { id: 'reports', label: '신고 관리' },
-  ];
+  const activeTabInfo = SIDEBAR_TABS.find((t) => t.id === activeTab)!;
 
-  const searchPlaceholder = '닉네임 또는 실명 검색';
+  // ── 사이드바 내용 (데스크탑 + 모바일 드로어 공용) ──
+  const renderSidebarContent = (): React.ReactNode => (
+    <>
+      {/* 서비스 설명 */}
+      <div className="px-5 py-5 border-b border-slate-800">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Admin Panel</p>
+        <p className="text-xs text-slate-400 mt-1">상명대학교 축제 랜덤매칭</p>
+      </div>
+
+      {/* 네비게이션 */}
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {SIDEBAR_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 group ${
+                isActive
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <Icon
+                size={16}
+                strokeWidth={isActive ? 2.5 : 2}
+                className={isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-slate-300'}
+              />
+              <span className={`text-sm font-semibold ${isActive ? 'text-slate-900' : ''}`}>
+                {tab.label}
+              </span>
+              {isActive && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500" />
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* 하단 */}
+      <div className="px-5 py-4 border-t border-slate-800">
+        <p className="text-[10px] text-slate-600">소프트웨어학과 학생회</p>
+      </div>
+    </>
+  );
 
   // ── 렌더 ─────────────────────────────────────────────────────
   return (
-    <MobileLayout className="bg-white">
-      <motion.header
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="sticky top-0 z-50 bg-white border-b border-slate-100 px-5 h-14 flex items-center justify-between"
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-slate-900 rounded-lg" />
-          <span className="font-bold text-slate-900 text-sm">관리자</span>
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* ── 상단 헤더 ── */}
+      <header className="fixed top-0 left-0 right-0 h-14 z-50 bg-white border-b border-slate-200 flex items-center px-3 lg:px-6 gap-2 lg:gap-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        {/* 모바일 햄버거 */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+          aria-label="메뉴 열기"
+        >
+          <Menu size={20} />
+        </button>
+
+        {/* 로고 */}
+        <div className="flex items-center gap-2 lg:gap-2.5 lg:w-56 shrink-0">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-300/30">
+            <Heart size={15} fill="currentColor" />
+          </div>
+          <span className="font-display text-lg tracking-tight hidden sm:inline">
+            <span className="text-blue-600">Rand</span><span className="text-pink-500">some</span>
+          </span>
         </div>
-        <div className="flex items-center gap-3">
+
+        {/* 현재 페이지명 */}
+        <div className="hidden sm:flex items-center gap-2 flex-1 min-w-0">
+          <ShieldCheck size={15} className="text-slate-400 shrink-0" />
+          <span className="text-sm font-semibold text-slate-600 shrink-0">관리자</span>
+          <span className="text-slate-300 mx-1 shrink-0">/</span>
+          <span className="text-sm font-bold text-slate-900 truncate">{activeTabInfo.label}</span>
+        </div>
+        {/* 모바일 페이지명 */}
+        <div className="sm:hidden flex-1 min-w-0">
+          <span className="text-sm font-bold text-slate-900 truncate block">{activeTabInfo.label}</span>
+        </div>
+
+        {/* 우측 액션 */}
+        <div className="flex items-center gap-1 lg:gap-2 shrink-0">
           <button
             onClick={() => navigate('/admin/qr')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-semibold transition-colors"
             aria-label="QR 인증"
           >
             <QrCode size={14} />
-            QR
+            <span className="hidden sm:inline">QR 스캔</span>
           </button>
           <button
             onClick={handleLogout}
-            className="text-xs text-slate-400 hover:text-slate-700 font-medium transition-colors"
+            className="flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-medium transition-colors"
           >
-            로그아웃
+            <LogOut size={14} />
+            <span className="hidden sm:inline">로그아웃</span>
           </button>
         </div>
-      </motion.header>
+      </header>
 
-      <div className="sticky top-14 z-40 bg-white border-b border-slate-100 flex">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            className={`relative flex-1 py-3 text-[11px] font-semibold transition-colors ${
-              activeTab === tab.id ? 'text-slate-900' : 'text-slate-400'
-            }`}
-          >
-            {tab.label}
-            {activeTab === tab.id && (
-              <motion.div
-                layoutId="adminTabIndicator"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900"
-                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'members' && (
-        <div className="px-5 py-3 bg-white border-b border-slate-50 sticky top-[98px] z-30">
-          <div className="relative">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              className="w-full h-10 pl-10 pr-10 bg-slate-50 border-none rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-slate-200 outline-none transition-all"
-              placeholder={searchPlaceholder}
-              value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
+      {/* ── 모바일 드로어 ── */}
+      <AnimatePresence>
+        {drawerOpen && (
+          <div className="fixed inset-0 z-[60] lg:hidden">
+            <motion.div
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDrawerOpen(false)}
             />
-            <AnimatePresence>
-              {searchTerm && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.7 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.7 }}
-                  transition={{ duration: 0.15 }}
-                  onClick={() => handleSearchChange('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center bg-slate-200 text-slate-500 rounded-full"
+            <motion.aside
+              className="absolute left-0 top-0 bottom-0 w-64 bg-slate-900 flex flex-col"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            >
+              {/* 드로어 헤더 */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white">
+                    <Heart size={12} fill="currentColor" />
+                  </div>
+                  <span className="font-display text-base tracking-tight">
+                    <span className="text-blue-400">Rand</span><span className="text-pink-400">some</span>
+                  </span>
+                </div>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  aria-label="메뉴 닫기"
                 >
-                  <X size={10} />
-                </motion.button>
-              )}
-            </AnimatePresence>
+                  <X size={18} />
+                </button>
+              </div>
+              {renderSidebarContent()}
+            </motion.aside>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-10">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.18 }}
-          >
-            {activeTab === 'members' && renderMembers()}
-            {activeTab === 'requests' && renderMatchingApplications()}
-            {activeTab === 'announcements' && renderAnnouncements()}
-            {activeTab === 'coupon-events' && (
-              <Suspense fallback={<div className="h-28 bg-slate-50 rounded-2xl animate-pulse mt-4" />}>
-                <CouponEventsTab />
-              </Suspense>
+      <div className="flex pt-14 min-h-screen">
+        {/* ── 좌측 사이드바 (데스크탑 전용) ── */}
+        <aside className="hidden lg:flex fixed left-0 top-14 bottom-0 w-56 bg-slate-900 flex-col z-40">
+          {renderSidebarContent()}
+        </aside>
+
+        {/* ── 메인 컨텐츠 ── */}
+        <main className="flex-1 lg:ml-56 min-h-full w-full">
+          <div className="p-4 lg:p-6 max-w-4xl">
+            {/* 페이지 헤더 */}
+            <motion.div
+              key={activeTab + '-header'}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mb-4 lg:mb-5"
+            >
+              <h1 className="text-lg lg:text-xl font-bold text-slate-900">{activeTabInfo.label}</h1>
+              <p className="text-xs text-slate-400 mt-0.5">{activeTabInfo.description}</p>
+            </motion.div>
+
+            {/* 검색바 (회원 관리 전용) */}
+            {activeTab === 'members' && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="mb-4"
+              >
+                <div className="relative max-w-full sm:max-w-sm">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    className="w-full h-10 pl-10 pr-10 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition-all shadow-sm"
+                    placeholder="닉네임 또는 실명 검색"
+                    value={searchTerm}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                  />
+                  <AnimatePresence>
+                    {searchTerm && (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.7 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        transition={{ duration: 0.15 }}
+                        onClick={() => handleSearchChange('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center bg-slate-200 text-slate-500 rounded-full"
+                      >
+                        <X size={10} />
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
             )}
-            {activeTab === 'reports' && renderReports()}
-          </motion.div>
-        </AnimatePresence>
+
+            {/* 탭 컨텐츠 */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 sm:p-5">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  {activeTab === 'members' && renderMembers()}
+                  {activeTab === 'candidates' && (
+                    <Suspense fallback={<div className="h-28 bg-slate-50 rounded-2xl animate-pulse" />}>
+                      <CandidateRegistrationsTab />
+                    </Suspense>
+                  )}
+                  {activeTab === 'requests' && renderMatchingApplications()}
+                  {activeTab === 'announcements' && renderAnnouncements()}
+                  {activeTab === 'coupon-events' && (
+                    <Suspense fallback={<div className="h-28 bg-slate-50 rounded-2xl animate-pulse" />}>
+                      <CouponEventsTab />
+                    </Suspense>
+                  )}
+                  {activeTab === 'reports' && renderReports()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </main>
       </div>
 
       {/* 회원 상세 모달 */}
       <AnimatePresence>
         {(selectedMemberDetail ?? detailLoading) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-5">
             <motion.div
               className="absolute inset-0 bg-black/40"
               initial={{ opacity: 0 }}
@@ -840,7 +1119,7 @@ const AdminDashboard: React.FC = () => {
               onClick={() => setSelectedMemberDetail(null)}
             />
             <motion.div
-              className="relative w-full max-w-[390px] bg-white rounded-3xl p-6 max-h-[85vh] overflow-y-auto"
+              className="relative w-full sm:max-w-[390px] bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-h-[85vh] overflow-y-auto"
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -861,11 +1140,6 @@ const AdminDashboard: React.FC = () => {
                         }`}>
                           {selectedMemberDetail.role === 'ROLE_CANDIDATE' ? '후보자' : '일반'}
                         </span>
-                        {restrictedMemberIds.has(selectedMemberDetail.id) && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-50 text-red-500">
-                            제한됨
-                          </span>
-                        )}
                       </div>
                       <p className="text-xs text-slate-400">{selectedMemberDetail.email}</p>
                     </div>
@@ -901,18 +1175,48 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  {/* 회원 제한 */}
-                  <div className="mt-5 pt-4 border-t border-slate-100">
-                    <button
-                      onClick={() => handleToggleRestrict(selectedMemberDetail.id)}
-                      className={`w-full h-11 rounded-2xl text-sm font-semibold transition-colors ${
-                        restrictedMemberIds.has(selectedMemberDetail.id)
-                          ? 'border border-slate-200 text-slate-500 hover:bg-slate-50'
-                          : 'bg-red-50 border border-red-100 text-red-600 hover:bg-red-100'
-                      }`}
-                    >
-                      {restrictedMemberIds.has(selectedMemberDetail.id) ? '제한 해제' : '회원 제한'}
-                    </button>
+                  <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
+                    {!showSuspendForm ? (
+                      <button
+                        onClick={() => setShowSuspendForm(true)}
+                        className="w-full h-11 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <AlertTriangle size={14} />
+                        회원 정지
+                      </button>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-3"
+                      >
+                        <textarea
+                          placeholder="정지 사유를 입력해주세요"
+                          value={suspendReason}
+                          onChange={(e) => setSuspendReason(e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2.5 bg-white border border-red-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-400 resize-none transition-colors"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setShowSuspendForm(false);
+                              setSuspendReason('');
+                            }}
+                            className="flex-1 h-10 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                          >
+                            취소
+                          </button>
+                          <button
+                            onClick={() => handleSuspendMember(selectedMemberDetail.id)}
+                            disabled={suspendLoading || !suspendReason.trim()}
+                            className="flex-1 h-10 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {suspendLoading ? '처리 중...' : '정지 확인'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 </>
               )}
@@ -924,7 +1228,7 @@ const AdminDashboard: React.FC = () => {
       {/* 신고 상세 모달 */}
       <AnimatePresence>
         {(selectedReport ?? reportDetailLoading) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-5">
             <motion.div
               className="absolute inset-0 bg-black/40"
               initial={{ opacity: 0 }}
@@ -933,7 +1237,7 @@ const AdminDashboard: React.FC = () => {
               onClick={() => { if (!isProcessingReport) setSelectedReport(null); }}
             />
             <motion.div
-              className="relative w-full max-w-[390px] bg-white rounded-3xl p-6 max-h-[85vh] overflow-y-auto"
+              className="relative w-full sm:max-w-[390px] bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-h-[85vh] overflow-y-auto"
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -943,7 +1247,6 @@ const AdminDashboard: React.FC = () => {
                 <div className="h-48 animate-pulse bg-slate-50 rounded-2xl" />
               ) : selectedReport && (
                 <>
-                  {/* 헤더 */}
                   <div className="flex items-start justify-between mb-5">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -965,7 +1268,6 @@ const AdminDashboard: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* 신고자 / 피신고자 */}
                   <div className="space-y-3 mb-4">
                     <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
                       <p className="text-[10px] font-bold text-slate-400">신고자</p>
@@ -986,7 +1288,6 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 상세 내용 */}
                   {selectedReport.description && (
                     <div className="bg-slate-50 rounded-2xl p-4 mb-4">
                       <p className="text-[10px] font-bold text-slate-400 mb-1.5">상세 내용</p>
@@ -1001,7 +1302,6 @@ const AdminDashboard: React.FC = () => {
                     })}
                   </p>
 
-                  {/* 액션 버튼 */}
                   <div className="pt-4 border-t border-slate-100 space-y-2">
                     {selectedReport.reportStatus === 'PENDING' && (
                       <>
@@ -1037,7 +1337,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
-    </MobileLayout>
+    </div>
   );
 };
 

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
+import { Orbs } from '@/components/ui/Orbs';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { getTicketHistory } from '@/features/ticket/api';
 import type { TicketHistoryItem, TicketActionType, TicketSource, TicketType } from '@/types';
-import { ChevronLeft, Ticket, TrendingUp, TrendingDown, RotateCcw, ArrowUpDown } from 'lucide-react';
+import { MobileHeader } from '@/components/layout/MobileHeader';
+import { Ticket, TrendingUp, TrendingDown, RotateCcw, ArrowUpDown } from 'lucide-react';
 
 const TICKET_TYPE_TABS: { value: TicketType | 'ALL'; label: string }[] = [
   { value: 'ALL', label: '전체' },
@@ -100,20 +102,15 @@ const TicketHistoryPage: React.FC = () => {
   }, [hasNext, isFetchingMore, cursor, fetchHistory]);
 
   return (
-    <MobileLayout>
-      <header className="sticky top-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] px-4 h-14 flex items-center gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-1.5 -ml-1 rounded-xl hover:bg-slate-100 transition-colors"
-          aria-label="뒤로가기"
-        >
-          <ChevronLeft size={22} className="text-slate-700" />
-        </button>
-        <h1 className="text-lg font-bold text-slate-900 flex-1">티켓 이력</h1>
-      </header>
+    <MobileLayout className="!bg-transparent">
+      <div className="flex-1 flex flex-col bg-member relative overflow-hidden min-h-screen">
+      <Orbs />
+
+      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
+      <MobileHeader title="티켓 이력" onBack={() => navigate(-1)} />
 
       {/* 필터 + 정렬 */}
-      <div className="px-4 py-2.5 flex items-center justify-between gap-2 border-b border-slate-100/60">
+      <div className="px-4 py-2.5 flex items-center justify-between gap-2" style={{ borderBottom: '1px solid rgba(59,130,246,.08)' }}>
         <div className="flex gap-2">
           {TICKET_TYPE_TABS.map(({ value, label }) => (
             <button
@@ -121,8 +118,8 @@ const TicketHistoryPage: React.FC = () => {
               onClick={() => setTicketTypeFilter(value)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
                 ticketTypeFilter === value
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  ? 'bg-[#0c1535] text-white shadow-sm'
+                  : 'bg-white/60 text-slate-500 hover:bg-white/80'
               }`}
             >
               {label}
@@ -131,18 +128,18 @@ const TicketHistoryPage: React.FC = () => {
         </div>
         <button
           onClick={() => setSortType((s) => s === 'LATEST' ? 'OLDEST' : 'LATEST')}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors whitespace-nowrap shrink-0"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white/60 text-slate-500 hover:bg-white/80 transition-colors whitespace-nowrap shrink-0"
         >
           <ArrowUpDown size={11} />
           {sortType === 'LATEST' ? '최신순' : '오래된순'}
         </button>
       </div>
 
-      <div className={`flex-1 overflow-y-auto p-4 ${isPWA ? 'pb-8' : 'pb-6'}`}>
+      <div className={`flex-1 overflow-y-auto p-4 relative z-10 ${isPWA ? 'pb-8' : 'pb-6'}`}>
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="bg-white/80 rounded-2xl p-4 border border-slate-100/60 h-16 animate-shimmer-gradient" />
+              <div key={i} className="rounded-2xl p-4 h-16 animate-shimmer-gradient" style={{ background: 'rgba(255,255,255,.82)', border: '1px solid rgba(255,255,255,.65)' }} />
             ))}
           </div>
         ) : loadError ? (
@@ -170,9 +167,10 @@ const TicketHistoryPage: React.FC = () => {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, delay: Math.min(i * 0.06, 0.3), ease: [0.22, 1, 0.36, 1] }}
-                  className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-slate-100/80 shadow-[0_1px_8px_rgba(0,0,0,0.04)] flex items-center gap-3"
+                  className="rounded-2xl p-4 flex items-center gap-3"
+                  style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                     item.actionType === 'EARN'
                       ? 'bg-emerald-100 text-emerald-600'
                       : item.actionType === 'REFUND'
@@ -194,7 +192,11 @@ const TicketHistoryPage: React.FC = () => {
                         {SOURCE_LABELS[item.source]}
                       </span>
                       <span className={`text-sm font-bold shrink-0 ${
-                        item.actionType === 'USE' ? 'text-rose-500' : 'text-emerald-600'
+                        item.actionType === 'EARN'
+                          ? 'text-emerald-600'
+                          : item.actionType === 'REFUND'
+                          ? 'text-blue-600'
+                          : 'text-rose-500'
                       }`}>
                         {item.actionType === 'USE' ? '-' : '+'}{item.amount}장
                       </span>
@@ -220,6 +222,8 @@ const TicketHistoryPage: React.FC = () => {
             </div>
           </AnimatePresence>
         )}
+      </div>
+      </div>
       </div>
     </MobileLayout>
   );

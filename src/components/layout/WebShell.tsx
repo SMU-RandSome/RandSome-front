@@ -2,14 +2,16 @@ import React, { useCallback } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
-import { Sparkles, Heart, FileText, User, LogOut, ShieldCheck } from 'lucide-react';
+import { Footer } from '@/components/layout/Footer';
+import { Heart, LogOut, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const MEMBER_TABS = [
-  { label: '홈', path: '/home', icon: Sparkles },
-  { label: '매칭', path: '/match', icon: Heart },
-  { label: '신청내역', path: '/requests', icon: FileText },
-  { label: '마이페이지', path: '/mypage', icon: User },
+  { label: '홈', path: '/home' },
+  { label: '매칭', path: '/match' },
+  { label: '출석', path: '/attendance' },
+  { label: '신청내역', path: '/requests' },
+  { label: '마이', path: '/mypage' },
 ] as const;
 
 export const WebShell: React.FC = () => {
@@ -27,9 +29,10 @@ export const WebShell: React.FC = () => {
   }, [logout, navigate]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFF] flex flex-col">
+    <div className="min-h-screen mesh-surface flex flex-col">
       {/* 글래스 모피즘 네비게이션 */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.04)] h-16">
+      {!isAdminPage && (
+        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.04)] h-16">
         <div className="max-w-4xl mx-auto h-full px-6 flex items-center justify-between w-full">
           {/* 로고 */}
           <button
@@ -53,12 +56,11 @@ export const WebShell: React.FC = () => {
                   location.pathname === tab.path ||
                   (tab.path === '/requests' &&
                     location.pathname.startsWith('/requests'));
-                const Icon = tab.icon;
                 return (
                   <button
                     key={tab.path}
                     onClick={() => navigate(tab.path)}
-                    className="relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                    className="relative px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors duration-200"
                     aria-current={isActive ? 'page' : undefined}
                   >
                     {isActive && (
@@ -68,10 +70,9 @@ export const WebShell: React.FC = () => {
                         transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                       />
                     )}
-                    <span className={`relative z-10 flex items-center gap-1.5 transition-colors duration-200 ${
+                    <span className={`relative z-10 transition-colors duration-200 ${
                       isActive ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
                     }`}>
-                      <Icon size={15} strokeWidth={isActive ? 2.5 : 2} />
                       {tab.label}
                     </span>
                   </button>
@@ -123,11 +124,14 @@ export const WebShell: React.FC = () => {
           </div>
         </div>
       </header>
+      )}
 
       {/* 페이지 컨텐츠 */}
-      <main className="flex-1 mt-16">
+      <main className={`flex-1 ${isAdminPage ? '' : 'mt-16'}`}>
         <Outlet />
       </main>
+
+      {!isAdminPage && <Footer />}
     </div>
   );
 };

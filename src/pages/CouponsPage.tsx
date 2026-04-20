@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
+import { Orbs } from '@/components/ui/Orbs';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useToast } from '@/components/ui/Toast';
 import { getCoupons, useCoupon } from '@/features/coupon/api';
@@ -14,7 +15,8 @@ const FILTER_TABS: { value: CouponFilter; label: string }[] = [
   { value: 'AVAILABLE', label: '사용 가능' },
   { value: 'USED_OR_EXPIRED', label: '사용·만료' },
 ];
-import { ChevronLeft, Ticket, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { MobileHeader } from '@/components/layout/MobileHeader';
+import { Ticket, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const STATUS_LABELS: Record<CouponStatus, string> = {
@@ -109,40 +111,36 @@ const CouponsPage: React.FC = () => {
   };
 
   return (
-    <MobileLayout>
-      <header className="sticky top-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] px-4 h-14 flex items-center gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-1.5 -ml-1 rounded-xl hover:bg-slate-100 transition-colors"
-          aria-label="뒤로가기"
-        >
-          <ChevronLeft size={22} className="text-slate-700" />
-        </button>
-        <h1 className="text-lg font-bold text-slate-900 flex-1">내 쿠폰</h1>
-      </header>
+    <MobileLayout className="!bg-transparent">
+      <div className="flex-1 flex flex-col bg-member relative overflow-hidden min-h-screen">
+      <Orbs />
+
+      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
+      <MobileHeader title="내 쿠폰" onBack={() => navigate(-1)} />
 
       {/* 필터 탭 */}
-      <div className="px-4 py-2.5 flex gap-2 border-b border-slate-100/60">
+      <div className="px-4 py-2.5 flex gap-2" style={{ borderBottom: '1px solid rgba(59,130,246,.08)' }}>
         {FILTER_TABS.map(({ value, label }) => (
           <button
             key={value}
             onClick={() => setFilter(value)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
               filter === value
-                ? 'bg-violet-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                ? 'text-white shadow-sm'
+                : 'bg-white/60 text-slate-500 hover:bg-white/80'
             }`}
+            style={filter === value ? { background: 'linear-gradient(135deg, #7c3aed, #a855f7)' } : undefined}
           >
             {label}
           </button>
         ))}
       </div>
 
-      <div className={`flex-1 overflow-y-auto p-4 ${isPWA ? 'pb-8' : 'pb-6'}`}>
+      <div className={`flex-1 overflow-y-auto p-4 relative z-10 ${isPWA ? 'pb-8' : 'pb-6'}`}>
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white/80 rounded-2xl p-4 border border-slate-100/60 h-24 animate-shimmer-gradient" />
+              <div key={i} className="rounded-2xl p-4 h-24 animate-shimmer-gradient" style={{ background: 'rgba(255,255,255,.82)', border: '1px solid rgba(255,255,255,.65)' }} />
             ))}
           </div>
         ) : loadError ? (
@@ -170,16 +168,16 @@ const CouponsPage: React.FC = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: Math.min(i * 0.07, 0.35), ease: [0.22, 1, 0.36, 1] }}
-                className={`bg-white/90 backdrop-blur-sm rounded-2xl border shadow-[0_1px_10px_rgba(0,0,0,0.05)] overflow-hidden transition-opacity ${
+                className={`rounded-2xl overflow-hidden transition-opacity ${
                   item.status !== 'AVAILABLE' ? 'opacity-60' : ''
-                } ${item.status === 'AVAILABLE' ? 'border-violet-200/80' : 'border-slate-100/80'}`}
+                }`}
+                style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
               >
                 {/* 쿠폰 상단 색띠 */}
-                <div className={`h-1.5 ${
-                  item.status === 'AVAILABLE'
-                    ? 'bg-violet-500'
-                    : 'bg-slate-200'
-                }`} />
+                <div
+                  className="h-1.5"
+                  style={item.status === 'AVAILABLE' ? { background: 'linear-gradient(135deg, #7c3aed, #a855f7)' } : { background: '#e2e8f0' }}
+                />
 
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -222,7 +220,8 @@ const CouponsPage: React.FC = () => {
                     {item.status === 'AVAILABLE' && (
                       <button
                         onClick={() => setConfirmTarget(item)}
-                        className="px-4 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold rounded-xl shadow-sm shadow-violet-200/40 hover:shadow-violet-300/50 active:opacity-80 transition-all"
+                        className="px-4 py-1.5 text-white text-xs font-bold rounded-xl shadow-sm shadow-violet-200/40 hover:shadow-violet-300/50 active:opacity-80 transition-all"
+                        style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
                       >
                         사용하기
                       </button>
@@ -242,6 +241,7 @@ const CouponsPage: React.FC = () => {
           </div>
         )}
       </div>
+      </div>
 
       {/* 쿠폰 사용 확인 모달 */}
       <AnimatePresence>
@@ -259,7 +259,8 @@ const CouponsPage: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-2xl w-[calc(100%-2rem)] max-w-[360px]"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] rounded-2xl w-[calc(100%-2rem)] max-w-[360px]"
+              style={{ background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(20px) saturate(180%)' }}
             >
               <div className="p-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-1">쿠폰 사용</h3>
@@ -281,7 +282,8 @@ const CouponsPage: React.FC = () => {
                   <button
                     onClick={handleUseConfirm}
                     disabled={isUsing}
-                    className="flex-1 py-3.5 rounded-2xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 active:opacity-80 shadow-md shadow-violet-200/40 transition-all disabled:opacity-50"
+                    className="flex-1 py-3.5 rounded-2xl text-white text-sm font-bold active:opacity-80 shadow-md shadow-violet-200/40 transition-all disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
                   >
                     {isUsing ? '처리중...' : '사용 확인'}
                   </button>
@@ -291,6 +293,7 @@ const CouponsPage: React.FC = () => {
           </>
         )}
       </AnimatePresence>
+      </div>
     </MobileLayout>
   );
 };
