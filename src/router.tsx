@@ -21,6 +21,7 @@ const CouponsPage = React.lazy(() => import('@/pages/CouponsPage'));
 const CouponEventPage = React.lazy(() => import('@/pages/CouponEventPage'));
 const QrPage = React.lazy(() => import('@/pages/QrPage'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/AdminDashboard'));
+const AdminQrPage = React.lazy(() => import('@/pages/admin/AdminQrPage'));
 const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
 
 const PageLoader: React.FC = () => (
@@ -110,7 +111,10 @@ export const router = createBrowserRouter([
       // 관리자 전용 라우트
       {
         element: <AdminRoute />,
-        children: [{ path: '/admin', element: <AdminDashboard /> }],
+        children: [
+          { path: '/admin', element: <AdminDashboard /> },
+          { path: '/admin/qr', element: <AdminQrPage /> },
+        ],
       },
 
       // 404

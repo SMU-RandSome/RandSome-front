@@ -7,6 +7,7 @@ import type {
   PageResponse,
   CandidateGenderCountResponse,
   AnnouncementRegisterRequest,
+  AdminQrVerifyRequest,
 } from '@/types';
 
 export const getAdminMembers = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMemberListItem>>> =>
@@ -32,4 +33,9 @@ export const registerAnnouncement = (body: AnnouncementRegisterRequest): Promise
 export const getAdminMatchingApplications = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMatchingApplicationItem>>> =>
   apiClient
     .get<ApiResponse<PageResponse<AdminMatchingApplicationItem>>>('/v1/admin/matching-applications', { params })
+    .then((r) => r.data);
+
+export const verifyQrCode = (body: AdminQrVerifyRequest): Promise<ApiResponse<void>> =>
+  apiClient
+    .post<ApiResponse<void>>('/v1/admin/qr/verify', body)
     .then((r) => r.data);

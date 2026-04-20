@@ -19,7 +19,7 @@ import type {
   CandidateGenderCountResponse,
   Announcement,
 } from '@/types';
-import { X, ChevronRight, Search, ChevronLeft, Megaphone, Plus, CheckCircle2, XCircle, Dice5, Heart } from 'lucide-react';
+import { X, ChevronRight, Search, ChevronLeft, Megaphone, Plus, CheckCircle2, XCircle, Dice5, Heart, QrCode } from 'lucide-react';
 import { getApiErrorMessage } from '@/lib/axios';
 
 type AdminTab = 'members' | 'requests' | 'announcements';
@@ -515,12 +515,22 @@ const AdminDashboard: React.FC = () => {
           <div className="w-6 h-6 bg-slate-900 rounded-lg" />
           <span className="font-bold text-slate-900 text-sm">관리자</span>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-slate-400 hover:text-slate-700 font-medium transition-colors"
-        >
-          로그아웃
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/admin/qr')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-semibold transition-colors"
+            aria-label="QR 인증"
+          >
+            <QrCode size={14} />
+            QR
+          </button>
+          <button
+            onClick={handleLogout}
+            className="text-xs text-slate-400 hover:text-slate-700 font-medium transition-colors"
+          >
+            로그아웃
+          </button>
+        </div>
       </motion.header>
 
       <div className="sticky top-14 z-40 bg-white border-b border-slate-100 flex">
