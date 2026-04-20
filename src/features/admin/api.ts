@@ -10,6 +10,9 @@ import type {
   AdminQrVerifyRequest,
   CouponEventPreviewItem,
   CouponEventRegisterRequest,
+  ReportItem,
+  ReportDetailItem,
+  ReportStatus,
 } from '@/types';
 
 export const getAdminMembers = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMemberListItem>>> =>
@@ -72,4 +75,31 @@ export const activateAdminCouponEvent = (eventId: number): Promise<ApiResponse<n
 export const deactivateAdminCouponEvent = (eventId: number): Promise<ApiResponse<null>> =>
   apiClient
     .patch<ApiResponse<null>>(`/v1/admin/coupon-events/${eventId}/deactivate`)
+    .then((r) => r.data);
+
+// --- 신고 관리 ---
+
+export const getAdminReports = (params?: { status?: ReportStatus; page?: number; size?: number }): Promise<ApiResponse<PageResponse<ReportItem>>> =>
+  apiClient
+    .get<ApiResponse<PageResponse<ReportItem>>>('/v1/admin/reports', { params })
+    .then((r) => r.data);
+
+export const getAdminReportDetail = (reportId: number): Promise<ApiResponse<ReportDetailItem>> =>
+  apiClient
+    .get<ApiResponse<ReportDetailItem>>(`/v1/admin/reports/${reportId}`)
+    .then((r) => r.data);
+
+export const processAdminReport = (reportId: number): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/reports/${reportId}/process`)
+    .then((r) => r.data);
+
+export const rejectAdminReport = (reportId: number): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/reports/${reportId}/reject`)
+    .then((r) => r.data);
+
+export const restoreAdminMember = (memberId: number): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/members/${memberId}/restore`)
     .then((r) => r.data);

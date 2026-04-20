@@ -10,6 +10,11 @@ import {
   getCandidateGenderCount,
   registerAnnouncement,
   getAdminMatchingApplications,
+  getAdminReports,
+  getAdminReportDetail,
+  processAdminReport,
+  rejectAdminReport,
+  restoreAdminMember,
 } from '@/features/admin/api';
 import { getAnnouncements } from '@/features/announcement/api';
 import type {
@@ -18,16 +23,44 @@ import type {
   AdminMatchingApplicationItem,
   CandidateGenderCountResponse,
   Announcement,
+  ReportItem,
+  ReportDetailItem,
+  ReportStatus,
+  ReportReason,
 } from '@/types';
-import { X, ChevronRight, Search, ChevronLeft, Megaphone, Plus, CheckCircle2, XCircle, Dice5, Heart, QrCode } from 'lucide-react';
+import {
+  X, ChevronRight, Search, ChevronLeft, Megaphone, Plus,
+  CheckCircle2, XCircle, Dice5, Heart, Flag, RotateCcw, QrCode,
+} from 'lucide-react';
 import { getApiErrorMessage } from '@/lib/axios';
 
 const CouponEventsTab = React.lazy(() => import('@/features/admin/components/CouponEventsTab'));
 
-type AdminTab = 'members' | 'requests' | 'announcements' | 'coupon-events';
+type AdminTab = 'members' | 'requests' | 'announcements' | 'coupon-events' | 'reports';
+type ReportStatusFilter = 'ALL' | ReportStatus;
 
 const ITEMS_PER_PAGE = 5;
 
+const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  INAPPROPRIATE_CONTENT: '부적절한 내용',
+  PLAGIARIZED_PROFILE: '프로필 도용',
+  FAKE_PROFILE: '허위 프로필',
+  HARASSMENT: '괴롭힘',
+  SCAM: '사기',
+  OTHER: '기타',
+};
+
+const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
+  PENDING: '대기 중',
+  RESOLVED: '처리됨',
+  REJECTED: '거절됨',
+};
+
+const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
+  PENDING: 'bg-orange-100 text-orange-600',
+  RESOLVED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-slate-100 text-slate-500',
+};
 
 // ── 페이지네이션 ───────────────────────────────────────────────
 const Pagination: React.FC<{
@@ -93,6 +126,16 @@ const AdminDashboard: React.FC = () => {
   const [newContent, setNewContent] = useState('');
   const [isPosting, setIsPosting] = useState(false);
 
+  // 신고 관리
+  const [reportFilter, setReportFilter] = useState<ReportStatusFilter>('ALL');
+  const [reports, setReports] = useState<ReportItem[]>([]);
+  const [reportsTotalPages, setReportsTotalPages] = useState(1);
+  const [reportsPage, setReportsPage] = useState(1);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<ReportDetailItem | null>(null);
+  const [reportDetailLoading, setReportDetailLoading] = useState(false);
+  const [isProcessingReport, setIsProcessingReport] = useState(false);
+
   const fetchCandidateStats = useCallback((): void => {
     getCandidateGenderCount()
       .then((res) => { if (res.data) setCandidateStats(res.data); })
@@ -145,6 +188,23 @@ const AdminDashboard: React.FC = () => {
       .finally(() => setAnnouncementsLoading(false));
   }, [toast]);
 
+  const fetchReports = useCallback((page: number, status: ReportStatusFilter): void => {
+    setReportsLoading(true);
+    getAdminReports({
+      ...(status !== 'ALL' && { status }),
+      page: page - 1,
+      size: ITEMS_PER_PAGE,
+    })
+      .then((res) => {
+        if (res.data) {
+          setReports(res.data.content);
+          setReportsTotalPages(res.data.totalPages);
+        }
+      })
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
+      .finally(() => setReportsLoading(false));
+  }, [toast]);
+
   const handlePostAnnouncement = async (): Promise<void> => {
     if (!newTitle.trim() || !newContent.trim()) return;
     setIsPosting(true);
@@ -158,6 +218,57 @@ const AdminDashboard: React.FC = () => {
       toast(getApiErrorMessage(err), 'error');
     } finally {
       setIsPosting(false);
+    }
+  };
+
+  const handleReportClick = async (reportId: number): Promise<void> => {
+    setReportDetailLoading(true);
+    try {
+      const res = await getAdminReportDetail(reportId);
+      if (res.data) setSelectedReport(res.data);
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setReportDetailLoading(false);
+    }
+  };
+
+  const handleProcessReport = async (reportId: number): Promise<void> => {
+    setIsProcessingReport(true);
+    try {
+      await processAdminReport(reportId);
+      toast('신고가 처리(경고)되었습니다.', 'success');
+      setSelectedReport(null);
+      fetchReports(reportsPage, reportFilter);
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setIsProcessingReport(false);
+    }
+  };
+
+  const handleRejectReport = async (reportId: number): Promise<void> => {
+    setIsProcessingReport(true);
+    try {
+      await rejectAdminReport(reportId);
+      toast('신고가 거절되었습니다.', 'info');
+      setSelectedReport(null);
+      fetchReports(reportsPage, reportFilter);
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setIsProcessingReport(false);
+    }
+  };
+
+  const handleRestoreMember = async (memberId: number): Promise<void> => {
+    try {
+      await restoreAdminMember(memberId);
+      toast('회원이 복구되었습니다.', 'success');
+      setSelectedReport(null);
+      fetchReports(reportsPage, reportFilter);
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
     }
   };
 
@@ -184,6 +295,12 @@ const AdminDashboard: React.FC = () => {
     }
   }, [activeTab, fetchAnnouncements]);
 
+  useEffect(() => {
+    if (activeTab === 'reports') {
+      fetchReports(reportsPage, reportFilter);
+    }
+  }, [activeTab, reportsPage, reportFilter, fetchReports]);
+
   const handleLogout = (): void => {
     logout();
     navigate('/');
@@ -194,6 +311,7 @@ const AdminDashboard: React.FC = () => {
     setSearchTerm('');
     setCurrentPage(1);
     setMatchingPage(1);
+    setReportsPage(1);
   };
 
   const handleSearchChange = (value: string): void => {
@@ -495,12 +613,116 @@ const AdminDashboard: React.FC = () => {
     </div>
   );
 
+  const renderReports = (): React.ReactNode => {
+    const STATUS_FILTERS: { value: ReportStatusFilter; label: string }[] = [
+      { value: 'ALL', label: '전체' },
+      { value: 'PENDING', label: '대기 중' },
+      { value: 'RESOLVED', label: '처리됨' },
+      { value: 'REJECTED', label: '거절됨' },
+    ];
+
+    return (
+      <div className="flex flex-col h-full pt-4">
+        {/* 상태 필터 */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none"
+        >
+          {STATUS_FILTERS.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => {
+                setReportFilter(value);
+                setReportsPage(1);
+              }}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                reportFilter === value
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </motion.div>
+
+        {reportsLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 bg-slate-50 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="divide-y divide-slate-100">
+              {reports.length === 0 ? (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center text-sm text-slate-400 py-16"
+                >
+                  신고 내역이 없습니다.
+                </motion.p>
+              ) : (
+                reports.map((report, i) => (
+                  <motion.button
+                    key={report.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: i * 0.04 }}
+                    onClick={() => handleReportClick(report.id)}
+                    className="w-full py-3 flex items-center gap-3 text-left hover:bg-slate-50 -mx-5 px-5 transition-colors"
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      report.status === 'PENDING'
+                        ? 'bg-orange-100 text-orange-500'
+                        : report.status === 'RESOLVED'
+                        ? 'bg-green-100 text-green-600'
+                        : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      <Flag size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                          {REPORT_REASON_LABELS[report.reason]}
+                        </p>
+                        <span className={`shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded ${REPORT_STATUS_COLORS[report.status]}`}>
+                          {REPORT_STATUS_LABELS[report.status]}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5 truncate">{report.description || '상세 내용 없음'}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[10px] text-slate-400">
+                        {new Date(report.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                      </p>
+                      <ChevronRight size={14} className="text-slate-300 ml-auto mt-1" />
+                    </div>
+                  </motion.button>
+                ))
+              )}
+            </div>
+            <Pagination
+              currentPage={reportsPage}
+              totalPages={reportsTotalPages}
+              onPageChange={setReportsPage}
+            />
+          </>
+        )}
+      </div>
+    );
+  };
+
   // ── 탭 정의 ──────────────────────────────────────────────────
   const TABS: { id: AdminTab; label: string }[] = [
     { id: 'members', label: '회원 관리' },
     { id: 'requests', label: '매칭 신청' },
     { id: 'announcements', label: '공지사항' },
     { id: 'coupon-events', label: '쿠폰 이벤트' },
+    { id: 'reports', label: '신고 관리' },
   ];
 
   const searchPlaceholder = '닉네임 또는 실명 검색';
@@ -541,7 +763,7 @@ const AdminDashboard: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
-            className={`relative flex-1 py-3 text-xs font-semibold transition-colors ${
+            className={`relative flex-1 py-3 text-[11px] font-semibold transition-colors ${
               activeTab === tab.id ? 'text-slate-900' : 'text-slate-400'
             }`}
           >
@@ -603,6 +825,7 @@ const AdminDashboard: React.FC = () => {
                 <CouponEventsTab />
               </Suspense>
             )}
+            {activeTab === 'reports' && renderReports()}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -692,6 +915,123 @@ const AdminDashboard: React.FC = () => {
                     >
                       {restrictedMemberIds.has(selectedMemberDetail.id) ? '제한 해제' : '회원 제한'}
                     </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 신고 상세 모달 */}
+      <AnimatePresence>
+        {(selectedReport ?? reportDetailLoading) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
+            <motion.div
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { if (!isProcessingReport) setSelectedReport(null); }}
+            />
+            <motion.div
+              className="relative w-full max-w-[390px] bg-white rounded-3xl p-6 max-h-[85vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            >
+              {reportDetailLoading ? (
+                <div className="h-48 animate-pulse bg-slate-50 rounded-2xl" />
+              ) : selectedReport && (
+                <>
+                  {/* 헤더 */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Flag size={16} className="text-slate-500" />
+                        <h3 className="font-bold text-slate-900 text-base">
+                          {REPORT_REASON_LABELS[selectedReport.reason]}
+                        </h3>
+                      </div>
+                      <span className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-full ${REPORT_STATUS_COLORS[selectedReport.status]}`}>
+                        {REPORT_STATUS_LABELS[selectedReport.status]}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedReport(null)}
+                      className="p-1 text-slate-400 hover:text-slate-700 transition-colors"
+                      aria-label="닫기"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  {/* 신고자 / 피신고자 */}
+                  <div className="space-y-3 mb-4">
+                    <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
+                      <p className="text-[10px] font-bold text-slate-400">신고자</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedReport.reporterNickname}</p>
+                      <p className="text-xs text-slate-400">ID: {selectedReport.reporterId}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-bold text-slate-400">피신고자</p>
+                        {selectedReport.targetActiveSuspensionCount > 0 && (
+                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-600">
+                            활성 신고 {selectedReport.targetActiveSuspensionCount}건
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-slate-900">{selectedReport.targetNickname}</p>
+                      <p className="text-xs text-slate-400">ID: {selectedReport.targetMemberId}</p>
+                    </div>
+                  </div>
+
+                  {/* 상세 내용 */}
+                  {selectedReport.description && (
+                    <div className="bg-slate-50 rounded-2xl p-4 mb-4">
+                      <p className="text-[10px] font-bold text-slate-400 mb-1.5">상세 내용</p>
+                      <p className="text-sm text-slate-700 leading-relaxed">{selectedReport.description}</p>
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-slate-400 mb-5">
+                    {new Date(selectedReport.createdAt).toLocaleString('ko-KR', {
+                      year: 'numeric', month: 'long', day: 'numeric',
+                      hour: '2-digit', minute: '2-digit',
+                    })}
+                  </p>
+
+                  {/* 액션 버튼 */}
+                  <div className="pt-4 border-t border-slate-100 space-y-2">
+                    {selectedReport.status === 'PENDING' && (
+                      <>
+                        <button
+                          onClick={() => handleProcessReport(selectedReport.id)}
+                          disabled={isProcessingReport}
+                          className="w-full h-11 rounded-2xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {isProcessingReport ? '처리 중...' : '처리 (경고)'}
+                        </button>
+                        <button
+                          onClick={() => handleRejectReport(selectedReport.id)}
+                          disabled={isProcessingReport}
+                          className="w-full h-11 rounded-2xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          거절
+                        </button>
+                      </>
+                    )}
+                    {selectedReport.status === 'RESOLVED' && (
+                      <button
+                        onClick={() => handleRestoreMember(selectedReport.targetMemberId)}
+                        className="w-full h-11 rounded-2xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <RotateCcw size={14} />
+                        회원 복구
+                      </button>
+                    )}
                   </div>
                 </>
               )}
