@@ -356,6 +356,15 @@ export interface AdminQrVerifyRequest {
 
 // --- 관리자 ---
 
+export interface AdminMatchingApplicationItem {
+  id: number;
+  memberNickname: string;
+  matchingType: MatchingType;
+  applicationStatus: MatchingApplicationStatus;
+  applicationCount: number;
+  appliedAt: string;
+}
+
 export interface CandidateGenderCountResponse {
   maleCount: number;
   femaleCount: number;

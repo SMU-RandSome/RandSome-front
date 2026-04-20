@@ -3,6 +3,7 @@ import type {
   ApiResponse,
   AdminMemberListItem,
   AdminMemberDetail,
+  AdminMatchingApplicationItem,
   PageResponse,
   CandidateGenderCountResponse,
   AnnouncementRegisterRequest,
@@ -26,4 +27,9 @@ export const getCandidateGenderCount = (): Promise<ApiResponse<CandidateGenderCo
 export const registerAnnouncement = (body: AnnouncementRegisterRequest): Promise<ApiResponse<number>> =>
   apiClient
     .post<ApiResponse<number>>('/v1/admin/announcements', body)
+    .then((r) => r.data);
+
+export const getAdminMatchingApplications = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMatchingApplicationItem>>> =>
+  apiClient
+    .get<ApiResponse<PageResponse<AdminMatchingApplicationItem>>>('/v1/admin/matching-applications', { params })
     .then((r) => r.data);
