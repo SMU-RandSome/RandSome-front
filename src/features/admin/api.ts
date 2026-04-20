@@ -7,6 +7,9 @@ import type {
   PageResponse,
   CandidateGenderCountResponse,
   AnnouncementRegisterRequest,
+  ReportItem,
+  ReportDetailItem,
+  ReportStatus,
 } from '@/types';
 
 export const getAdminMembers = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMemberListItem>>> =>
@@ -32,4 +35,29 @@ export const registerAnnouncement = (body: AnnouncementRegisterRequest): Promise
 export const getAdminMatchingApplications = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMatchingApplicationItem>>> =>
   apiClient
     .get<ApiResponse<PageResponse<AdminMatchingApplicationItem>>>('/v1/admin/matching-applications', { params })
+    .then((r) => r.data);
+
+export const getAdminReports = (params?: { status?: ReportStatus; page?: number; size?: number }): Promise<ApiResponse<PageResponse<ReportItem>>> =>
+  apiClient
+    .get<ApiResponse<PageResponse<ReportItem>>>('/v1/admin/reports', { params })
+    .then((r) => r.data);
+
+export const getAdminReportDetail = (reportId: number): Promise<ApiResponse<ReportDetailItem>> =>
+  apiClient
+    .get<ApiResponse<ReportDetailItem>>(`/v1/admin/reports/${reportId}`)
+    .then((r) => r.data);
+
+export const processAdminReport = (reportId: number): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/reports/${reportId}/process`)
+    .then((r) => r.data);
+
+export const rejectAdminReport = (reportId: number): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/reports/${reportId}/reject`)
+    .then((r) => r.data);
+
+export const restoreAdminMember = (memberId: number): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/members/${memberId}/restore`)
     .then((r) => r.data);
