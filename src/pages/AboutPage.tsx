@@ -316,7 +316,7 @@ const AboutPage: React.FC = () => {
 
   return (
     <MobileLayout className="bg-[#F8FAFF]">
-      <div className={isPWA ? 'px-5 pt-5' : ''}>
+      <div className={isPWA ? 'px-5 pt-5' : 'mx-auto max-w-2xl px-5 py-5'}>
         {content}
       </div>
     </MobileLayout>
