@@ -12,7 +12,7 @@ import {
   getAdminMatchingApplications,
   getAdminReports,
   getAdminReportDetail,
-  processAdminReport,
+  resolveAdminReport,
   rejectAdminReport,
   restoreAdminMember,
 } from '@/features/admin/api';
@@ -20,13 +20,14 @@ import { getAnnouncements } from '@/features/announcement/api';
 import type {
   AdminMemberListItem,
   AdminMemberDetail,
-  AdminMatchingApplicationItem,
+  AdminMatchingItem,
   CandidateGenderCountResponse,
   Announcement,
-  ReportItem,
-  ReportDetailItem,
+  AdminReportListItem,
+  AdminReportDetailResponse,
   ReportStatus,
   ReportReason,
+  ReportStatusFilter,
 } from '@/types';
 import {
   X, ChevronRight, Search, ChevronLeft, Megaphone, Plus,
@@ -37,7 +38,7 @@ import { getApiErrorMessage } from '@/lib/axios';
 const CouponEventsTab = React.lazy(() => import('@/features/admin/components/CouponEventsTab'));
 
 type AdminTab = 'members' | 'requests' | 'announcements' | 'coupon-events' | 'reports';
-type ReportStatusFilter = 'ALL' | ReportStatus;
+type AdminReportFilter = 'ALL' | ReportStatusFilter | ReportStatus;
 
 const ITEMS_PER_PAGE = 5;
 
@@ -52,12 +53,14 @@ const REPORT_REASON_LABELS: Record<ReportReason, string> = {
 
 const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   PENDING: '대기 중',
+  IN_REVIEW: '검토 중',
   RESOLVED: '처리됨',
   REJECTED: '거절됨',
 };
 
 const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
   PENDING: 'bg-orange-100 text-orange-600',
+  IN_REVIEW: 'bg-blue-100 text-blue-600',
   RESOLVED: 'bg-green-100 text-green-700',
   REJECTED: 'bg-slate-100 text-slate-500',
 };
@@ -114,7 +117,7 @@ const AdminDashboard: React.FC = () => {
   const [restrictedMemberIds, setRestrictedMemberIds] = useState<Set<number>>(new Set());
 
   // 매칭 신청
-  const [matchingApplications, setMatchingApplications] = useState<AdminMatchingApplicationItem[]>([]);
+  const [matchingApplications, setMatchingApplications] = useState<AdminMatchingItem[]>([]);
   const [matchingTotalPages, setMatchingTotalPages] = useState(1);
   const [matchingPage, setMatchingPage] = useState(1);
   const [matchingLoading, setMatchingLoading] = useState(false);
@@ -127,20 +130,18 @@ const AdminDashboard: React.FC = () => {
   const [isPosting, setIsPosting] = useState(false);
 
   // 신고 관리
-  const [reportFilter, setReportFilter] = useState<ReportStatusFilter>('ALL');
-  const [reports, setReports] = useState<ReportItem[]>([]);
-  const [reportsTotalPages, setReportsTotalPages] = useState(1);
-  const [reportsPage, setReportsPage] = useState(1);
+  const [reportFilter, setReportFilter] = useState<AdminReportFilter>('ALL');
+  const [reports, setReports] = useState<AdminReportListItem[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<ReportDetailItem | null>(null);
+  const [selectedReport, setSelectedReport] = useState<AdminReportDetailResponse | null>(null);
   const [reportDetailLoading, setReportDetailLoading] = useState(false);
   const [isProcessingReport, setIsProcessingReport] = useState(false);
 
   const fetchCandidateStats = useCallback((): void => {
     getCandidateGenderCount()
       .then((res) => { if (res.data) setCandidateStats(res.data); })
-      .catch((err) => {
-        console.error('후보 통계 로딩 실패:', err);
+      .catch((err: unknown) => {
+        if (import.meta.env.DEV) console.error('후보 통계 로딩 실패:', err);
         toast('후보 통계를 불러오는데 실패했습니다', 'error');
       });
   }, [toast]);
@@ -158,7 +159,7 @@ const AdminDashboard: React.FC = () => {
               )
             : res.data.content;
           setMembers(filtered);
-          setTotalPages(res.data.totalPages);
+          setTotalPages(Math.ceil(res.data.totalElements / (res.data.size || ITEMS_PER_PAGE)));
         }
       })
       .catch((err: unknown) => {
@@ -173,7 +174,7 @@ const AdminDashboard: React.FC = () => {
       .then((res) => {
         if (res.data) {
           setMatchingApplications(res.data.content);
-          setMatchingTotalPages(res.data.totalPages);
+          setMatchingTotalPages(Math.ceil(res.data.totalElements / (res.data.size || ITEMS_PER_PAGE)));
         }
       })
       .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
@@ -188,17 +189,18 @@ const AdminDashboard: React.FC = () => {
       .finally(() => setAnnouncementsLoading(false));
   }, [toast]);
 
-  const fetchReports = useCallback((page: number, status: ReportStatusFilter): void => {
+  const fetchReports = useCallback((status: AdminReportFilter): void => {
     setReportsLoading(true);
-    getAdminReports({
-      ...(status !== 'ALL' && { status }),
-      page: page - 1,
-      size: ITEMS_PER_PAGE,
-    })
+    const statusFilterMap: Record<string, ReportStatusFilter> = {
+      PENDING: 'PENDING',
+      IN_REVIEW: 'IN_REVIEW',
+      RESOLVED: 'COMPLETED',
+      REJECTED: 'COMPLETED',
+    };
+    getAdminReports(status !== 'ALL' ? { statusFilter: statusFilterMap[status] ?? 'PENDING' } : undefined)
       .then((res) => {
         if (res.data) {
-          setReports(res.data.content);
-          setReportsTotalPages(res.data.totalPages);
+          setReports(res.data);
         }
       })
       .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
@@ -236,10 +238,10 @@ const AdminDashboard: React.FC = () => {
   const handleProcessReport = async (reportId: number): Promise<void> => {
     setIsProcessingReport(true);
     try {
-      await processAdminReport(reportId);
+      await resolveAdminReport(reportId);
       toast('신고가 처리(경고)되었습니다.', 'success');
       setSelectedReport(null);
-      fetchReports(reportsPage, reportFilter);
+      fetchReports(reportFilter);
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     } finally {
@@ -253,7 +255,7 @@ const AdminDashboard: React.FC = () => {
       await rejectAdminReport(reportId);
       toast('신고가 거절되었습니다.', 'info');
       setSelectedReport(null);
-      fetchReports(reportsPage, reportFilter);
+      fetchReports(reportFilter);
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     } finally {
@@ -266,7 +268,7 @@ const AdminDashboard: React.FC = () => {
       await restoreAdminMember(memberId);
       toast('회원이 복구되었습니다.', 'success');
       setSelectedReport(null);
-      fetchReports(reportsPage, reportFilter);
+      fetchReports(reportFilter);
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     }
@@ -297,9 +299,9 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'reports') {
-      fetchReports(reportsPage, reportFilter);
+      fetchReports(reportFilter);
     }
-  }, [activeTab, reportsPage, reportFilter, fetchReports]);
+  }, [activeTab, reportFilter, fetchReports]);
 
   const handleLogout = (): void => {
     logout();
@@ -311,7 +313,6 @@ const AdminDashboard: React.FC = () => {
     setSearchTerm('');
     setCurrentPage(1);
     setMatchingPage(1);
-    setReportsPage(1);
   };
 
   const handleSearchChange = (value: string): void => {
@@ -496,7 +497,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-semibold text-slate-900 truncate">{app.memberNickname}</p>
+                        <p className="text-sm font-semibold text-slate-900 truncate">{app.applicantNickname}</p>
                         <span className="text-xs text-slate-400 shrink-0">{app.matchingType === 'IDEAL' ? '이상형' : '랜덤'}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -518,7 +519,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-[10px] text-slate-400 shrink-0">
-                      {new Date(app.appliedAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                      {new Date(app.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
                     </p>
                   </motion.div>
                 );
@@ -614,9 +615,10 @@ const AdminDashboard: React.FC = () => {
   );
 
   const renderReports = (): React.ReactNode => {
-    const STATUS_FILTERS: { value: ReportStatusFilter; label: string }[] = [
+    const STATUS_FILTERS: { value: AdminReportFilter; label: string }[] = [
       { value: 'ALL', label: '전체' },
       { value: 'PENDING', label: '대기 중' },
+      { value: 'IN_REVIEW', label: '검토 중' },
       { value: 'RESOLVED', label: '처리됨' },
       { value: 'REJECTED', label: '거절됨' },
     ];
@@ -635,7 +637,6 @@ const AdminDashboard: React.FC = () => {
               key={value}
               onClick={() => {
                 setReportFilter(value);
-                setReportsPage(1);
               }}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                 reportFilter === value
@@ -676,10 +677,12 @@ const AdminDashboard: React.FC = () => {
                     className="w-full py-3 flex items-center gap-3 text-left hover:bg-slate-50 -mx-5 px-5 transition-colors"
                   >
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      report.status === 'PENDING'
+                      report.reportStatus === 'PENDING'
                         ? 'bg-orange-100 text-orange-500'
-                        : report.status === 'RESOLVED'
+                        : report.reportStatus === 'RESOLVED'
                         ? 'bg-green-100 text-green-600'
+                        : report.reportStatus === 'IN_REVIEW'
+                        ? 'bg-blue-100 text-blue-500'
                         : 'bg-slate-100 text-slate-400'
                     }`}>
                       <Flag size={16} />
@@ -689,11 +692,11 @@ const AdminDashboard: React.FC = () => {
                         <p className="text-sm font-semibold text-slate-900 truncate">
                           {REPORT_REASON_LABELS[report.reason]}
                         </p>
-                        <span className={`shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded ${REPORT_STATUS_COLORS[report.status]}`}>
-                          {REPORT_STATUS_LABELS[report.status]}
+                        <span className={`shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded ${REPORT_STATUS_COLORS[report.reportStatus]}`}>
+                          {REPORT_STATUS_LABELS[report.reportStatus]}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5 truncate">{report.description || '상세 내용 없음'}</p>
+                      <p className="text-xs text-slate-400 mt-0.5 truncate">{report.reporterNickname} → {report.reportedMemberNickname}</p>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-[10px] text-slate-400">
@@ -705,11 +708,6 @@ const AdminDashboard: React.FC = () => {
                 ))
               )}
             </div>
-            <Pagination
-              currentPage={reportsPage}
-              totalPages={reportsTotalPages}
-              onPageChange={setReportsPage}
-            />
           </>
         )}
       </div>
@@ -954,8 +952,8 @@ const AdminDashboard: React.FC = () => {
                           {REPORT_REASON_LABELS[selectedReport.reason]}
                         </h3>
                       </div>
-                      <span className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-full ${REPORT_STATUS_COLORS[selectedReport.status]}`}>
-                        {REPORT_STATUS_LABELS[selectedReport.status]}
+                      <span className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-full ${REPORT_STATUS_COLORS[selectedReport.reportStatus]}`}>
+                        {REPORT_STATUS_LABELS[selectedReport.reportStatus]}
                       </span>
                     </div>
                     <button
@@ -977,14 +975,14 @@ const AdminDashboard: React.FC = () => {
                     <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] font-bold text-slate-400">피신고자</p>
-                        {selectedReport.targetActiveSuspensionCount > 0 && (
+                        {selectedReport.activeReportCount > 0 && (
                           <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-600">
-                            활성 신고 {selectedReport.targetActiveSuspensionCount}건
+                            활성 신고 {selectedReport.activeReportCount}건
                           </span>
                         )}
                       </div>
-                      <p className="text-sm font-semibold text-slate-900">{selectedReport.targetNickname}</p>
-                      <p className="text-xs text-slate-400">ID: {selectedReport.targetMemberId}</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedReport.reportedMemberNickname}</p>
+                      <p className="text-xs text-slate-400">ID: {selectedReport.reportedMemberId}</p>
                     </div>
                   </div>
 
@@ -1005,7 +1003,7 @@ const AdminDashboard: React.FC = () => {
 
                   {/* 액션 버튼 */}
                   <div className="pt-4 border-t border-slate-100 space-y-2">
-                    {selectedReport.status === 'PENDING' && (
+                    {selectedReport.reportStatus === 'PENDING' && (
                       <>
                         <button
                           onClick={() => handleProcessReport(selectedReport.id)}
@@ -1023,9 +1021,9 @@ const AdminDashboard: React.FC = () => {
                         </button>
                       </>
                     )}
-                    {selectedReport.status === 'RESOLVED' && (
+                    {selectedReport.reportStatus === 'RESOLVED' && (
                       <button
-                        onClick={() => handleRestoreMember(selectedReport.targetMemberId)}
+                        onClick={() => handleRestoreMember(selectedReport.reportedMemberId)}
                         className="w-full h-11 rounded-2xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
                       >
                         <RotateCcw size={14} />

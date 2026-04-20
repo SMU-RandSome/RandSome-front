@@ -1,11 +1,13 @@
 import { apiClient } from '@/lib/axios';
-import type { ApiResponse, CouponEventDetailItem, CouponItem, CursorPageResponse } from '@/types';
+import type { ApiResponse, CouponEventDetailItem, CouponItem, CursorSlice } from '@/types';
 
-export const getCoupons = (cursor?: string, limit = 20): Promise<ApiResponse<CursorPageResponse<CouponItem>>> =>
+export const getCoupons = (params?: {
+  filter?: 'AVAILABLE' | 'USED_OR_EXPIRED' | 'ALL';
+  lastCouponId?: number;
+  size?: number;
+}): Promise<ApiResponse<CursorSlice<CouponItem>>> =>
   apiClient
-    .get<ApiResponse<CursorPageResponse<CouponItem>>>('/v1/coupons', {
-      params: { cursor, limit },
-    })
+    .get<ApiResponse<CursorSlice<CouponItem>>>('/v1/coupons', { params })
     .then((r) => r.data);
 
 export const useCoupon = (couponId: number): Promise<ApiResponse<null>> =>
@@ -14,7 +16,7 @@ export const useCoupon = (couponId: number): Promise<ApiResponse<null>> =>
 export const getCouponEvent = (eventId: number): Promise<ApiResponse<CouponEventDetailItem>> =>
   apiClient.get<ApiResponse<CouponEventDetailItem>>(`/v1/coupon-events/${eventId}`).then((r) => r.data);
 
-export const claimCouponEvent = (eventId: number, secretCode?: string): Promise<ApiResponse<null>> =>
+export const issueCouponEvent = (couponEventId: number): Promise<ApiResponse<number>> =>
   apiClient
-    .post<ApiResponse<null>>(`/v1/coupon-events/${eventId}/claim`, secretCode ? { secretCode } : {})
+    .post<ApiResponse<number>>(`/v1/coupon-events/${couponEventId}/issue`)
     .then((r) => r.data);

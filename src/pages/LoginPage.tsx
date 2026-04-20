@@ -91,7 +91,7 @@ const LoginPage: React.FC = () => {
         <button
           type="submit"
           disabled={!emailId || !password || isLoading}
-          className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-200/50"
+          className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:brightness-110 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-200/50"
         >
           {isLoading ? '로그인 중...' : '로그인하기'}
         </button>

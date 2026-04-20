@@ -119,9 +119,9 @@ export interface MemberProfile {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  personalityTag: PersonalityTag;
-  faceTypeTag: FaceTypeTag;
-  datingStyleTag: DatingStyleTag;
+  personalityTag?: PersonalityTag;
+  faceTypeTag?: FaceTypeTag;
+  datingStyleTag?: DatingStyleTag;
   candidateRegistrationStatus: CandidateRegistrationStatus;
   exposureCount: number;
 }
@@ -133,9 +133,9 @@ export interface MemberProfileUpdateRequest {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  personalityTag: PersonalityTag;
-  faceTypeTag: FaceTypeTag;
-  datingStyleTag: DatingStyleTag;
+  personalityTag?: PersonalityTag;
+  faceTypeTag?: FaceTypeTag;
+  datingStyleTag?: DatingStyleTag;
 }
 
 export interface MemberCreateRequest {
@@ -149,9 +149,9 @@ export interface MemberCreateRequest {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  personalityTag: PersonalityTag;
-  faceTypeTag: FaceTypeTag;
-  datingStyleTag: DatingStyleTag;
+  personalityTag?: PersonalityTag;
+  faceTypeTag?: FaceTypeTag;
+  datingStyleTag?: DatingStyleTag;
   agreedToTerms: boolean;
 }
 
@@ -214,6 +214,7 @@ export interface MatchingApplicationRequest {
 
 export interface MatchingApplicationResponse {
   matchingApplicationId: number;
+  matchingType: MatchingType;
   requestedCount: number;
   matchedCount: number;
   refundedTickets: number;
@@ -274,41 +275,55 @@ export type CouponEventStatus = 'DRAFT' | 'ACTIVE' | 'ENDED';
 
 export interface CouponItem {
   id: number;
-  eventId: number;
   eventName: string;
   status: CouponStatus;
-  ticketType: TicketType;
-  rewardAmount: number;
-  expiresAt: string;
+  eventExpiresAt: string;
+  rewardTicketAmount: number;
 }
 
 export interface CouponEventPreviewItem {
   id: number;
   name: string;
-  description: string;
+  eventType: CouponEventType;
   status: CouponEventStatus;
-  type: CouponEventType;
-  rewardTicketType: TicketType;
-  rewardAmount: number;
-  startsAt: string;
-  expiresAt: string;
-  couponExpiresAt: string;
+  totalQuantity: number;
 }
 
-export interface CouponEventDetailItem extends CouponEventPreviewItem {
-  secretCode?: string;
+export interface CouponEventDetailItem {
+  id: number;
+  name: string;
+  description?: string;
+  eventType: CouponEventType;
+  status: CouponEventStatus;
+  totalQuantity: number;
+  rewardTicketType: TicketType;
+  rewardTicketAmount: number;
+  startsAt: string;
+  expiresAt: string;
 }
 
 export interface CouponEventRegisterRequest {
   name: string;
-  description: string;
+  description?: string;
   type: CouponEventType;
+  totalQuantity: number;
   rewardTicketType: TicketType;
-  rewardAmount: number;
+  rewardTicketAmount?: number;
   startsAt: string;
   expiresAt: string;
   couponExpiresAt: string;
-  secretCode?: string;
+}
+
+export interface CouponEventUpdateRequest {
+  name: string;
+  description?: string;
+  type: CouponEventType;
+  totalQuantity: number;
+  rewardTicketType: TicketType;
+  rewardTicketAmount?: number;
+  startsAt: string;
+  expiresAt: string;
+  couponExpiresAt: string;
 }
 
 // --- 출석 (v2) ---
@@ -323,28 +338,39 @@ export interface AttendanceResponse {
 
 export type ReportReason = 'INAPPROPRIATE_CONTENT' | 'PLAGIARIZED_PROFILE' | 'FAKE_PROFILE' | 'HARASSMENT' | 'SCAM' | 'OTHER';
 
-export type ReportStatus = 'PENDING' | 'RESOLVED' | 'REJECTED';
+export type ReportStatus = 'PENDING' | 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
+
+export type ReportStatusFilter = 'PENDING' | 'IN_REVIEW' | 'COMPLETED';
 
 export interface ReportCreateRequest {
-  targetMemberId: number;
+  matchingResultId: number;
   reason: ReportReason;
   description: string;
 }
 
-export interface ReportItem {
+export interface AdminReportListItem {
   id: number;
-  reporterId: number;
-  targetMemberId: number;
+  reporterNickname: string;
+  reportedMemberNickname: string;
+  targetType: 'MATCHING_RESULT';
   reason: ReportReason;
-  description: string;
-  status: ReportStatus;
+  reportStatus: ReportStatus;
   createdAt: string;
 }
 
-export interface ReportDetailItem extends ReportItem {
+export interface AdminReportDetailResponse {
+  id: number;
+  reporterId: number;
   reporterNickname: string;
-  targetNickname: string;
-  targetActiveSuspensionCount: number;
+  reportedMemberId: number;
+  reportedMemberNickname: string;
+  targetType: 'MATCHING_RESULT';
+  targetId: number;
+  reason: ReportReason;
+  description: string;
+  reportStatus: ReportStatus;
+  activeReportCount: number;
+  createdAt: string;
 }
 
 // --- QR (v2) ---
@@ -356,13 +382,15 @@ export interface AdminQrVerifyRequest {
 
 // --- 관리자 ---
 
-export interface AdminMatchingApplicationItem {
+export interface AdminMatchingItem {
   id: number;
-  memberNickname: string;
+  applicantNickname: string;
+  applicantLegalName: string;
+  applicantGender: Gender;
   matchingType: MatchingType;
-  applicationStatus: MatchingApplicationStatus;
   applicationCount: number;
-  appliedAt: string;
+  applicationStatus: MatchingApplicationStatus;
+  createdAt: string;
 }
 
 export interface CandidateGenderCountResponse {
@@ -403,15 +431,14 @@ export interface AdminMemberDetail {
 
 export interface PageResponse<T> {
   content: T[];
-  currentPage: number;
-  totalPages: number;
+  page: number;
+  size: number;
   totalElements: number;
   hasNext: boolean;
-  hasPrevious: boolean;
 }
 
-export interface CursorPageResponse<T> {
-  content: T[];
+export interface CursorSlice<T> {
+  items: T[];
+  nextCursor: number | null;
   hasNext: boolean;
-  cursor?: string;
 }

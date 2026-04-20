@@ -25,7 +25,9 @@ const AttendancePage: React.FC = () => {
       .then((res) => {
         if (!cancelled) setAttendance(res.data);
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) toast('출석 정보를 불러오지 못했습니다.', 'error');
+      })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
       });
@@ -38,6 +40,7 @@ const AttendancePage: React.FC = () => {
   const handleCheckAttendance = (): void => {
     setIsChecking(true);
     checkAttendance()
+      .then(() => getAttendance())
       .then((res) => {
         setAttendance(res.data);
         toast('출석 완료! 티켓이 지급되었습니다 🎟️', 'success');

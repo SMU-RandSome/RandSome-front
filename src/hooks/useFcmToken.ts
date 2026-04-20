@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { getToken, deleteToken } from 'firebase/messaging';
 import { getFirebaseMessaging } from '@/lib/firebase';
-import { syncDeviceToken, deleteDeviceToken } from '@/features/notification/api';
+import { syncDeviceToken, deleteDeviceToken } from '@/features/member/api';
 
 export const FCM_TOKEN_KEY = 'fcmToken';
 export const FCM_ENABLED_KEY = 'fcmEnabled';
@@ -17,7 +17,7 @@ export const useFcmToken = (isAuthenticated: boolean): void => {
     if (localStorage.getItem(FCM_ENABLED_KEY) !== 'true') return; // 토글 OFF 상태면 자동 등록 생략
 
     registerFcmToken().catch((err) => {
-      console.error('FCM 토큰 자동 등록 실패:', err);
+      if (import.meta.env.DEV) console.error('FCM 토큰 자동 등록 실패:', err);
     });
   }, [isAuthenticated]);
 };
@@ -41,7 +41,7 @@ export const registerFcmToken = async (): Promise<boolean> => {
       await syncDeviceToken({ deviceToken: token });
       localStorage.setItem(FCM_TOKEN_KEY, token);
     } catch (err) {
-      console.error('FCM 토큰 서버 동기화 실패:', err);
+      if (import.meta.env.DEV) console.error('FCM 토큰 서버 동기화 실패:', err);
       // 동기화 실패 시 localStorage에 저장하지 않음 (일관성 유지)
       return false;
     }
@@ -57,12 +57,12 @@ export const unregisterFcmToken = async (): Promise<void> => {
   const messaging = await getFirebaseMessaging();
   if (messaging) {
     await deleteToken(messaging).catch((err) => {
-      console.error('Firebase 토큰 삭제 실패:', err);
+      if (import.meta.env.DEV) console.error('Firebase 토큰 삭제 실패:', err);
     });
   }
   if (token) {
     await deleteDeviceToken(token).catch((err) => {
-      console.error('서버 FCM 토큰 삭제 실패:', err);
+      if (import.meta.env.DEV) console.error('서버 FCM 토큰 삭제 실패:', err);
     });
   }
   localStorage.removeItem(FCM_TOKEN_KEY);

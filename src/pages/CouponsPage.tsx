@@ -6,6 +6,14 @@ import { useToast } from '@/components/ui/Toast';
 import { getCoupons, useCoupon } from '@/features/coupon/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import type { CouponItem, CouponStatus } from '@/types';
+
+type CouponFilter = 'ALL' | 'AVAILABLE' | 'USED_OR_EXPIRED';
+
+const FILTER_TABS: { value: CouponFilter; label: string }[] = [
+  { value: 'ALL', label: '전체' },
+  { value: 'AVAILABLE', label: '사용 가능' },
+  { value: 'USED_OR_EXPIRED', label: '사용·만료' },
+];
 import { ChevronLeft, Ticket, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -28,14 +36,15 @@ const CouponsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasNext, setHasNext] = useState(false);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [cursor, setCursor] = useState<number | undefined>(undefined);
   const [loadError, setLoadError] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<CouponItem | null>(null);
   const [isUsing, setIsUsing] = useState(false);
+  const [filter, setFilter] = useState<CouponFilter>('ALL');
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchCoupons = useCallback((nextCursor?: string): void => {
+  const fetchCoupons = useCallback((nextCursor?: number): void => {
     if (nextCursor) {
       setIsFetchingMore(true);
     } else {
@@ -43,13 +52,13 @@ const CouponsPage: React.FC = () => {
       setLoadError(false);
     }
 
-    getCoupons(nextCursor)
+    getCoupons({ filter, lastCouponId: nextCursor, size: 20 })
       .then((res) => {
         const page = res.data;
         if (!page) return;
-        setItems((prev) => nextCursor ? [...prev, ...page.content] : page.content);
+        setItems((prev) => nextCursor ? [...prev, ...page.items] : page.items);
         setHasNext(page.hasNext);
-        setCursor(page.cursor);
+        setCursor(page.nextCursor ?? undefined);
       })
       .catch(() => {
         if (!nextCursor) setLoadError(true);
@@ -58,7 +67,7 @@ const CouponsPage: React.FC = () => {
         setIsLoading(false);
         setIsFetchingMore(false);
       });
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
     fetchCoupons();
@@ -112,6 +121,23 @@ const CouponsPage: React.FC = () => {
         <h1 className="text-lg font-bold text-slate-900 flex-1">내 쿠폰</h1>
       </header>
 
+      {/* 필터 탭 */}
+      <div className="px-4 py-2.5 flex gap-2 border-b border-slate-100/60">
+        {FILTER_TABS.map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setFilter(value)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
+              filter === value
+                ? 'bg-violet-600 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className={`flex-1 overflow-y-auto p-4 ${isPWA ? 'pb-8' : 'pb-6'}`}>
         {isLoading ? (
           <div className="space-y-3">
@@ -151,7 +177,7 @@ const CouponsPage: React.FC = () => {
                 {/* 쿠폰 상단 색띠 */}
                 <div className={`h-1.5 ${
                   item.status === 'AVAILABLE'
-                    ? item.ticketType === 'RANDOM' ? 'bg-blue-500' : 'bg-violet-500'
+                    ? 'bg-violet-500'
                     : 'bg-slate-200'
                 }`} />
 
@@ -178,13 +204,11 @@ const CouponsPage: React.FC = () => {
                       </div>
                       <p className="text-sm font-bold text-slate-900 truncate">{item.eventName}</p>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {item.ticketType === 'RANDOM' ? '랜덤권' : '이상형권'} {item.rewardAmount}장
+                        티켓 {item.rewardTicketAmount}장
                       </p>
                     </div>
 
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                      item.ticketType === 'RANDOM' ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'
-                    }`}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-violet-100 text-violet-600">
                       <Ticket size={22} />
                     </div>
                   </div>
@@ -192,7 +216,7 @@ const CouponsPage: React.FC = () => {
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
                     <span className="flex items-center gap-1 text-[11px] text-slate-400">
                       <Clock size={11} />
-                      {formatExpiry(item.expiresAt)} 만료
+                      {formatExpiry(item.eventExpiresAt)} 만료
                     </span>
 
                     {item.status === 'AVAILABLE' && (
@@ -243,7 +267,7 @@ const CouponsPage: React.FC = () => {
                   <span className="font-semibold text-slate-800">{confirmTarget.eventName}</span>
                 </p>
                 <p className="text-sm text-slate-500 mb-6">
-                  {confirmTarget.ticketType === 'RANDOM' ? '랜덤권' : '이상형권'} {confirmTarget.rewardAmount}장이 지급됩니다.
+                  티켓 {confirmTarget.rewardTicketAmount}장이 지급됩니다.
                   사용 후에는 취소할 수 없습니다.
                 </p>
                 <div className="flex gap-2.5">

@@ -11,9 +11,7 @@ import {
 } from '@/features/admin/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import type { CouponEventPreviewItem, CouponEventType, TicketType } from '@/types';
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, X, Zap, KeyRound } from 'lucide-react';
-
-const ITEMS_PER_PAGE = 5;
+import { Plus, Pencil, Trash2, X, Zap, KeyRound } from 'lucide-react';
 
 const STATUS_CONFIG = {
   DRAFT: { label: '준비중', bg: 'bg-slate-100', text: 'text-slate-600' },
@@ -35,75 +33,30 @@ interface FormState {
   name: string;
   description: string;
   type: CouponEventType;
+  totalQuantity: number;
   rewardTicketType: TicketType;
-  rewardAmount: number;
+  rewardTicketAmount: number;
   startsAt: string;
   expiresAt: string;
   couponExpiresAt: string;
-  secretCode: string;
 }
 
 const EMPTY_FORM: FormState = {
   name: '',
   description: '',
   type: 'HAPPY_HOUR',
+  totalQuantity: 100,
   rewardTicketType: 'RANDOM',
-  rewardAmount: 1,
+  rewardTicketAmount: 1,
   startsAt: '',
   expiresAt: '',
   couponExpiresAt: '',
-  secretCode: '',
-};
-
-const toDateTimeLocal = (iso: string): string => {
-  const d = new Date(iso);
-  const pad = (n: number): string => n.toString().padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-
-const formatDate = (iso: string): string =>
-  new Date(iso).toLocaleString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-const Pagination: React.FC<{
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}> = ({ currentPage, totalPages, onPageChange }) => {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="flex items-center justify-center gap-2 mt-8 pb-4">
-      <button
-        disabled={currentPage === 1}
-        onClick={() => onPageChange(currentPage - 1)}
-        className="p-2 rounded-lg border border-slate-200 disabled:opacity-30 text-slate-600 transition-colors hover:bg-slate-50"
-      >
-        <ChevronLeft size={16} />
-      </button>
-      <span className="text-sm font-medium text-slate-600 px-2">
-        {currentPage} / {totalPages}
-      </span>
-      <button
-        disabled={currentPage === totalPages}
-        onClick={() => onPageChange(currentPage + 1)}
-        className="p-2 rounded-lg border border-slate-200 disabled:opacity-30 text-slate-600 transition-colors hover:bg-slate-50"
-      >
-        <ChevronRight size={16} />
-      </button>
-    </div>
-  );
 };
 
 const CouponEventsTab: React.FC = () => {
   const { toast } = useToast();
 
   const [events, setEvents] = useState<CouponEventPreviewItem[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -116,13 +69,12 @@ const CouponEventsTab: React.FC = () => {
 
   const [toggling, setToggling] = useState<number | null>(null);
 
-  const fetchEvents = useCallback((page: number): void => {
+  const fetchEvents = useCallback((): void => {
     setLoading(true);
-    getAdminCouponEvents({ page: page - 1, size: ITEMS_PER_PAGE })
+    getAdminCouponEvents()
       .then((res) => {
         if (res.data) {
-          setEvents(res.data.content);
-          setTotalPages(res.data.totalPages);
+          setEvents(res.data);
         }
       })
       .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
@@ -130,8 +82,8 @@ const CouponEventsTab: React.FC = () => {
   }, [toast]);
 
   useEffect(() => {
-    fetchEvents(currentPage);
-  }, [currentPage, fetchEvents]);
+    fetchEvents();
+  }, [fetchEvents]);
 
   // --- 폼 ---
 
@@ -145,14 +97,14 @@ const CouponEventsTab: React.FC = () => {
     setEditingId(event.id);
     setForm({
       name: event.name,
-      description: event.description,
-      type: event.type,
-      rewardTicketType: event.rewardTicketType,
-      rewardAmount: event.rewardAmount,
-      startsAt: toDateTimeLocal(event.startsAt),
-      expiresAt: toDateTimeLocal(event.expiresAt),
-      couponExpiresAt: toDateTimeLocal(event.couponExpiresAt),
-      secretCode: '',
+      description: '',
+      type: event.eventType,
+      totalQuantity: event.totalQuantity,
+      rewardTicketType: 'RANDOM',
+      rewardTicketAmount: 1,
+      startsAt: '',
+      expiresAt: '',
+      couponExpiresAt: '',
     });
     setFormOpen(true);
   };
@@ -168,10 +120,9 @@ const CouponEventsTab: React.FC = () => {
   };
 
   const isFormValid = (): boolean => {
-    if (!form.name.trim() || !form.description.trim()) return false;
+    if (!form.name.trim()) return false;
     if (!form.startsAt || !form.expiresAt || !form.couponExpiresAt) return false;
-    if (form.rewardAmount < 1) return false;
-    if (form.type === 'SECRET_CODE' && !form.secretCode.trim() && editingId === null) return false;
+    if (form.totalQuantity < 1) return false;
     return true;
   };
 
@@ -180,16 +131,14 @@ const CouponEventsTab: React.FC = () => {
     setSubmitting(true);
     const body = {
       name: form.name.trim(),
-      description: form.description.trim(),
+      description: form.description.trim() || undefined,
       type: form.type,
+      totalQuantity: form.totalQuantity,
       rewardTicketType: form.rewardTicketType,
-      rewardAmount: form.rewardAmount,
+      rewardTicketAmount: form.rewardTicketAmount,
       startsAt: new Date(form.startsAt).toISOString(),
       expiresAt: new Date(form.expiresAt).toISOString(),
       couponExpiresAt: new Date(form.couponExpiresAt).toISOString(),
-      ...(form.type === 'SECRET_CODE' && form.secretCode.trim()
-        ? { secretCode: form.secretCode.trim() }
-        : {}),
     };
     try {
       if (editingId !== null) {
@@ -200,7 +149,7 @@ const CouponEventsTab: React.FC = () => {
         toast('쿠폰 이벤트가 생성되었습니다.', 'success');
       }
       closeForm();
-      fetchEvents(currentPage);
+      fetchEvents();
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     } finally {
@@ -217,7 +166,7 @@ const CouponEventsTab: React.FC = () => {
       await deleteAdminCouponEvent(deleteTarget.id);
       toast('쿠폰 이벤트가 삭제되었습니다.', 'success');
       setDeleteTarget(null);
-      fetchEvents(currentPage);
+      fetchEvents();
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     } finally {
@@ -237,7 +186,7 @@ const CouponEventsTab: React.FC = () => {
         await deactivateAdminCouponEvent(event.id);
         toast('이벤트가 종료되었습니다.', 'success');
       }
-      fetchEvents(currentPage);
+      fetchEvents();
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     } finally {
@@ -298,37 +247,23 @@ const CouponEventsTab: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        {event.type === 'HAPPY_HOUR' ? (
+                        {event.eventType === 'HAPPY_HOUR' ? (
                           <Zap size={10} className="text-amber-500" />
                         ) : (
                           <KeyRound size={10} className="text-purple-500" />
                         )}
-                        <span className="text-[11px] text-slate-400">{TYPE_LABEL[event.type]}</span>
+                        <span className="text-[11px] text-slate-400">{TYPE_LABEL[event.eventType]}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* 보상 정보 */}
+                  {/* 수량 정보 */}
                   <div className="bg-slate-50 rounded-xl p-3 mb-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-400">보상</span>
+                      <span className="text-xs text-slate-400">총 수량</span>
                       <span className="text-sm font-semibold text-slate-900">
-                        {TICKET_LABEL[event.rewardTicketType]} {event.rewardAmount}장
+                        {event.totalQuantity}개
                       </span>
-                    </div>
-                  </div>
-
-                  {/* 기간 */}
-                  <div className="space-y-1 mb-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400">이벤트 기간</span>
-                      <span className="text-slate-600">
-                        {formatDate(event.startsAt)} ~ {formatDate(event.expiresAt)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400">쿠폰 만료</span>
-                      <span className="text-slate-600">{formatDate(event.couponExpiresAt)}</span>
                     </div>
                   </div>
 
@@ -370,11 +305,6 @@ const CouponEventsTab: React.FC = () => {
               );
             })}
           </div>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
         </>
       )}
 
@@ -461,26 +391,20 @@ const CouponEventsTab: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 시크릿 코드 */}
-                {form.type === 'SECRET_CODE' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                  >
-                    <label htmlFor="secret-code" className="text-xs font-bold text-slate-500 mb-1.5 block">
-                      시크릿 코드
-                    </label>
-                    <input
-                      id="secret-code"
-                      type="text"
-                      value={form.secretCode}
-                      onChange={(e) => updateField('secretCode', e.target.value)}
-                      placeholder={editingId !== null ? '비워두면 기존 코드 유지' : '참여에 필요한 코드 입력'}
-                      className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors"
-                    />
-                  </motion.div>
-                )}
+                {/* 총 수량 */}
+                <div>
+                  <label htmlFor="total-quantity" className="text-xs font-bold text-slate-500 mb-1.5 block">
+                    총 수량
+                  </label>
+                  <input
+                    id="total-quantity"
+                    type="number"
+                    min={1}
+                    value={form.totalQuantity}
+                    onChange={(e) => updateField('totalQuantity', Number(e.target.value))}
+                    className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+                  />
+                </div>
 
                 {/* 보상 티켓 유형 */}
                 <div>
@@ -512,8 +436,8 @@ const CouponEventsTab: React.FC = () => {
                     id="reward-amount"
                     type="number"
                     min={1}
-                    value={form.rewardAmount}
-                    onChange={(e) => updateField('rewardAmount', Number(e.target.value))}
+                    value={form.rewardTicketAmount}
+                    onChange={(e) => updateField('rewardTicketAmount', Number(e.target.value))}
                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
                   />
                 </div>

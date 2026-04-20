@@ -34,6 +34,7 @@ const AdminQrPage: React.FC = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
   const isScannerRunning = useRef(false);
+  const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── 스캐너 시작/정지 ─────────────────────────────────────────
   const stopScanner = useCallback(async (): Promise<void> => {
@@ -91,6 +92,9 @@ const AdminQrPage: React.FC = () => {
   // 언마운트 시 정리
   useEffect(() => {
     return () => {
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+      }
       if (scannerRef.current && isScannerRunning.current) {
         scannerRef.current.stop().catch(() => {});
         isScannerRunning.current = false;
@@ -117,7 +121,7 @@ const AdminQrPage: React.FC = () => {
       // 카메라 모드면 다시 스캐너 시작
       if (mode === 'camera') {
         // 약간의 딜레이 후 재시작 (UI 전환용)
-        setTimeout(() => startScanner(), 500);
+        restartTimerRef.current = setTimeout(() => startScanner(), 500);
       }
     } catch (err) {
       toast(getApiErrorMessage(err, '인증에 실패했습니다.'), 'error');

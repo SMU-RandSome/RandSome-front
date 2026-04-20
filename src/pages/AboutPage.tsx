@@ -2,17 +2,17 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { ArrowLeft, Github, Heart, Server, Sparkles, Cloud, Bot } from 'lucide-react';
+import { ArrowLeft, Github, Heart, Server, Sparkles, Cloud, Bot, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface HumanDeveloper {
   type: 'human';
   name: string;
-  role: string;
+  role: string | string[];
   major: string;
   highlight: string;
   github?: string;
-  accent: 'emerald' | 'rose';
+  accent: 'emerald' | 'rose' | 'sky';
 }
 
 interface AIDeveloper {
@@ -33,21 +33,29 @@ const DEVELOPERS: Developer[] = [
   },
   {
     type: 'human',
-    name: '곽문수',
-    role: 'Backend Developer',
+    name: 'Taepung Kwak',
+    role: ['Product Manager', 'Team Lead', 'Backend Developer'],
     major: '소프트웨어학과 22학번',
-    highlight: '도메인 설계 및 API 구현',
+    highlight: '프로젝트 기획 및 팀 리딩',
     github: 'https://github.com/kwakseobang',
     accent: 'emerald',
   },
   {
     type: 'human',
-    name: '신예준',
+    name: 'Daniel Shin',
     role: 'Infrastructure Developer',
     major: '소프트웨어학과 22학번',
     highlight: '운영 환경 구성 및 배포 안정화',
     github: 'https://github.com/y22jun',
     accent: 'rose',
+  },
+  {
+    type: 'human',
+    name: 'Mcdonald Oh',
+    role: 'QA',
+    major: '소프트웨어학과 22학번',
+    highlight: '서비스 품질 검증 및 테스트',
+    accent: 'sky',
   },
 ];
 
@@ -77,6 +85,10 @@ const accentStyle: Record<HumanDeveloper['accent'], { card: string; badge: strin
   rose: {
     card: 'border-rose-200/60 bg-gradient-to-br from-rose-50/80 to-pink-50/40',
     badge: 'bg-rose-100 text-rose-700 border-rose-200',
+  },
+  sky: {
+    card: 'border-sky-200/60 bg-gradient-to-br from-sky-50/80 to-blue-50/40',
+    badge: 'bg-sky-100 text-sky-700 border-sky-200',
   },
 };
 
@@ -112,8 +124,10 @@ const AICard: React.FC<{ dev: AIDeveloper; index: number }> = ({ dev, index }) =
 
 const HumanCard: React.FC<{ dev: HumanDeveloper; index: number }> = ({ dev, index }) => {
   const style = accentStyle[dev.accent];
-  const Icon = dev.role.includes('Backend') ? Server : Cloud;
-  const iconColor = dev.accent === 'emerald' ? 'text-emerald-500' : 'text-rose-500';
+  const roles = Array.isArray(dev.role) ? dev.role : [dev.role];
+  const hasRole = (keyword: string) => roles.some(r => r.includes(keyword));
+  const Icon = hasRole('Backend') ? Server : hasRole('QA') ? ShieldCheck : Cloud;
+  const iconColor = dev.accent === 'emerald' ? 'text-emerald-500' : dev.accent === 'sky' ? 'text-sky-500' : 'text-rose-500';
 
   return (
     <motion.div
@@ -144,9 +158,13 @@ const HumanCard: React.FC<{ dev: HumanDeveloper; index: number }> = ({ dev, inde
             )}
           </div>
           <div className="mb-2 flex flex-col items-start gap-1">
-            <span className="px-2 py-0.5 rounded-md bg-white/70 border border-slate-200/70 text-[11px] text-slate-600 font-semibold">
-              {dev.role}
-            </span>
+            <div className="flex flex-wrap gap-1">
+              {roles.map(r => (
+                <span key={r} className="px-2 py-0.5 rounded-md bg-white/70 border border-slate-200/70 text-[11px] text-slate-600 font-semibold">
+                  {r}
+                </span>
+              ))}
+            </div>
             <span className="px-2 py-0.5 rounded-md bg-white/70 border border-slate-200/70 text-[11px] text-slate-500">
               {dev.major}
             </span>
@@ -216,7 +234,7 @@ const AboutPage: React.FC = () => {
           </p>
           <div className="flex gap-3">
             {[
-              { label: '총 인원', value: '3명' },
+              { label: '총 인원', value: '4명' },
               { label: '개발 기간', value: '약 2주' },
               { label: '플랫폼', value: 'Web + PWA' },
             ].map(({ label, value }) => (

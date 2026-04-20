@@ -3,16 +3,18 @@ import type {
   ApiResponse,
   AdminMemberListItem,
   AdminMemberDetail,
-  AdminMatchingApplicationItem,
+  AdminMatchingItem,
   PageResponse,
   CandidateGenderCountResponse,
   AnnouncementRegisterRequest,
   AdminQrVerifyRequest,
   CouponEventPreviewItem,
   CouponEventRegisterRequest,
-  ReportItem,
-  ReportDetailItem,
-  ReportStatus,
+  CouponEventUpdateRequest,
+  AdminReportListItem,
+  AdminReportDetailResponse,
+  ReportStatusFilter,
+  Gender,
 } from '@/types';
 
 export const getAdminMembers = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMemberListItem>>> =>
@@ -35,9 +37,16 @@ export const registerAnnouncement = (body: AnnouncementRegisterRequest): Promise
     .post<ApiResponse<number>>('/v1/admin/announcements', body)
     .then((r) => r.data);
 
-export const getAdminMatchingApplications = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMatchingApplicationItem>>> =>
+export const getAdminMatchingApplications = (params?: {
+  date?: string;
+  gender?: Gender;
+  keyword?: string;
+  sort?: 'LATEST' | 'OLDEST';
+  page?: number;
+  size?: number;
+}): Promise<ApiResponse<PageResponse<AdminMatchingItem>>> =>
   apiClient
-    .get<ApiResponse<PageResponse<AdminMatchingApplicationItem>>>('/v1/admin/matching-applications', { params })
+    .get<ApiResponse<PageResponse<AdminMatchingItem>>>('/v1/admin/matching-applications', { params })
     .then((r) => r.data);
 
 export const verifyQrCode = (body: AdminQrVerifyRequest): Promise<ApiResponse<void>> =>
@@ -47,9 +56,9 @@ export const verifyQrCode = (body: AdminQrVerifyRequest): Promise<ApiResponse<vo
 
 // --- 쿠폰 이벤트 관리 ---
 
-export const getAdminCouponEvents = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<CouponEventPreviewItem>>> =>
+export const getAdminCouponEvents = (): Promise<ApiResponse<CouponEventPreviewItem[]>> =>
   apiClient
-    .get<ApiResponse<PageResponse<CouponEventPreviewItem>>>('/v1/admin/coupon-events', { params })
+    .get<ApiResponse<CouponEventPreviewItem[]>>('/v1/admin/coupon-events')
     .then((r) => r.data);
 
 export const createAdminCouponEvent = (body: CouponEventRegisterRequest): Promise<ApiResponse<number>> =>
@@ -57,9 +66,9 @@ export const createAdminCouponEvent = (body: CouponEventRegisterRequest): Promis
     .post<ApiResponse<number>>('/v1/admin/coupon-events', body)
     .then((r) => r.data);
 
-export const updateAdminCouponEvent = (eventId: number, body: CouponEventRegisterRequest): Promise<ApiResponse<null>> =>
+export const updateAdminCouponEvent = (eventId: number, body: CouponEventUpdateRequest): Promise<ApiResponse<null>> =>
   apiClient
-    .put<ApiResponse<null>>(`/v1/admin/coupon-events/${eventId}`, body)
+    .patch<ApiResponse<null>>(`/v1/admin/coupon-events/${eventId}`, body)
     .then((r) => r.data);
 
 export const deleteAdminCouponEvent = (eventId: number): Promise<ApiResponse<null>> =>
@@ -69,29 +78,29 @@ export const deleteAdminCouponEvent = (eventId: number): Promise<ApiResponse<nul
 
 export const activateAdminCouponEvent = (eventId: number): Promise<ApiResponse<null>> =>
   apiClient
-    .patch<ApiResponse<null>>(`/v1/admin/coupon-events/${eventId}/activate`)
+    .post<ApiResponse<null>>(`/v1/admin/coupon-events/${eventId}/activate`)
     .then((r) => r.data);
 
 export const deactivateAdminCouponEvent = (eventId: number): Promise<ApiResponse<null>> =>
   apiClient
-    .patch<ApiResponse<null>>(`/v1/admin/coupon-events/${eventId}/deactivate`)
+    .post<ApiResponse<null>>(`/v1/admin/coupon-events/${eventId}/deactivate`)
     .then((r) => r.data);
 
 // --- 신고 관리 ---
 
-export const getAdminReports = (params?: { status?: ReportStatus; page?: number; size?: number }): Promise<ApiResponse<PageResponse<ReportItem>>> =>
+export const getAdminReports = (params?: { statusFilter?: ReportStatusFilter }): Promise<ApiResponse<AdminReportListItem[]>> =>
   apiClient
-    .get<ApiResponse<PageResponse<ReportItem>>>('/v1/admin/reports', { params })
+    .get<ApiResponse<AdminReportListItem[]>>('/v1/admin/reports', { params })
     .then((r) => r.data);
 
-export const getAdminReportDetail = (reportId: number): Promise<ApiResponse<ReportDetailItem>> =>
+export const getAdminReportDetail = (reportId: number): Promise<ApiResponse<AdminReportDetailResponse>> =>
   apiClient
-    .get<ApiResponse<ReportDetailItem>>(`/v1/admin/reports/${reportId}`)
+    .get<ApiResponse<AdminReportDetailResponse>>(`/v1/admin/reports/${reportId}`)
     .then((r) => r.data);
 
-export const processAdminReport = (reportId: number): Promise<ApiResponse<null>> =>
+export const resolveAdminReport = (reportId: number): Promise<ApiResponse<null>> =>
   apiClient
-    .post<ApiResponse<null>>(`/v1/admin/reports/${reportId}/process`)
+    .post<ApiResponse<null>>(`/v1/admin/reports/${reportId}/resolve`)
     .then((r) => r.data);
 
 export const rejectAdminReport = (reportId: number): Promise<ApiResponse<null>> =>
@@ -101,5 +110,5 @@ export const rejectAdminReport = (reportId: number): Promise<ApiResponse<null>> 
 
 export const restoreAdminMember = (memberId: number): Promise<ApiResponse<null>> =>
   apiClient
-    .post<ApiResponse<null>>(`/v1/admin/members/${memberId}/restore`)
+    .post<ApiResponse<null>>(`/v1/admin/reports/members/${memberId}/restore`)
     .then((r) => r.data);

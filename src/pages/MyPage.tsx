@@ -20,9 +20,12 @@ import {
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/useFcmToken';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
-import type { Department, MemberProfile, Mbti, TicketBalanceResponse } from '@/types';
-import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, Ticket, QrCode } from 'lucide-react';
+import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS, PERSONALITY_TAG_LABELS, FACE_TYPE_TAG_LABELS, DATING_STYLE_TAG_LABELS } from '@/constants/tags';
+import type { Department, MemberProfile, Mbti, TicketBalanceResponse, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
+import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, Ticket, QrCode, CalendarCheck, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+// 태그 상수는 src/constants/tags.ts 에서 import됩니다.
 
 // 컴포넌트 외부 정의 — 매 렌더마다 React 엘리먼트 재생성 방지
 const CANDIDATE_STATUS_CONFIG = {
@@ -63,57 +66,6 @@ const CANDIDATE_STATUS_CONFIG = {
   },
 } as const;
 
-const PERSONALITY_TAG_LABELS: Record<string, string> = {
-  ACTIVE: '활발한',
-  QUIET: '조용한',
-  AFFECTIONATE: '다정한',
-  INDEPENDENT: '독립적인',
-  FUNNY: '유머있는',
-  SERIOUS: '진지한',
-  OPTIMISTIC: '긍정적인',
-  CAREFUL: '신중한',
-};
-
-const FACE_TYPE_TAG_LABELS: Record<string, string> = {
-  PUPPY: '강아지상',
-  CAT: '고양이상',
-  BEAR: '곰상',
-  FOX: '여우상',
-  RABBIT: '토끼상',
-  PURE: '청순한',
-  CHIC: '시크한',
-  WARM: '훈훈한',
-};
-
-const DATING_STYLE_TAG_LABELS: Record<string, string> = {
-  FREQUENT_CONTACT: '자주 연락',
-  MODERATE_CONTACT: '적당한 연락',
-  PLANNED_DATE: '계획형 데이트',
-  SPONTANEOUS_DATE: '즉흥형 데이트',
-  SKINSHIP_LOVER: '스킨십 많은',
-  RESPECTFUL_SPACE: '각자 시간 존중',
-  EXPRESSIVE: '감정 표현 잘함',
-  GROW_TOGETHER: '함께 성장',
-};
-
-const MBTI_OPTIONS = [
-  { value: 'ISTJ', label: 'ISTJ' },
-  { value: 'ISFJ', label: 'ISFJ' },
-  { value: 'INFJ', label: 'INFJ' },
-  { value: 'INTJ', label: 'INTJ' },
-  { value: 'ISTP', label: 'ISTP' },
-  { value: 'ISFP', label: 'ISFP' },
-  { value: 'INFP', label: 'INFP' },
-  { value: 'INTP', label: 'INTP' },
-  { value: 'ESTP', label: 'ESTP' },
-  { value: 'ESFP', label: 'ESFP' },
-  { value: 'ENFP', label: 'ENFP' },
-  { value: 'ENTP', label: 'ENTP' },
-  { value: 'ESTJ', label: 'ESTJ' },
-  { value: 'ESFJ', label: 'ESFJ' },
-  { value: 'ENFJ', label: 'ENFJ' },
-  { value: 'ENTJ', label: 'ENTJ' },
-];
 
 interface EditForm {
   legalName: string;
@@ -122,9 +74,9 @@ interface EditForm {
   instagramId: string;
   selfIntroduction: string;
   idealDescription: string;
-  personalityTag: string;
-  faceTypeTag: string;
-  datingStyleTag: string;
+  personalityTag: PersonalityTag | '';
+  faceTypeTag: FaceTypeTag | '';
+  datingStyleTag: DatingStyleTag | '';
 }
 
 interface ModalState {
@@ -153,9 +105,9 @@ const MyPage: React.FC = () => {
     instagramId: user?.instagramId ?? '',
     selfIntroduction: user?.selfIntroduction ?? '',
     idealDescription: user?.idealDescription ?? '',
-    personalityTag: (user?.personalityTag as any) ?? '',
-    faceTypeTag: (user?.faceTypeTag as any) ?? '',
-    datingStyleTag: (user?.datingStyleTag as any) ?? '',
+    personalityTag: (user?.personalityTag ?? '') as PersonalityTag | '',
+    faceTypeTag: (user?.faceTypeTag ?? '') as FaceTypeTag | '',
+    datingStyleTag: (user?.datingStyleTag ?? '') as DatingStyleTag | '',
   });
   const [modal, setModal] = useState<ModalState>({ isOpen: false, title: '', content: null });
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -203,9 +155,9 @@ const MyPage: React.FC = () => {
             instagramId: res.data.instagramId ?? '',
             selfIntroduction: res.data.selfIntroduction ?? '',
             idealDescription: res.data.idealDescription ?? '',
-            personalityTag: (res.data.personalityTag as any) ?? '',
-            faceTypeTag: (res.data.faceTypeTag as any) ?? '',
-            datingStyleTag: (res.data.datingStyleTag as any) ?? '',
+            personalityTag: (res.data.personalityTag ?? '') as PersonalityTag | '',
+            faceTypeTag: (res.data.faceTypeTag ?? '') as FaceTypeTag | '',
+            datingStyleTag: (res.data.datingStyleTag ?? '') as DatingStyleTag | '',
           });
         }
       })
@@ -310,13 +262,6 @@ const MyPage: React.FC = () => {
 
     setIsSaving(true);
     try {
-      // 디버그: 전송할 데이터 확인
-      console.log('전송할 editForm:', {
-        department: editForm.department,
-        personalityTag: editForm.personalityTag,
-        faceTypeTag: editForm.faceTypeTag,
-        datingStyleTag: editForm.datingStyleTag,
-      });
       await updateMyProfile({
         legalName: editForm.legalName,
         mbti: editForm.mbti,
@@ -324,9 +269,9 @@ const MyPage: React.FC = () => {
         instagramId: editForm.instagramId || undefined,
         selfIntroduction: editForm.selfIntroduction || undefined,
         idealDescription: editForm.idealDescription || undefined,
-        personalityTag: editForm.personalityTag as any,
-        faceTypeTag: editForm.faceTypeTag as any,
-        datingStyleTag: editForm.datingStyleTag as any,
+        personalityTag: editForm.personalityTag || undefined,
+        faceTypeTag: editForm.faceTypeTag || undefined,
+        datingStyleTag: editForm.datingStyleTag || undefined,
       });
       // 저장 후 최신 프로필 다시 조회
       const res = await getMyProfile();
@@ -576,7 +521,7 @@ const MyPage: React.FC = () => {
                     <div>
                       <p className="text-xs font-semibold text-slate-500 mb-2">성격</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {Object.entries(PERSONALITY_TAG_LABELS).map(([value, label]) => (
+                        {PERSONALITY_TAGS.map(({ value, label }) => (
                           <button
                             key={value}
                             type="button"
@@ -595,7 +540,7 @@ const MyPage: React.FC = () => {
                     <div>
                       <p className="text-xs font-semibold text-slate-500 mb-2">외모 스타일</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {Object.entries(FACE_TYPE_TAG_LABELS).map(([value, label]) => (
+                        {FACE_TYPE_TAGS.map(({ value, label }) => (
                           <button
                             key={value}
                             type="button"
@@ -614,7 +559,7 @@ const MyPage: React.FC = () => {
                     <div>
                       <p className="text-xs font-semibold text-slate-500 mb-2">연애 스타일</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {Object.entries(DATING_STYLE_TAG_LABELS).map(([value, label]) => (
+                        {DATING_STYLE_TAGS.map(({ value, label }) => (
                           <button
                             key={value}
                             type="button"
@@ -801,6 +746,9 @@ const MyPage: React.FC = () => {
         {/* 메뉴 */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-100/80 shadow-[0_1px_12px_rgba(0,0,0,0.04)] overflow-hidden divide-y divide-slate-50">
           {[
+            { label: '출석 체크', icon: <CalendarCheck size={16} className="text-slate-400" />, onClick: () => navigate('/attendance') },
+            { label: '내 쿠폰', icon: <Ticket size={16} className="text-slate-400" />, onClick: () => navigate('/coupons') },
+            { label: '티켓 이력', icon: <History size={16} className="text-slate-400" />, onClick: () => navigate('/tickets/history') },
             { label: 'QR 코드', icon: <QrCode size={16} className="text-slate-400" />, onClick: () => navigate('/qr') },
             { label: '비밀번호 변경', icon: null, onClick: () => setShowPasswordChange(true) },
             { label: '이용약관', icon: null, onClick: openTerms },

@@ -520,7 +520,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ target, onClose, onSuccess })
   const handleSubmit = (): void => {
     if (!reason) return;
     setIsSubmitting(true);
-    createReport({ targetMemberId: target.id, reason, description })
+    createReport({ matchingResultId: target.id, reason, description })
       .then(() => {
         toast('신고가 접수되었습니다', 'success');
         onSuccess();

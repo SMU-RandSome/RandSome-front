@@ -8,7 +8,7 @@ export const useFeed = (): { feed: FeedItem[]; isLoading: boolean } => {
   const { data, isLoading } = useQuery({
     queryKey: ['feed'],
     queryFn: async (): Promise<FeedItem[]> => {
-      const res = await getFeed({ size: 20 });
+      const res = await getFeed();
       return res.data ?? [];
     },
     refetchInterval: POLL_INTERVAL,

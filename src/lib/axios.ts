@@ -71,9 +71,15 @@ apiClient.interceptors.response.use(
       try {
         // 동시에 여러 요청이 401을 받을 때 갱신 요청을 하나만 보냄
         if (!refreshPromise) {
-          refreshPromise = refreshAccessToken().finally(() => {
-            refreshPromise = null;
-          });
+          refreshPromise = refreshAccessToken()
+            .catch((err) => {
+              refreshPromise = null; // 실패 시 즉시 초기화 (재시도 허용)
+              throw err;
+            })
+            .then((token) => {
+              refreshPromise = null; // 성공 시 초기화
+              return token;
+            });
         }
         const newToken = await refreshPromise;
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -89,6 +95,8 @@ apiClient.interceptors.response.use(
           if (wasAuthenticated) {
             // 실제 인증 상태였을 때만 로그인 페이지로 리다이렉트
             window.location.href = '/login';
+            // 리다이렉트가 실패할 경우를 대비한 안전 밸브 (3초 후 플래그 초기화)
+            setTimeout(() => { isRedirectingToLogin = false; }, 3000);
           } else {
             // 비회원이 공개 API 호출 중 만료된 토큰으로 401이 난 경우 → 리다이렉트 없이 토큰만 정리
             isRedirectingToLogin = false;
@@ -98,10 +106,8 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // 403 Forbidden: 권한 없음
+    // 403 Forbidden: 권한 없음 — 에러는 호출부에서 처리
     if (error.response?.status === 403) {
-      console.error('403 Forbidden:', error.response);
-      // Toast는 에러를 받는 쪽에서 처리하도록 여기선 로그만
       return Promise.reject(error);
     }
 

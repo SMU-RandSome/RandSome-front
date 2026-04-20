@@ -3,10 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useToast } from '@/components/ui/Toast';
-import { getCouponEvent, claimCouponEvent } from '@/features/coupon/api';
+import { getCouponEvent, issueCouponEvent } from '@/features/coupon/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import type { CouponEventDetailItem } from '@/types';
-import { ChevronLeft, Ticket, Clock, Gift, Lock } from 'lucide-react';
+import { ChevronLeft, Ticket, Clock, Gift } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const EVENT_TYPE_LABELS = {
@@ -34,7 +34,6 @@ const CouponEventPage: React.FC = () => {
   const [event, setEvent] = useState<CouponEventDetailItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [secretCode, setSecretCode] = useState('');
   const [isClaiming, setIsClaiming] = useState(false);
 
   useEffect(() => {
@@ -64,7 +63,7 @@ const CouponEventPage: React.FC = () => {
     if (!id || !event) return;
     const eventId = parseInt(id, 10);
     setIsClaiming(true);
-    claimCouponEvent(eventId, event.type === 'SECRET_CODE' ? secretCode : undefined)
+    issueCouponEvent(eventId)
       .then(() => {
         toast('쿠폰이 발급되었습니다! 쿠폰함을 확인해주세요 🎟️', 'success');
         navigate('/coupons');
@@ -78,7 +77,7 @@ const CouponEventPage: React.FC = () => {
   };
 
   const isActive = event?.status === 'ACTIVE';
-  const canClaim = isActive && (event?.type !== 'SECRET_CODE' || secretCode.trim().length > 0);
+  const canClaim = isActive;
 
   return (
     <MobileLayout>
@@ -136,7 +135,7 @@ const CouponEventPage: React.FC = () => {
                     {STATUS_LABELS[event.status]}
                   </span>
                   <span className="text-[11px] font-semibold opacity-70">
-                    {EVENT_TYPE_LABELS[event.type]}
+                    {EVENT_TYPE_LABELS[event.eventType]}
                   </span>
                 </div>
 
@@ -148,7 +147,7 @@ const CouponEventPage: React.FC = () => {
                   <div>
                     <p className="text-xs opacity-70">지급 보상</p>
                     <p className="text-sm font-bold">
-                      {event.rewardTicketType === 'RANDOM' ? '랜덤권' : '이상형권'} {event.rewardAmount}장
+                      {event.rewardTicketType === 'RANDOM' ? '랜덤권' : '이상형권'} {event.rewardTicketAmount}장
                     </p>
                   </div>
                 </div>
@@ -176,34 +175,7 @@ const CouponEventPage: React.FC = () => {
                   <p className="font-semibold text-slate-800 text-xs">{formatDate(event.expiresAt)}</p>
                 </div>
               </div>
-              <div className="pt-1 border-t border-slate-100">
-                <p className="text-[11px] text-slate-400 mb-0.5">쿠폰 만료일</p>
-                <p className="text-xs font-semibold text-slate-800">{formatDate(event.couponExpiresAt)}</p>
-              </div>
             </motion.div>
-
-            {/* 시크릿 코드 입력 (필요 시) */}
-            {event.type === 'SECRET_CODE' && isActive && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)]"
-              >
-                <label htmlFor="secretCode" className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2.5">
-                  <Lock size={15} />
-                  시크릿 코드 입력
-                </label>
-                <input
-                  id="secretCode"
-                  type="text"
-                  value={secretCode}
-                  onChange={(e) => setSecretCode(e.target.value)}
-                  placeholder="이벤트 코드를 입력하세요"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"
-                />
-              </motion.div>
-            )}
 
             {/* 발급 버튼 */}
             <motion.div

@@ -13,5 +13,5 @@ export const updatePassword = (body: PasswordUpdateRequest): Promise<ApiResponse
 export const syncDeviceToken = (body: DeviceTokenSyncRequest): Promise<ApiResponse<null>> =>
   apiClient.patch<ApiResponse<null>>('/v1/members/devices', body).then((r) => r.data);
 
-export const deleteDeviceToken = (): Promise<ApiResponse<null>> =>
-  apiClient.delete<ApiResponse<null>>('/v1/members/devices').then((r) => r.data);
+export const deleteDeviceToken = (deviceToken: string): Promise<ApiResponse<null>> =>
+  apiClient.delete<ApiResponse<null>>('/v1/members/devices', { params: { deviceToken } }).then((r) => r.data);

@@ -14,7 +14,8 @@ import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
 import { apiClient, getApiErrorMessage } from '@/lib/axios';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
-import type { MemberCreateRequest, Gender, Mbti, Department } from '@/types';
+import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS } from '@/constants/tags';
+import type { MemberCreateRequest, Gender, Mbti, Department, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
 import {
   ChevronLeft,
   CheckCircle2,
@@ -29,57 +30,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
-const MBTI_OPTIONS = [
-  { value: 'ISTJ', label: 'ISTJ' },
-  { value: 'ISFJ', label: 'ISFJ' },
-  { value: 'INFJ', label: 'INFJ' },
-  { value: 'INTJ', label: 'INTJ' },
-  { value: 'ISTP', label: 'ISTP' },
-  { value: 'ISFP', label: 'ISFP' },
-  { value: 'INFP', label: 'INFP' },
-  { value: 'INTP', label: 'INTP' },
-  { value: 'ESTP', label: 'ESTP' },
-  { value: 'ESFP', label: 'ESFP' },
-  { value: 'ENFP', label: 'ENFP' },
-  { value: 'ENTP', label: 'ENTP' },
-  { value: 'ESTJ', label: 'ESTJ' },
-  { value: 'ESFJ', label: 'ESFJ' },
-  { value: 'ENFJ', label: 'ENFJ' },
-  { value: 'ENTJ', label: 'ENTJ' },
-];
-
-const PERSONALITY_TAGS = [
-  { value: 'ACTIVE', label: '활발한' },
-  { value: 'QUIET', label: '조용한' },
-  { value: 'AFFECTIONATE', label: '다정한' },
-  { value: 'INDEPENDENT', label: '독립적인' },
-  { value: 'FUNNY', label: '유머있는' },
-  { value: 'SERIOUS', label: '진지한' },
-  { value: 'OPTIMISTIC', label: '긍정적인' },
-  { value: 'CAREFUL', label: '신중한' },
-];
-
-const FACE_TYPE_TAGS = [
-  { value: 'PUPPY', label: '강아지상' },
-  { value: 'CAT', label: '고양이상' },
-  { value: 'BEAR', label: '곰상' },
-  { value: 'FOX', label: '여우상' },
-  { value: 'RABBIT', label: '토끼상' },
-  { value: 'PURE', label: '청순한' },
-  { value: 'CHIC', label: '시크한' },
-  { value: 'WARM', label: '훈훈한' },
-];
-
-const DATING_STYLE_TAGS = [
-  { value: 'FREQUENT_CONTACT', label: '자주 연락' },
-  { value: 'MODERATE_CONTACT', label: '적당한 연락' },
-  { value: 'PLANNED_DATE', label: '계획형 데이트' },
-  { value: 'SPONTANEOUS_DATE', label: '즉흥형 데이트' },
-  { value: 'SKINSHIP_LOVER', label: '스킨십 많은' },
-  { value: 'RESPECTFUL_SPACE', label: '각자 시간 존중' },
-  { value: 'EXPRESSIVE', label: '감정 표현 잘함' },
-  { value: 'GROW_TOGETHER', label: '함께 성장' },
-];
+// 태그/MBTI 상수는 src/constants/tags.ts 에서 import됩니다.
 
 type SignupStep = 1 | 2 | 3;
 
@@ -187,7 +138,22 @@ const SignupPage: React.FC = () => {
   const { isPWA } = useDisplayMode();
 
   const [step, setStep] = useState<SignupStep>(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    realName: string;
+    gender: string;
+    mbti: string;
+    department: string;
+    intro: string;
+    idealType: string;
+    emailUsername: string;
+    instagramId: string;
+    password: string;
+    passwordConfirm: string;
+    personalityTag: PersonalityTag | '';
+    faceTypeTag: FaceTypeTag | '';
+    datingStyleTag: DatingStyleTag | '';
+    terms: { service: boolean; privacy: boolean; disclaimer: boolean; profilePublic: boolean };
+  }>({
     realName: '',
     gender: '',
     mbti: '',
@@ -345,32 +311,35 @@ const SignupPage: React.FC = () => {
         instagramId: formData.instagramId || undefined,
         selfIntroduction: formData.intro || undefined,
         idealDescription: formData.idealType || undefined,
-        personalityTag: formData.personalityTag as any,
-        faceTypeTag: formData.faceTypeTag as any,
-        datingStyleTag: formData.datingStyleTag as any,
+        personalityTag: formData.personalityTag || undefined,
+        faceTypeTag: formData.faceTypeTag || undefined,
+        datingStyleTag: formData.datingStyleTag || undefined,
         agreedToTerms: requiredTermsAgreed,
       };
 
       await apiClient.post('/v1/members/sign-up', body);
 
-      // 가입 후 자동 로그인
-      const tokenRes = await loginApi({ email: body.email, password: body.password });
-      if (!tokenRes.data) {
+      // 가입 후 자동 로그인 (실패해도 회원가입은 성공)
+      try {
+        const tokenRes = await loginApi({ email: body.email, password: body.password });
+        if (!tokenRes.data) {
+          toast('회원가입이 완료되었습니다. 로그인해주세요.', 'success');
+          navigate('/login');
+          return;
+        }
+        localStorage.setItem('accessToken', tokenRes.data.accessToken);
+        localStorage.setItem('refreshToken', tokenRes.data.refreshToken);
+        const profileRes = await getMyProfile();
+        if (profileRes.data) {
+          setUser(profileRes.data);
+        }
+        toast('회원가입이 완료되었습니다! 환영합니다.', 'success');
+        navigate('/home');
+      } catch {
+        // 자동 로그인 실패 — 회원가입은 성공했으므로 로그인 페이지로 안내
         toast('회원가입이 완료되었습니다. 로그인해주세요.', 'success');
         navigate('/login');
-        return;
       }
-
-      localStorage.setItem('accessToken', tokenRes.data.accessToken);
-      localStorage.setItem('refreshToken', tokenRes.data.refreshToken);
-
-      const profileRes = await getMyProfile();
-      if (profileRes.data) {
-        setUser(profileRes.data);
-      }
-
-      toast('회원가입이 완료되었습니다! 환영합니다.', 'success');
-      navigate('/home');
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     } finally {
