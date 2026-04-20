@@ -250,8 +250,8 @@ export type TicketActionType = 'EARN' | 'USE' | 'REFUND';
 export type TicketSource = 'JOIN' | 'ATTENDANCE' | 'COUPON' | 'MATCHING' | 'PARTIAL_MATCH_REFUND' | 'NO_MATCH_REFUND' | 'ADMIN';
 
 export interface TicketBalanceResponse {
-  randomTickets: number;
-  idealTickets: number;
+  randomTicketCount: number;
+  idealTicketCount: number;
 }
 
 export interface TicketHistoryItem {
@@ -348,11 +348,6 @@ export interface ReportDetailItem extends ReportItem {
 }
 
 // --- QR (v2) ---
-
-export interface QrResponse {
-  qrToken: string;
-  qrImageUrl: string;
-}
 
 export interface AdminQrVerifyRequest {
   qrToken: string;

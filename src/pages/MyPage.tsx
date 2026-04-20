@@ -10,6 +10,7 @@ import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { getMyProfile, updateMyProfile, updatePassword } from '@/features/member/api';
 import { withdrawCandidate, cancelCandidateRegistration } from '@/features/candidate/api';
+import { getTicketBalance } from '@/features/ticket/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import {
   getRealNameErrorMessage,
@@ -19,8 +20,8 @@ import {
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/useFcmToken';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
-import type { Department, MemberProfile, Mbti } from '@/types';
-import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff } from 'lucide-react';
+import type { Department, MemberProfile, Mbti, TicketBalanceResponse } from '@/types';
+import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, Ticket, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // 컴포넌트 외부 정의 — 매 렌더마다 React 엘리먼트 재생성 방지
@@ -168,6 +169,20 @@ const MyPage: React.FC = () => {
       localStorage.getItem(FCM_ENABLED_KEY) === 'true',
   );
   const [notifLoading, setNotifLoading] = useState(false);
+  const [ticketBalance, setTicketBalance] = useState<TicketBalanceResponse | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getTicketBalance()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.data) setTicketBalance(res.data);
+      })
+      .catch(() => {
+        // 티켓 잔고 조회 실패 — 무시 (위젯 숨김)
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -718,6 +733,30 @@ const MyPage: React.FC = () => {
           </div>
         </div>
 
+        {/* 티켓 잔고 */}
+        {ticketBalance && (
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-[0_1px_12px_rgba(0,0,0,0.04)] border border-slate-100/80">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <Ticket size={16} className="text-blue-500" />
+                </div>
+                <span className="text-xs font-bold text-slate-400">랜덤권</span>
+              </div>
+              <p className="text-2xl font-black text-slate-900">{ticketBalance.randomTicketCount}<span className="text-sm font-bold text-slate-400 ml-1">장</span></p>
+            </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-[0_1px_12px_rgba(0,0,0,0.04)] border border-slate-100/80">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-xl bg-pink-100 flex items-center justify-center">
+                  <Ticket size={16} className="text-pink-500" />
+                </div>
+                <span className="text-xs font-bold text-slate-400">이상형권</span>
+              </div>
+              <p className="text-2xl font-black text-slate-900">{ticketBalance.idealTicketCount}<span className="text-sm font-bold text-slate-400 ml-1">장</span></p>
+            </div>
+          </div>
+        )}
+
         {/* 후보 상태 */}
         <div
           onClick={statusConfig.clickable ? () => navigate('/match') : undefined}
@@ -762,16 +801,19 @@ const MyPage: React.FC = () => {
         {/* 메뉴 */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-100/80 shadow-[0_1px_12px_rgba(0,0,0,0.04)] overflow-hidden divide-y divide-slate-50">
           {[
-            { label: '비밀번호 변경', onClick: () => setShowPasswordChange(true) },
-            { label: '이용약관', onClick: openTerms },
-            { label: '개발팀 소개', onClick: () => navigate('/about') },
-          ].map(({ label, onClick }) => (
+            { label: 'QR 코드', icon: <QrCode size={16} className="text-slate-400" />, onClick: () => navigate('/qr') },
+            { label: '비밀번호 변경', icon: null, onClick: () => setShowPasswordChange(true) },
+            { label: '이용약관', icon: null, onClick: openTerms },
+          ].map(({ label, icon, onClick }) => (
             <button
               key={label}
               onClick={onClick}
               className="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors"
             >
-              <span className="text-slate-700 font-medium text-sm">{label}</span>
+              <div className="flex items-center gap-2.5">
+                {icon}
+                <span className="text-slate-700 font-medium text-sm">{label}</span>
+              </div>
               <ChevronRight size={16} className="text-slate-300" />
             </button>
           ))}
@@ -809,8 +851,14 @@ const MyPage: React.FC = () => {
           )}
         </div>
 
-        <div className="mt-8 text-center">
-          <p className="text-xs text-slate-400">Randsome v1.0.0</p>
+        <div className="mt-8 text-center space-y-1.5">
+          <button
+            onClick={() => navigate('/about')}
+            className="text-xs text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-2"
+          >
+            개발팀 소개
+          </button>
+          <p className="text-xs text-slate-300">Randsome v1.0.0</p>
         </div>
       </div>
 
@@ -884,7 +932,7 @@ const MyPage: React.FC = () => {
               <div className="p-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-1">후보 등록 신청 취소</h3>
                 <p className="text-sm text-slate-500 mb-2">정말 후보 등록 신청을 취소하시겠어요?</p>
-                <p className="text-xs text-slate-400 mb-6">취소 시 결제 정보도 함께 취소됩니다.</p>
+                <p className="text-xs text-slate-400 mb-6">취소 후에는 다시 등록 신청이 필요합니다.</p>
                 <div className="flex gap-2.5">
                   <button
                     onClick={() => setShowCancelConfirm(false)}

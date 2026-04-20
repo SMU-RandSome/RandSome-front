@@ -125,7 +125,7 @@ export const WebShell: React.FC = () => {
       </header>
 
       {/* 페이지 컨텐츠 */}
-      <main className="flex-1 mt-16 overflow-y-auto">
+      <main className="flex-1 mt-16">
         <Outlet />
       </main>
     </div>

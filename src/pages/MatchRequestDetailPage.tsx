@@ -2,13 +2,42 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useDisplayMode } from '@/store/displayModeStore';
+import { useToast } from '@/components/ui/Toast';
 import { getMatchingResult } from '@/features/matching/api';
-import type { MatchingResultDetailItem } from '@/types';
-import { ArrowLeft, User, Heart, Instagram, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { createReport } from '@/features/report/api';
+import { getApiErrorMessage } from '@/lib/axios';
+import type { MatchingResultDetailItem, ReportReason } from '@/types';
+import { ArrowLeft, User, Heart, Instagram, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Flag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const CLAMP_LIMIT = 80;
 const VALID_INSTAGRAM_ID = /^[a-zA-Z0-9._]{1,30}$/;
+
+const PERSONALITY_TAG_LABELS: Record<string, string> = {
+  ACTIVE: '활발한', QUIET: '조용한', AFFECTIONATE: '다정한', INDEPENDENT: '독립적인',
+  FUNNY: '유머있는', SERIOUS: '진지한', OPTIMISTIC: '긍정적인', CAREFUL: '신중한',
+};
+
+const FACE_TYPE_TAG_LABELS: Record<string, string> = {
+  PUPPY: '강아지상', CAT: '고양이상', BEAR: '곰상', FOX: '여우상',
+  RABBIT: '토끼상', PURE: '청순한', CHIC: '시크한', WARM: '훈훈한',
+};
+
+const DATING_STYLE_TAG_LABELS: Record<string, string> = {
+  FREQUENT_CONTACT: '자주 연락', MODERATE_CONTACT: '적당한 연락',
+  PLANNED_DATE: '계획형 데이트', SPONTANEOUS_DATE: '즉흥형 데이트',
+  SKINSHIP_LOVER: '스킨십 많은', RESPECTFUL_SPACE: '각자 시간 존중',
+  EXPRESSIVE: '감정 표현 잘함', GROW_TOGETHER: '함께 성장',
+};
+
+const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  INAPPROPRIATE_CONTENT: '부적절한 내용',
+  PLAGIARIZED_PROFILE: '프로필 도용',
+  FAKE_PROFILE: '허위 프로필',
+  HARASSMENT: '괴롭힘/욕설',
+  SCAM: '사기 행위',
+  OTHER: '기타',
+};
 
 const ClampedText: React.FC<{ text: string }> = ({ text }) => {
   const [expanded, setExpanded] = useState(false);
@@ -66,6 +95,7 @@ const MatchRequestDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [reportTarget, setReportTarget] = useState<MatchingResultDetailItem | null>(null);
 
   useEffect(() => {
     if (!applicationId) {
@@ -245,8 +275,26 @@ const MatchRequestDetailPage: React.FC = () => {
             <p className="mt-6 text-slate-300 text-xs">
               불쾌감을 주는 언행은 제재 대상입니다. 매너 있는 대화를 부탁드려요.
             </p>
+
+            <button
+              onClick={() => setReportTarget(results[currentIndex])}
+              className="mt-2 flex items-center gap-1 text-[11px] text-slate-300 hover:text-rose-400 transition-colors mx-auto"
+            >
+              <Flag size={11} />
+              신고하기
+            </button>
           </div>
         )}
+
+        <AnimatePresence>
+          {reportTarget && (
+            <ReportModal
+              target={reportTarget}
+              onClose={() => setReportTarget(null)}
+              onSuccess={() => setReportTarget(null)}
+            />
+          )}
+        </AnimatePresence>
       </MobileLayout>
     );
   }
@@ -325,8 +373,28 @@ const MatchRequestDetailPage: React.FC = () => {
           <p className="shrink-0 text-center text-slate-300 text-[10px] mt-4">
             불쾌감을 주는 언행은 제재 대상입니다. 매너 있는 대화를 부탁드려요.
           </p>
+
+          {results.length > 0 && (
+            <button
+              onClick={() => setReportTarget(results[currentIndex])}
+              className="shrink-0 mt-1 flex items-center gap-1 text-[11px] text-slate-300 hover:text-rose-400 transition-colors mx-auto"
+            >
+              <Flag size={11} />
+              신고하기
+            </button>
+          )}
         </div>
       )}
+
+      <AnimatePresence>
+        {reportTarget && (
+          <ReportModal
+            target={reportTarget}
+            onClose={() => setReportTarget(null)}
+            onSuccess={() => setReportTarget(null)}
+          />
+        )}
+      </AnimatePresence>
     </MobileLayout>
   );
 };
@@ -408,9 +476,132 @@ const ProfileSwipeCard: React.FC<{ result: MatchingResultDetailItem }> = ({ resu
               : <p className="text-pink-300 text-xs italic">작성된 내용이 없어요</p>
             }
           </div>
+
+          {(result.personalityTag || result.faceTypeTag || result.datingStyleTag) && (
+            <div className="bg-slate-50 rounded-2xl p-3.5">
+              <p className="text-[10px] font-bold text-slate-400 mb-2">태그</p>
+              <div className="flex flex-wrap gap-1.5">
+                {result.personalityTag && (
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700">
+                    {PERSONALITY_TAG_LABELS[result.personalityTag] ?? result.personalityTag}
+                  </span>
+                )}
+                {result.faceTypeTag && (
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-violet-100 text-violet-700">
+                    {FACE_TYPE_TAG_LABELS[result.faceTypeTag] ?? result.faceTypeTag}
+                  </span>
+                )}
+                {result.datingStyleTag && (
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-pink-100 text-pink-700">
+                    {DATING_STYLE_TAG_LABELS[result.datingStyleTag] ?? result.datingStyleTag}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+};
+
+interface ReportModalProps {
+  target: MatchingResultDetailItem;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const ReportModal: React.FC<ReportModalProps> = ({ target, onClose, onSuccess }) => {
+  const { toast } = useToast();
+  const [reason, setReason] = useState<ReportReason | null>(null);
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = (): void => {
+    if (!reason) return;
+    setIsSubmitting(true);
+    createReport({ targetMemberId: target.id, reason, description })
+      .then(() => {
+        toast('신고가 접수되었습니다', 'success');
+        onSuccess();
+      })
+      .catch((err: unknown) => {
+        toast(getApiErrorMessage(err), 'error');
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+  };
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black z-[60]"
+        onClick={() => !isSubmitting && onClose()}
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 32 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 32 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 z-[70] bg-white rounded-t-3xl w-full max-w-[430px] max-h-[80vh] overflow-y-auto"
+      >
+        <div className="p-6">
+          <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+
+          <h3 className="text-lg font-bold text-slate-900 mb-0.5">신고하기</h3>
+          <p className="text-sm text-slate-400 mb-5">
+            <span className="font-semibold text-slate-600">{target.nickname}</span>님을 신고합니다
+          </p>
+
+          <p className="text-xs font-bold text-slate-500 mb-2.5">신고 사유</p>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {(Object.entries(REPORT_REASON_LABELS) as [ReportReason, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setReason(key)}
+                className={`py-2.5 px-3 rounded-xl text-xs font-semibold text-left transition-all ${
+                  reason === key
+                    ? 'bg-rose-500 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <p className="text-xs font-bold text-slate-500 mb-2">상세 설명 (선택)</p>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="신고 내용을 자세히 적어주세요"
+            rows={3}
+            className="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent resize-none transition-all mb-5"
+          />
+
+          <div className="flex gap-2.5">
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all disabled:opacity-50"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={reason === null || isSubmitting}
+              className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 active:opacity-80 shadow-md shadow-rose-200/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? '처리중...' : '신고 제출'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </>
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search, X } from 'lucide-react';
 
 interface SelectOption {
@@ -18,6 +19,15 @@ interface SearchableSelectProps {
   id?: string;
 }
 
+interface DropdownRect {
+  top: number;
+  left: number;
+  width: number;
+  openUpward: boolean;
+}
+
+const DROPDOWN_MAX_HEIGHT = 300;
+
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   label,
   options,
@@ -31,10 +41,10 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+  const [rect, setRect] = useState<DropdownRect | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
   const selectedOption = options.find((opt) => opt.value === value);
@@ -42,70 +52,140 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const filteredOptions = useMemo(() => {
     if (!searchQuery.trim()) return options;
     const query = searchQuery.toLowerCase();
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(query)
-    );
+    return options.filter((option) => option.label.toLowerCase().includes(query));
   }, [options, searchQuery]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setSearchQuery('');
-      }
-    };
+  const calcRect = (): void => {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - r.bottom;
+    const openUpward = spaceBelow < DROPDOWN_MAX_HEIGHT + 8 && r.top > spaceBelow;
+    setRect({
+      top: openUpward ? r.top - 8 : r.bottom + 8,
+      left: r.left,
+      width: r.width,
+      openUpward,
+    });
+  };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    calcRect();
+    if (searchInputRef.current) searchInputRef.current.focus();
+
+    const close = (): void => setIsOpen(false);
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const dropdownHeight = 300; // max-h-60 + search bar
-
-      // 아래 공간이 부족하고 위 공간이 충분하면 위로 열기
-      if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
-        setDropdownPosition('top');
-      } else {
-        setDropdownPosition('bottom');
-      }
+  const handleClickOutside = (e: MouseEvent): void => {
+    if (
+      containerRef.current &&
+      !containerRef.current.contains(e.target as Node) &&
+      !(e.target as Element).closest('[data-searchable-select-dropdown]')
+    ) {
+      setIsOpen(false);
+      setSearchQuery('');
     }
-  }, [isOpen]);
+  };
 
-  const handleSelect = (optionValue: string) => {
+  const handleSelect = (optionValue: string): void => {
     onChange(optionValue);
     setIsOpen(false);
     setSearchQuery('');
   };
 
-  const handleClear = () => {
+  const handleClear = (): void => {
     onChange('');
   };
+
+  const dropdown = isOpen && rect
+    ? createPortal(
+        <div
+          data-searchable-select-dropdown
+          style={{
+            position: 'fixed',
+            top: rect.openUpward ? undefined : rect.top,
+            bottom: rect.openUpward ? window.innerHeight - rect.top : undefined,
+            left: rect.left,
+            width: rect.width,
+            zIndex: 9999,
+            maxHeight: DROPDOWN_MAX_HEIGHT,
+          }}
+          className="bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in duration-200 flex flex-col"
+        >
+          <div className="shrink-0 bg-gradient-to-b from-white to-slate-50 border-b border-slate-200 p-3">
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={searchPlaceholder}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all text-sm shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-y-auto flex-1">
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-8 text-center text-slate-400 text-sm" role="status" aria-live="polite">
+                검색 결과가 없습니다
+              </div>
+            ) : (
+              filteredOptions.map((option, index) => {
+                const isSelected = option.value === value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSelect(option.value)}
+                    className={`w-full px-4 py-3 text-left flex items-center justify-between transition-all duration-150 ${
+                      index !== filteredOptions.length - 1 ? 'border-b border-slate-100' : ''
+                    } ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 font-semibold'
+                        : 'text-slate-700 hover:bg-blue-50 hover:text-blue-600'
+                    } ${index === filteredOptions.length - 1 ? 'rounded-b-xl' : ''}`}
+                    role="option"
+                    aria-selected={isSelected}
+                  >
+                    <span>{option.label}</span>
+                    {isSelected && (
+                      <Check size={18} className="text-blue-600 animate-in zoom-in duration-200" />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
 
   return (
     <div className={`w-full mb-4 ${className}`} ref={containerRef}>
       {label && (
-        <label
-          htmlFor={selectId}
-          className="block text-sm font-medium text-slate-700 mb-1.5"
-        >
+        <label htmlFor={selectId} className="block text-sm font-medium text-slate-700 mb-1.5">
           {label}
         </label>
       )}
       <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           id={selectId}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setIsOpen((v) => !v)}
           className={`w-full px-4 py-3 rounded-xl border bg-white text-left flex items-center justify-between shadow-sm hover:shadow-md ${
             error
               ? 'border-red-500 focus:ring-red-200'
@@ -136,80 +216,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             />
           </div>
         </button>
-
-        {isOpen && (
-          <div 
-            ref={dropdownRef}
-            className={`absolute z-50 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in duration-200 ${
-              dropdownPosition === 'top' 
-                ? 'bottom-full mb-2 slide-in-from-bottom-2' 
-                : 'top-full mt-2 slide-in-from-top-2'
-            }`}
-          >
-            <div className="sticky top-0 bg-gradient-to-b from-white to-slate-50 border-b border-slate-200 p-3">
-              <div className="relative">
-                <Search
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400"
-                />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={searchPlaceholder}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all text-sm shadow-sm"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            </div>
-
-            <div className="max-h-60 overflow-y-auto">
-              {filteredOptions.length === 0 ? (
-                <div 
-                  className="px-4 py-8 text-center text-slate-400 text-sm"
-                  role="status"
-                  aria-live="polite"
-                >
-                  검색 결과가 없습니다
-                </div>
-              ) : (
-                filteredOptions.map((option, index) => {
-                  const isSelected = option.value === value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleSelect(option.value)}
-                      className={`w-full px-4 py-3 text-left flex items-center justify-between transition-all duration-150 ${
-                        index !== filteredOptions.length - 1 ? 'border-b border-slate-100' : ''
-                      } ${
-                        isSelected 
-                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 font-semibold' 
-                          : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent hover:text-blue-600'
-                      } ${
-                        index === filteredOptions.length - 1 ? 'rounded-b-xl' : ''
-                      }`}
-                      role="option"
-                      aria-selected={isSelected}
-                    >
-                      <span className="transition-transform duration-150">
-                        {option.label}
-                      </span>
-                      {isSelected && (
-                        <Check 
-                          size={18} 
-                          className="text-blue-600 animate-in zoom-in duration-200" 
-                        />
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
       </div>
+      {dropdown}
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );

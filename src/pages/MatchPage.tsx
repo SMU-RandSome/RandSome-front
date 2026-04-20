@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/Button';
@@ -8,12 +8,13 @@ import { useDisplayMode } from '@/store/displayModeStore';
 import { useAuth } from '@/store/authStore';
 import { registerCandidate } from '@/features/candidate/api';
 import { applyMatching } from '@/features/matching/api';
+import { getTicketBalance } from '@/features/ticket/api';
 import { getApiErrorMessage } from '@/lib/axios';
-import type { PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
-import { Heart, UserPlus, ArrowRight, Check, Sparkles } from 'lucide-react';
+import type { PersonalityTag, FaceTypeTag, DatingStyleTag, TicketBalanceResponse, MatchingApplicationResponse } from '@/types';
+import { Heart, UserPlus, ArrowRight, Check, Sparkles, Ticket, Home, PartyPopper, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type MatchView = 'hub' | 'register' | 'find';
+type MatchView = 'hub' | 'register' | 'find' | 'result';
 type MatchStep = 'select-type' | 'select-count' | 'select-tags';
 type MatchType = 'random' | 'ideal';
 
@@ -21,6 +22,7 @@ const MatchPage: React.FC = () => {
   const { toast } = useToast();
   const { isPWA } = useDisplayMode();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isAlreadyCandidate =
     user?.candidateRegistrationStatus === 'PENDING' ||
     user?.candidateRegistrationStatus === 'APPROVED';
@@ -39,6 +41,19 @@ const MatchPage: React.FC = () => {
   const [datingStyleTag, setDatingStyleTag] = useState<DatingStyleTag | ''>('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmMode, setConfirmMode] = useState<'register' | 'match' | null>(null);
+  const [ticketBalance, setTicketBalance] = useState<TicketBalanceResponse | null>(null);
+  const [matchResult, setMatchResult] = useState<MatchingApplicationResponse | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getTicketBalance()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.data) setTicketBalance(res.data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const reset = (): void => {
     setView('hub');
@@ -55,8 +70,11 @@ const MatchPage: React.FC = () => {
       if (confirmMode === 'register') {
         await registerCandidate();
         toast('후보 등록 신청이 완료되었습니다! 관리자 승인을 기다려주세요.', 'success');
+        setShowConfirm(false);
+        setConfirmMode(null);
+        reset();
       } else if (confirmMode === 'match' && matchType) {
-        await applyMatching({
+        const res = await applyMatching({
           matchingType: matchType === 'random' ? 'RANDOM' : 'IDEAL',
           applicationCount: count,
           ...(matchType === 'ideal' && personalityTag && {
@@ -69,11 +87,16 @@ const MatchPage: React.FC = () => {
             preferredDatingStyleTag: datingStyleTag as DatingStyleTag,
           }),
         });
-        toast('매칭 신청이 완료되었습니다! 설레는 만남을 기다려주세요.', 'success');
+        setShowConfirm(false);
+        setConfirmMode(null);
+        if (res.data) {
+          setMatchResult(res.data);
+          setView('result');
+        } else {
+          toast('매칭 신청이 완료되었습니다!', 'success');
+          reset();
+        }
       }
-      setShowConfirm(false);
-      setConfirmMode(null);
-      reset();
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     }
@@ -301,6 +324,11 @@ const MatchPage: React.FC = () => {
   const renderFindStep2 = (): React.ReactNode => {
     if (!matchType) return null;
     const stepNum = matchType === 'ideal' ? 'Step 3' : 'Step 2';
+    const currentBalance = matchType === 'random'
+      ? ticketBalance?.randomTicketCount ?? 0
+      : ticketBalance?.idealTicketCount ?? 0;
+    const ticketLabel = matchType === 'random' ? '랜덤권' : '이상형권';
+    const isInsufficient = currentBalance < count;
 
     return (
       <div className="p-5 h-full flex flex-col bg-white">
@@ -316,7 +344,7 @@ const MatchPage: React.FC = () => {
             </h2>
           </div>
 
-          <div className="bg-slate-50 rounded-[2rem] p-8 mb-6 flex flex-col items-center justify-center">
+          <div className="bg-slate-50 rounded-[2rem] p-8 mb-4 flex flex-col items-center justify-center">
             <div className="flex items-center gap-8 mb-8">
               <button
                 onClick={() => setCount(Math.max(1, count - 1))}
@@ -338,6 +366,31 @@ const MatchPage: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* 티켓 잔고 안내 */}
+          {ticketBalance && (
+            <div className={`rounded-2xl p-4 mb-4 flex items-center justify-between ${
+              isInsufficient
+                ? 'bg-red-50 border border-red-200'
+                : 'bg-blue-50 border border-blue-100'
+            }`}>
+              <div className="flex items-center gap-2">
+                <Ticket size={16} className={isInsufficient ? 'text-red-500' : 'text-blue-500'} />
+                <span className={`text-sm font-semibold ${isInsufficient ? 'text-red-700' : 'text-blue-700'}`}>
+                  {ticketLabel} {currentBalance}장 보유
+                </span>
+              </div>
+              <span className={`text-sm font-bold ${isInsufficient ? 'text-red-500' : 'text-slate-500'}`}>
+                {count}장 필요
+              </span>
+            </div>
+          )}
+          {isInsufficient && ticketBalance && (
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <AlertTriangle size={14} className="text-red-400 shrink-0" />
+              <p className="text-xs text-red-500 font-medium">티켓이 부족합니다. 출석 체크나 쿠폰으로 티켓을 획득해보세요!</p>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 pb-6">
@@ -350,6 +403,7 @@ const MatchPage: React.FC = () => {
           </Button>
           <Button
             className="flex-[2] h-14 rounded-2xl text-lg shadow-lg shadow-blue-500/20 bg-blue-500 hover:bg-blue-600"
+            disabled={isInsufficient && !!ticketBalance}
             onClick={() => {
               setConfirmMode('match');
               setShowConfirm(true);
@@ -498,12 +552,79 @@ const MatchPage: React.FC = () => {
     );
   };
 
+  const renderResult = (): React.ReactNode => {
+    if (!matchResult) return null;
+    const { requestedCount, matchedCount, refundedTickets, isPartialMatch } = matchResult;
+
+    return (
+      <div className="p-5 h-full flex flex-col bg-white items-center justify-center text-center">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+          className="flex flex-col items-center"
+        >
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${
+            isPartialMatch ? 'bg-orange-100' : 'bg-green-100'
+          }`}>
+            {isPartialMatch
+              ? <AlertTriangle size={36} className="text-orange-500" />
+              : <PartyPopper size={36} className="text-green-500" />
+            }
+          </div>
+
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">
+            {isPartialMatch ? '부분 매칭 완료!' : `${matchedCount}명 매칭 완료!`}
+          </h2>
+
+          {isPartialMatch ? (
+            <div className="space-y-2 mb-8">
+              <p className="text-sm text-slate-600">
+                요청 {requestedCount}명 중 <span className="font-bold text-orange-600">{matchedCount}명</span>만 매칭되었습니다.
+              </p>
+              <p className="text-xs text-slate-400 flex items-center justify-center gap-1.5">
+                <Ticket size={12} />
+                매칭되지 않은 {refundedTickets}장은 자동 환불되었습니다.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 mb-8">
+              설레는 인연이 기다리고 있어요!
+            </p>
+          )}
+
+          <div className="w-full space-y-3">
+            <Button
+              fullWidth
+              size="lg"
+              className="rounded-2xl h-14 text-lg shadow-lg shadow-blue-500/20"
+              onClick={() => navigate('/requests')}
+            >
+              매칭 결과 보기
+            </Button>
+            <Button
+              fullWidth
+              variant="ghost"
+              className="text-slate-400 hover:text-slate-600 flex items-center justify-center gap-2"
+              onClick={() => {
+                setMatchResult(null);
+                reset();
+              }}
+            >
+              <Home size={16} /> 홈으로
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
+
   return (
     <MobileLayout>
       {isPWA && (
         <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 h-14 flex items-center justify-center">
           <h1 className="text-lg font-bold text-slate-900">
-            {view === 'hub' ? '매칭' : view === 'register' ? '후보 등록' : '매칭 찾기'}
+            {view === 'hub' ? '매칭' : view === 'register' ? '후보 등록' : view === 'result' ? '매칭 결과' : '매칭 찾기'}
           </h1>
         </header>
       )}
@@ -523,6 +644,7 @@ const MatchPage: React.FC = () => {
             {view === 'find' && step === 'select-type' && renderFindStep1()}
             {view === 'find' && step === 'select-tags' && renderFindStep3()}
             {view === 'find' && step === 'select-count' && renderFindStep2()}
+            {view === 'result' && renderResult()}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -550,11 +672,17 @@ const MatchPage: React.FC = () => {
               <h3 className="text-xl font-bold text-slate-900 mb-2">
                 {confirmMode === 'register' ? '후보 등록 신청' : '매칭 신청'}
               </h3>
-              <p className="text-sm text-slate-600 mb-6">
+              <p className="text-sm text-slate-600 mb-2">
                 {confirmMode === 'register'
                   ? '후보로 등록하시겠어요?'
                   : `${count}명의 ${matchType === 'random' ? '무작위' : '이상형'} 매칭을 신청하시겠어요?`}
               </p>
+              {confirmMode === 'match' && (
+                <p className="text-xs text-slate-400 mb-4 flex items-center gap-1.5">
+                  <Ticket size={12} />
+                  {matchType === 'random' ? '랜덤권' : '이상형권'} {count}장 차감
+                </p>
+              )}
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowConfirm(false)}

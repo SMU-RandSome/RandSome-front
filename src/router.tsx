@@ -15,6 +15,11 @@ const MatchPage = React.lazy(() => import('@/pages/MatchPage'));
 const RequestsPage = React.lazy(() => import('@/pages/RequestsPage'));
 const MatchRequestDetailPage = React.lazy(() => import('@/pages/MatchRequestDetailPage'));
 const MyPage = React.lazy(() => import('@/pages/MyPage'));
+const TicketHistoryPage = React.lazy(() => import('@/pages/TicketHistoryPage'));
+const AttendancePage = React.lazy(() => import('@/pages/AttendancePage'));
+const CouponsPage = React.lazy(() => import('@/pages/CouponsPage'));
+const CouponEventPage = React.lazy(() => import('@/pages/CouponEventPage'));
+const QrPage = React.lazy(() => import('@/pages/QrPage'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/AdminDashboard'));
 const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
 
@@ -94,6 +99,11 @@ export const router = createBrowserRouter([
           { path: '/requests', element: <RequestsPage /> },
           { path: '/requests/detail', element: <MatchRequestDetailPage /> },
           { path: '/mypage', element: <MyPage /> },
+          { path: '/tickets/history', element: <TicketHistoryPage /> },
+          { path: '/attendance', element: <AttendancePage /> },
+          { path: '/coupons', element: <CouponsPage /> },
+          { path: '/coupon-events/:id', element: <CouponEventPage /> },
+          { path: '/qr', element: <QrPage /> },
         ],
       },
 
