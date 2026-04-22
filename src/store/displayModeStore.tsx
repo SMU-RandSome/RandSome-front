@@ -3,14 +3,14 @@ import { useIsPWA } from '@/hooks/useIsPWA';
 
 interface DisplayModeContextType {
   isPWA: boolean;
+  isStandalone: boolean;
 }
 
-const DisplayModeContext = createContext<DisplayModeContextType>({ isPWA: false });
+const DisplayModeContext = createContext<DisplayModeContextType>({ isPWA: false, isStandalone: false });
 
 export const DisplayModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isPWA = useIsPWA();
-  // isPWA가 변경될 때만 새 객체 생성 — 모든 useDisplayMode() 소비자 불필요 리렌더링 방지
-  const value = useMemo(() => ({ isPWA }), [isPWA]);
+  const { isPWA, isStandalone } = useIsPWA();
+  const value = useMemo(() => ({ isPWA, isStandalone }), [isPWA, isStandalone]);
 
   return (
     <DisplayModeContext.Provider value={value}>

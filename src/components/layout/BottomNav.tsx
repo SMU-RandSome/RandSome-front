@@ -11,17 +11,17 @@ const TABS = [
   { id: 'mypage', label: '마이', icon: User, path: '/mypage', activeColor: '#2563eb' },
 ] as const;
 
-export const BottomNav: React.FC = () => {
-  const { isPWA } = useDisplayMode();
+export const BottomNav: React.FC = React.memo(() => {
+  const { isPWA, isStandalone } = useDisplayMode();
 
   if (!isPWA) return null;
 
   return (
     <nav
-      className="fixed bottom-0 w-full max-w-[430px] z-50 left-1/2 -translate-x-1/2 flex items-center justify-around px-4"
+      className={`fixed bottom-0 w-full z-50 left-1/2 -translate-x-1/2 flex items-center justify-around px-4 ${isStandalone ? 'max-w-[430px]' : ''}`}
       style={{
-        height: 76,
-        paddingBottom: 28,
+        height: 'calc(76px + env(safe-area-inset-bottom))',
+        paddingBottom: 'env(safe-area-inset-bottom)',
         paddingTop: 8,
         background: 'rgba(255,255,255,.88)',
         backdropFilter: 'blur(20px)',
@@ -77,4 +77,4 @@ export const BottomNav: React.FC = () => {
       })}
     </nav>
   );
-};
+});

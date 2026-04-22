@@ -4,16 +4,18 @@ import { useDisplayMode } from '@/store/displayModeStore';
 interface MobileLayoutProps {
   children: React.ReactNode;
   className?: string;
+  outerClassName?: string;
 }
 
-export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, className = '' }) => {
-  const { isPWA } = useDisplayMode();
+export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, className = '', outerClassName = '' }) => {
+  const { isPWA, isStandalone } = useDisplayMode();
 
   if (isPWA) {
     return (
-      <div className="min-h-screen bg-member flex justify-center items-start font-sans text-slate-900">
+      <div className={`min-h-screen bg-member flex justify-center items-start font-sans text-slate-900 ${outerClassName}`}>
         <div
-          className={`w-full max-w-[430px] min-h-screen bg-member shadow-[0_0_40px_rgba(0,0,0,0.08)] relative flex flex-col border-x border-slate-200/40 overflow-x-hidden ${className}`}
+          className={`w-full min-h-screen bg-member relative flex flex-col overflow-x-hidden ${isStandalone ? 'max-w-[430px] shadow-[0_0_40px_rgba(0,0,0,0.08)]' : ''} ${className}`}
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
           {children}
         </div>
