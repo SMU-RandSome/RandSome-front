@@ -2,7 +2,7 @@
 
 export type Gender = 'MALE' | 'FEMALE';
 
-export type UserRole = 'ROLE_MEMBER' | 'ROLE_CANDIDATE' | 'ROLE_ADMIN';
+export type UserRole = 'ROLE_MEMBER' | 'ROLE_SUSPEND_MEMBER' | 'ROLE_CANDIDATE' | 'ROLE_ADMIN';
 
 // --- 태그 (v2) ---
 
@@ -133,9 +133,9 @@ export interface MemberProfileUpdateRequest {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  personalityTag?: PersonalityTag;
-  faceTypeTag?: FaceTypeTag;
-  datingStyleTag?: DatingStyleTag;
+  personalityTag: PersonalityTag;
+  faceTypeTag: FaceTypeTag;
+  datingStyleTag: DatingStyleTag;
 }
 
 export interface MemberCreateRequest {
@@ -215,6 +215,7 @@ export interface MatchingApplicationRequest {
 export interface MatchingApplicationResponse {
   matchingApplicationId: number;
   matchingType: MatchingType;
+  applicationStatus: MatchingApplicationStatus;
   requestedCount: number;
   matchedCount: number;
   refundedTickets: number;
@@ -278,6 +279,7 @@ export interface CouponItem {
   id: number;
   eventName: string;
   status: CouponStatus;
+  ticketType: TicketType;
   eventExpiresAt: string;
   rewardTicketAmount: number;
 }
@@ -290,6 +292,17 @@ export interface CouponEventPreviewItem {
   totalQuantity: number;
 }
 
+export interface AdminCouponEventPreviewItem {
+  id: number;
+  name: string;
+  eventType: CouponEventType;
+  status: CouponEventStatus;
+  totalQuantity: number;
+  remainingQuantity: number;
+  startsAt: string;
+  expiresAt: string;
+}
+
 export interface CouponEventDetailItem {
   id: number;
   name: string;
@@ -299,6 +312,20 @@ export interface CouponEventDetailItem {
   totalQuantity: number;
   rewardTicketType: TicketType;
   rewardTicketAmount: number;
+  startsAt: string;
+  expiresAt: string;
+}
+
+export interface CouponEventDetailResponse {
+  id: number;
+  name: string;
+  description?: string;
+  eventType: CouponEventType;
+  status: CouponEventStatus;
+  totalQuantity: number;
+  rewardTicketType: TicketType;
+  rewardTicketAmount: number;
+  isIssuable: boolean;
   startsAt: string;
   expiresAt: string;
 }
@@ -325,6 +352,14 @@ export interface CouponEventUpdateRequest {
   startsAt: string;
   expiresAt: string;
   couponExpiresAt: string;
+}
+
+// --- 회원 통계 (v2) ---
+
+export interface MemberStatsResponse {
+  exposureCount: number;
+  sentApplicationCount: number;
+  attendanceDays: number;
 }
 
 // --- 출석 (v2) ---
@@ -445,9 +480,6 @@ export interface AdminMemberDetail {
   instagramId?: string;
   selfIntroduction?: string;
   idealDescription?: string;
-  personalityTag: PersonalityTag;
-  faceTypeTag: FaceTypeTag;
-  datingStyleTag: DatingStyleTag;
 }
 
 export interface PageResponse<T> {

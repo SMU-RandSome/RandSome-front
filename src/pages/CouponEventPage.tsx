@@ -47,7 +47,7 @@ const CouponEventPage: React.FC = () => {
   };
 
   const isActive = event?.status === 'ACTIVE';
-  const canClaim = isActive;
+  const canClaim = isActive && (event?.isIssuable ?? false);
 
   return (
     <MobileLayout>
@@ -161,7 +161,9 @@ const CouponEventPage: React.FC = () => {
                     ? event.rewardTicketType === 'RANDOM'
                       ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-300/60 active:opacity-80'
                       : 'bg-gradient-to-r from-violet-500 to-purple-700 text-white shadow-lg shadow-violet-200/50 hover:shadow-violet-300/60 active:opacity-80'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : isActive && !event.isIssuable
+                    ? `opacity-40 cursor-not-allowed text-white ${event.rewardTicketType === 'RANDOM' ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : 'bg-gradient-to-r from-violet-500 to-purple-700'}`
+                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 }`}
               >
                 {issueMutation.isPending ? (
@@ -171,6 +173,8 @@ const CouponEventPage: React.FC = () => {
                   </span>
                 ) : !isActive ? (
                   `이벤트 ${STATUS_LABELS[event.status]}`
+                ) : !event.isIssuable ? (
+                  '발급 완료'
                 ) : (
                   '쿠폰 발급받기'
                 )}

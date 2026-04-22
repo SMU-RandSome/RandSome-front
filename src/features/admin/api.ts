@@ -11,7 +11,8 @@ import type {
   AdminQrVerifyRequest,
   CouponEventRegisterRequest,
   CouponEventUpdateRequest,
-  CouponEventPreviewItem,
+  AdminCouponEventPreviewItem,
+  CouponEventDetailItem,
   AdminReportListItem,
   AdminReportDetailResponse,
   ReportStatusFilter,
@@ -90,9 +91,14 @@ export const verifyQrCode = (body: AdminQrVerifyRequest): Promise<ApiResponse<vo
 
 // --- 쿠폰 이벤트 관리 ---
 
-export const getAdminCouponEvents = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<CouponEventPreviewItem>>> =>
+export const getAdminCouponEvents = (): Promise<ApiResponse<AdminCouponEventPreviewItem[]>> =>
   apiClient
-    .get<ApiResponse<PageResponse<CouponEventPreviewItem>>>('/v1/admin/coupon-events', { params })
+    .get<ApiResponse<AdminCouponEventPreviewItem[]>>('/v1/admin/coupon-events')
+    .then((r) => r.data);
+
+export const getAdminCouponEvent = (couponEventId: number): Promise<ApiResponse<CouponEventDetailItem>> =>
+  apiClient
+    .get<ApiResponse<CouponEventDetailItem>>(`/v1/admin/coupon-events/${couponEventId}`)
     .then((r) => r.data);
 
 export const createAdminCouponEvent = (body: CouponEventRegisterRequest): Promise<ApiResponse<number>> =>
@@ -144,5 +150,5 @@ export const rejectAdminReport = (reportId: number): Promise<ApiResponse<null>> 
 
 export const restoreAdminMember = (memberId: number): Promise<ApiResponse<null>> =>
   apiClient
-    .post<ApiResponse<null>>(`/v1/admin/reports/members/${memberId}/restore`)
+    .delete<ApiResponse<null>>(`/v1/admin/members/${memberId}/suspensions`)
     .then((r) => r.data);

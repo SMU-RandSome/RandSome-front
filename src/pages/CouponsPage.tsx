@@ -5,7 +5,7 @@ import { Orbs } from '@/components/ui/Orbs';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { getCoupons } from '@/features/coupon/api';
 import { useUseCouponMutation } from '@/features/coupon/hooks/useUseCoupon';
-import type { CouponItem, CouponStatus } from '@/types';
+import type { CouponItem, CouponStatus, TicketType } from '@/types';
 
 type CouponFilter = 'ALL' | 'AVAILABLE' | 'USED_OR_EXPIRED';
 
@@ -22,6 +22,11 @@ const STATUS_LABELS: Record<CouponStatus, string> = {
   AVAILABLE: '사용 가능',
   USED: '사용 완료',
   EXPIRED: '만료됨',
+};
+
+const TICKET_TYPE_LABELS: Record<TicketType, string> = {
+  RANDOM: '랜덤권',
+  IDEAL: '이상형권',
 };
 
 const formatExpiry = (iso: string): string => {
@@ -202,11 +207,13 @@ const CouponsPage: React.FC = () => {
                       </div>
                       <p className="text-sm font-bold text-slate-900 truncate">{item.eventName}</p>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        티켓 {item.rewardTicketAmount}장
+                        {TICKET_TYPE_LABELS[item.ticketType]} {item.rewardTicketAmount}장
                       </p>
                     </div>
 
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-violet-100 text-violet-600">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      item.ticketType === 'IDEAL' ? 'bg-indigo-100 text-indigo-600' : 'bg-violet-100 text-violet-600'
+                    }`}>
                       <Ticket size={22} />
                     </div>
                   </div>
@@ -268,7 +275,7 @@ const CouponsPage: React.FC = () => {
                   <span className="font-semibold text-slate-800">{confirmTarget.eventName}</span>
                 </p>
                 <p className="text-sm text-slate-500 mb-6">
-                  티켓 {confirmTarget.rewardTicketAmount}장이 지급됩니다.
+                  {TICKET_TYPE_LABELS[confirmTarget.ticketType]} {confirmTarget.rewardTicketAmount}장이 지급됩니다.
                   사용 후에는 취소할 수 없습니다.
                 </p>
                 <div className="flex gap-2.5">

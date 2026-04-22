@@ -499,9 +499,11 @@ const AdminDashboard: React.FC = () => {
                       <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${
                         member.role === 'ROLE_CANDIDATE'
                           ? 'bg-blue-50 text-blue-600'
+                          : member.role === 'ROLE_SUSPEND_MEMBER'
+                          ? 'bg-red-50 text-red-600'
                           : 'bg-slate-100 text-slate-500'
                       }`}>
-                        {member.role === 'ROLE_CANDIDATE' ? '후보자' : '일반'}
+                        {member.role === 'ROLE_CANDIDATE' ? '후보자' : member.role === 'ROLE_SUSPEND_MEMBER' ? '정지' : '일반'}
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -1138,9 +1140,11 @@ const AdminDashboard: React.FC = () => {
                         <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${
                           selectedMemberDetail.role === 'ROLE_CANDIDATE'
                             ? 'bg-blue-50 text-blue-600'
+                            : selectedMemberDetail.role === 'ROLE_SUSPEND_MEMBER'
+                            ? 'bg-red-50 text-red-600'
                             : 'bg-slate-100 text-slate-500'
                         }`}>
-                          {selectedMemberDetail.role === 'ROLE_CANDIDATE' ? '후보자' : '일반'}
+                          {selectedMemberDetail.role === 'ROLE_CANDIDATE' ? '후보자' : selectedMemberDetail.role === 'ROLE_SUSPEND_MEMBER' ? '정지' : '일반'}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400">{selectedMemberDetail.email}</p>
@@ -1178,7 +1182,15 @@ const AdminDashboard: React.FC = () => {
                     )}
                   </div>
                   <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
-                    {!showSuspendForm ? (
+                    {selectedMemberDetail.role === 'ROLE_SUSPEND_MEMBER' ? (
+                      <button
+                        onClick={() => handleRestoreMember(selectedMemberDetail.id)}
+                        className="w-full h-11 rounded-2xl bg-green-50 border border-green-100 text-green-700 text-sm font-semibold hover:bg-green-100 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <RotateCcw size={14} />
+                        정지 해제
+                      </button>
+                    ) : !showSuspendForm ? (
                       <button
                         onClick={() => setShowSuspendForm(true)}
                         className="w-full h-11 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"

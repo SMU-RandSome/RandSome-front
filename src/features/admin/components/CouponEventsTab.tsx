@@ -7,11 +7,12 @@ import {
   deleteAdminCouponEvent,
   activateAdminCouponEvent,
   deactivateAdminCouponEvent,
+  getAdminCouponEvents,
+  getAdminCouponEvent,
 } from '@/features/admin/api';
-import { getCouponEvents, getCouponEvent } from '@/features/coupon/api';
 import { getApiErrorMessage } from '@/lib/axios';
-import type { CouponEventPreviewItem, CouponEventType, TicketType } from '@/types';
-import { Plus, Pencil, Trash2, X, Zap, KeyRound } from 'lucide-react';
+import type { AdminCouponEventPreviewItem, CouponEventDetailItem, CouponEventType, TicketType } from '@/types';
+import { Plus, Pencil, Trash2, X, Zap, KeyRound, Calendar, Eye } from 'lucide-react';
 
 const STATUS_CONFIG = {
   DRAFT: { label: '준비중', bg: 'bg-slate-100', text: 'text-slate-600' },
@@ -52,6 +53,11 @@ const EMPTY_FORM: FormState = {
   startsAt: '',
   expiresAt: '',
   couponExpiresAt: '',
+};
+
+const formatDateShort = (iso: string): string => {
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
 const toDatetimeLocal = (iso: string): string => {
@@ -188,7 +194,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({ id, value, onChange }) =>
 const CouponEventsTab: React.FC = () => {
   const { toast } = useToast();
 
-  const [events, setEvents] = useState<CouponEventPreviewItem[]>([]);
+  const [events, setEvents] = useState<AdminCouponEventPreviewItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -197,14 +203,26 @@ const CouponEventsTab: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
-  const [deleteTarget, setDeleteTarget] = useState<CouponEventPreviewItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminCouponEventPreviewItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const [toggling, setToggling] = useState<number | null>(null);
 
+  const [detailItem, setDetailItem] = useState<CouponEventDetailItem | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const openDetail = (event: AdminCouponEventPreviewItem): void => {
+    setDetailItem(null);
+    setDetailLoading(true);
+    getAdminCouponEvent(event.id)
+      .then((res) => { if (res.data) setDetailItem(res.data); })
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
+      .finally(() => setDetailLoading(false));
+  };
+
   const fetchEvents = useCallback((): void => {
     setLoading(true);
-    getCouponEvents()
+    getAdminCouponEvents()
       .then((res) => {
         if (res.data) {
           setEvents(res.data);
@@ -226,12 +244,12 @@ const CouponEventsTab: React.FC = () => {
     setFormOpen(true);
   };
 
-  const openEditForm = (event: CouponEventPreviewItem): void => {
+  const openEditForm = (event: AdminCouponEventPreviewItem): void => {
     setEditingId(event.id);
     setForm({ ...EMPTY_FORM, name: event.name, type: event.eventType, totalQuantity: event.totalQuantity });
     setFormOpen(true);
     setFormLoading(true);
-    getCouponEvent(event.id)
+    getAdminCouponEvent(event.id)
       .then((res) => {
         if (!res.data) return;
         const d = res.data;
@@ -318,7 +336,7 @@ const CouponEventsTab: React.FC = () => {
 
   // --- 활성화/비활성화 ---
 
-  const handleToggleStatus = async (event: CouponEventPreviewItem): Promise<void> => {
+  const handleToggleStatus = async (event: AdminCouponEventPreviewItem): Promise<void> => {
     setToggling(event.id);
     try {
       if (event.status === 'DRAFT') {
@@ -399,12 +417,22 @@ const CouponEventsTab: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 수량 정보 */}
-                  <div className="bg-slate-50 rounded-xl p-3 mb-3">
+                  {/* 수량 / 기간 정보 */}
+                  <div className="bg-slate-50 rounded-xl p-3 mb-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-400">총 수량</span>
+                      <span className="text-xs text-slate-400">수량</span>
                       <span className="text-sm font-semibold text-slate-900">
-                        {event.totalQuantity}개
+                        {event.remainingQuantity}
+                        <span className="text-xs font-normal text-slate-400"> / {event.totalQuantity}개</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-xs text-slate-400">
+                        <Calendar size={10} />
+                        기간
+                      </span>
+                      <span className="text-xs text-slate-600">
+                        {formatDateShort(event.startsAt)} ~ {formatDateShort(event.expiresAt)}
                       </span>
                     </div>
                   </div>
@@ -428,6 +456,13 @@ const CouponEventsTab: React.FC = () => {
                           : '종료하기'}
                       </button>
                     )}
+                    <button
+                      onClick={() => openDetail(event)}
+                      className="h-9 px-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                      aria-label="상세 보기"
+                    >
+                      <Eye size={14} />
+                    </button>
                     <button
                       onClick={() => openEditForm(event)}
                       className="h-9 px-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
@@ -626,6 +661,84 @@ const CouponEventsTab: React.FC = () => {
                     : '생성하기'}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 이벤트 상세 모달 */}
+      <AnimatePresence>
+        {(detailLoading || detailItem) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
+            <motion.div
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setDetailItem(null); setDetailLoading(false); }}
+            />
+            <motion.div
+              className="relative w-full max-w-[390px] bg-white rounded-3xl p-6 max-h-[85vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-bold text-slate-900 text-base">이벤트 상세</h3>
+                <button
+                  onClick={() => { setDetailItem(null); setDetailLoading(false); }}
+                  className="p-1 text-slate-400 hover:text-slate-700 transition-colors"
+                  aria-label="닫기"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              {detailLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => <div key={i} className="h-10 bg-slate-50 rounded-xl animate-pulse" />)}
+                </div>
+              ) : detailItem && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${STATUS_CONFIG[detailItem.status].bg} ${STATUS_CONFIG[detailItem.status].text}`}>
+                      {STATUS_CONFIG[detailItem.status].label}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-slate-500">
+                      {detailItem.eventType === 'HAPPY_HOUR' ? <Zap size={11} className="text-amber-500" /> : <KeyRound size={11} className="text-purple-500" />}
+                      {TYPE_LABEL[detailItem.eventType]}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className="text-base font-bold text-slate-900">{detailItem.name}</p>
+                    {detailItem.description && (
+                      <p className="text-sm text-slate-500 mt-1">{detailItem.description}</p>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-50 rounded-2xl p-4 space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">총 수량</span>
+                      <span className="font-semibold text-slate-900">{detailItem.totalQuantity}개</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">보상 티켓</span>
+                      <span className="font-semibold text-slate-900">
+                        {TICKET_LABEL[detailItem.rewardTicketType]} {detailItem.rewardTicketAmount}장
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">이벤트 시작</span>
+                      <span className="font-semibold text-slate-900">{formatDateShort(detailItem.startsAt)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">이벤트 종료</span>
+                      <span className="font-semibold text-slate-900">{formatDateShort(detailItem.expiresAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

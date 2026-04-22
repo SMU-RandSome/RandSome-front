@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/axios';
-import type { ApiResponse, MemberProfile, MemberProfileUpdateRequest, PasswordUpdateRequest, DeviceTokenSyncRequest } from '@/types';
+import type { ApiResponse, MemberProfile, MemberProfileUpdateRequest, MemberStatsResponse, PasswordUpdateRequest, DeviceTokenSyncRequest } from '@/types';
 
 export const getMyProfile = (): Promise<ApiResponse<MemberProfile>> =>
   apiClient.get<ApiResponse<MemberProfile>>('/v1/members').then((r) => r.data);
@@ -15,3 +15,6 @@ export const syncDeviceToken = (body: DeviceTokenSyncRequest): Promise<ApiRespon
 
 export const deleteDeviceToken = (deviceToken: string): Promise<ApiResponse<null>> =>
   apiClient.delete<ApiResponse<null>>('/v1/members/devices', { params: { deviceToken } }).then((r) => r.data);
+
+export const getMemberStats = (): Promise<ApiResponse<MemberStatsResponse>> =>
+  apiClient.get<ApiResponse<MemberStatsResponse>>('/v1/members/stats').then((r) => r.data);

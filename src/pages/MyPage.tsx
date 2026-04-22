@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { getMyProfile, updateMyProfile, updatePassword } from '@/features/member/api';
+import { getMyProfile, getMemberStats, updateMyProfile, updatePassword } from '@/features/member/api';
 import { withdrawCandidate, cancelCandidateRegistration } from '@/features/candidate/api';
 import { getTicketBalance } from '@/features/ticket/api';
 import { getApiErrorMessage } from '@/lib/axios';
@@ -21,7 +21,7 @@ import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api'
 import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/useFcmToken';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS, PERSONALITY_TAG_LABELS, FACE_TYPE_TAG_LABELS, DATING_STYLE_TAG_LABELS } from '@/constants/tags';
-import type { Department, MemberProfile, Mbti, TicketBalanceResponse, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
+import type { Department, MemberProfile, MemberStatsResponse, Mbti, TicketBalanceResponse, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, Ticket, QrCode, History, Settings, Shield, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -130,6 +130,7 @@ const MyPage: React.FC = () => {
   );
   const [notifLoading, setNotifLoading] = useState(false);
   const [ticketBalance, setTicketBalance] = useState<TicketBalanceResponse | null>(null);
+  const [stats, setStats] = useState<MemberStatsResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +142,17 @@ const MyPage: React.FC = () => {
       .catch(() => {
         // 티켓 잔고 조회 실패 — 무시 (위젯 숨김)
       });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMemberStats()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.data) setStats(res.data);
+      })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -268,6 +280,11 @@ const MyPage: React.FC = () => {
       return;
     }
 
+    if (!editForm.personalityTag || !editForm.faceTypeTag || !editForm.datingStyleTag) {
+      toast('성격, 얼굴상, 연애 스타일 태그를 모두 선택해주세요.', 'error');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateMyProfile({
@@ -277,9 +294,9 @@ const MyPage: React.FC = () => {
         instagramId: editForm.instagramId || undefined,
         selfIntroduction: editForm.selfIntroduction || undefined,
         idealDescription: editForm.idealDescription || undefined,
-        personalityTag: editForm.personalityTag || undefined,
-        faceTypeTag: editForm.faceTypeTag || undefined,
-        datingStyleTag: editForm.datingStyleTag || undefined,
+        personalityTag: editForm.personalityTag,
+        faceTypeTag: editForm.faceTypeTag,
+        datingStyleTag: editForm.datingStyleTag,
       });
       // 저장 후 최신 프로필 다시 조회
       const res = await getMyProfile();
@@ -497,9 +514,9 @@ const MyPage: React.FC = () => {
           {/* Stats row */}
           <div className="flex border-t border-slate-200/60 py-3.5">
             {[
-              { label: '노출 횟수', value: String(displayProfile?.exposureCount ?? 0), cls: 'text-blue-500' },
-              { label: '보낸 신청', value: '-', cls: 'gt' },
-              { label: '매칭 성공', value: '-', cls: 'wt' },
+              { label: '노출 횟수', value: stats ? String(stats.exposureCount) : '-', cls: 'text-blue-500' },
+              { label: '보낸 신청', value: stats ? String(stats.sentApplicationCount) : '-', cls: 'text-indigo-500' },
+              { label: '출석 일수', value: stats ? String(stats.attendanceDays) : '-', cls: 'text-pink-500' },
             ].map(({ label, value, cls }, i) => (
               <div key={label} className="flex-1 text-center" style={{ borderRight: i < 2 ? '1px solid rgba(226,232,240,.6)' : 'none' }}>
                 <p className={`font-display text-[26px] leading-none ${cls}`}>{value}</p>
