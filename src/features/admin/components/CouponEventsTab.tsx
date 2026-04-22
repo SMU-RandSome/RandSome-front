@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/components/ui/Toast';
 import {
-  getAdminCouponEvents,
   createAdminCouponEvent,
   updateAdminCouponEvent,
   deleteAdminCouponEvent,
   activateAdminCouponEvent,
   deactivateAdminCouponEvent,
 } from '@/features/admin/api';
+import { getCouponEvents, getCouponEvent } from '@/features/coupon/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import type { CouponEventPreviewItem, CouponEventType, TicketType } from '@/types';
 import { Plus, Pencil, Trash2, X, Zap, KeyRound } from 'lucide-react';
@@ -16,6 +16,7 @@ import { Plus, Pencil, Trash2, X, Zap, KeyRound } from 'lucide-react';
 const STATUS_CONFIG = {
   DRAFT: { label: '준비중', bg: 'bg-slate-100', text: 'text-slate-600' },
   ACTIVE: { label: '활성', bg: 'bg-green-100', text: 'text-green-700' },
+  SOLD_OUT: { label: '매진', bg: 'bg-orange-100', text: 'text-orange-600' },
   ENDED: { label: '종료', bg: 'bg-red-50', text: 'text-red-500' },
 } as const;
 
@@ -53,6 +54,137 @@ const EMPTY_FORM: FormState = {
   couponExpiresAt: '',
 };
 
+const toDatetimeLocal = (iso: string): string => {
+  const d = new Date(iso);
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+// ─── DateTimeInput 커스텀 컴포넌트 ───────────────────────────────────────────
+
+const DT_YEARS = ['2025', '2026', '2027'] as const;
+const DT_MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+const DT_HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const DT_MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+const getDaysInMonth = (year: string, month: string): string[] => {
+  if (!year || !month) return Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+  const count = new Date(Number(year), Number(month), 0).getDate();
+  return Array.from({ length: count }, (_, i) => String(i + 1).padStart(2, '0'));
+};
+
+const DT_SELECT_CLS =
+  'h-10 px-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors cursor-pointer';
+
+interface DateTimeInputProps {
+  id: string;
+  value: string; // YYYY-MM-DDTHH:mm
+  onChange: (v: string) => void;
+}
+
+const DateTimeInput: React.FC<DateTimeInputProps> = ({ id, value, onChange }) => {
+  const parseValue = (val: string): { year: string; month: string; day: string; hour: string; minute: string } => {
+    if (!val) return { year: '', month: '', day: '', hour: '00', minute: '00' };
+    const [d = '', t = '00:00'] = val.split('T');
+    const [year = '', month = '', day = ''] = d.split('-');
+    const [hour = '00', minute = '00'] = t.split(':');
+    return { year, month, day, hour, minute };
+  };
+
+  const [parts, setParts] = useState(() => parseValue(value));
+  // 자체 emit으로 인한 value 변경은 무시 — 외부(부모 폼 리셋 등)만 반영
+  const lastEmit = useRef<string>(value);
+
+  useEffect(() => {
+    if (value !== lastEmit.current) {
+      setParts(parseValue(value));
+      lastEmit.current = value;
+    }
+  }, [value]);
+
+  const update = (patch: Partial<{ year: string; month: string; day: string; hour: string; minute: string }>): void => {
+    const next = { ...parts, ...patch };
+    setParts(next);
+    const { year, month, day, hour, minute } = next;
+    let emitVal = '';
+    if (year && month && day) {
+      const maxDay = new Date(Number(year), Number(month), 0).getDate();
+      const clampedDay = String(Math.min(Number(day) || 1, maxDay)).padStart(2, '0');
+      emitVal = `${year}-${month}-${clampedDay}T${hour}:${minute}`;
+    }
+    lastEmit.current = emitVal;
+    onChange(emitVal);
+  };
+
+  const days = getDaysInMonth(parts.year, parts.month);
+
+  return (
+    <div className="space-y-2">
+      {/* 날짜 행 */}
+      <div className="flex gap-1.5">
+        <select
+          id={id}
+          value={parts.year}
+          onChange={(e) => update({ year: e.target.value })}
+          className={`${DT_SELECT_CLS} flex-[3]`}
+          aria-label="연도"
+        >
+          <option value="">년도</option>
+          {DT_YEARS.map((y) => (
+            <option key={y} value={y}>{y}년</option>
+          ))}
+        </select>
+        <select
+          value={parts.month}
+          onChange={(e) => update({ month: e.target.value })}
+          className={`${DT_SELECT_CLS} flex-[2]`}
+          aria-label="월"
+        >
+          <option value="">월</option>
+          {DT_MONTHS.map((m) => (
+            <option key={m} value={m}>{Number(m)}월</option>
+          ))}
+        </select>
+        <select
+          value={parts.day}
+          onChange={(e) => update({ day: e.target.value })}
+          className={`${DT_SELECT_CLS} flex-[2]`}
+          aria-label="일"
+        >
+          <option value="">일</option>
+          {days.map((d) => (
+            <option key={d} value={d}>{Number(d)}일</option>
+          ))}
+        </select>
+      </div>
+      {/* 시간 행 */}
+      <div className="flex items-center gap-1.5">
+        <select
+          value={parts.hour}
+          onChange={(e) => update({ hour: e.target.value })}
+          className={`${DT_SELECT_CLS} flex-1`}
+          aria-label="시"
+        >
+          {DT_HOURS.map((h) => (
+            <option key={h} value={h}>{h}시</option>
+          ))}
+        </select>
+        <span className="text-slate-300 font-bold text-base select-none">:</span>
+        <select
+          value={parts.minute}
+          onChange={(e) => update({ minute: e.target.value })}
+          className={`${DT_SELECT_CLS} flex-1`}
+          aria-label="분"
+        >
+          {DT_MINUTES.map((m) => (
+            <option key={m} value={m}>{m}분</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+};
+
 const CouponEventsTab: React.FC = () => {
   const { toast } = useToast();
 
@@ -63,6 +195,7 @@ const CouponEventsTab: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<CouponEventPreviewItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -71,7 +204,7 @@ const CouponEventsTab: React.FC = () => {
 
   const fetchEvents = useCallback((): void => {
     setLoading(true);
-    getAdminCouponEvents()
+    getCouponEvents()
       .then((res) => {
         if (res.data) {
           setEvents(res.data);
@@ -95,18 +228,27 @@ const CouponEventsTab: React.FC = () => {
 
   const openEditForm = (event: CouponEventPreviewItem): void => {
     setEditingId(event.id);
-    setForm({
-      name: event.name,
-      description: '',
-      type: event.eventType,
-      totalQuantity: event.totalQuantity,
-      rewardTicketType: 'RANDOM',
-      rewardTicketAmount: 1,
-      startsAt: '',
-      expiresAt: '',
-      couponExpiresAt: '',
-    });
+    setForm({ ...EMPTY_FORM, name: event.name, type: event.eventType, totalQuantity: event.totalQuantity });
     setFormOpen(true);
+    setFormLoading(true);
+    getCouponEvent(event.id)
+      .then((res) => {
+        if (!res.data) return;
+        const d = res.data;
+        setForm({
+          name: d.name,
+          description: d.description ?? '',
+          type: d.eventType,
+          totalQuantity: d.totalQuantity,
+          rewardTicketType: d.rewardTicketType,
+          rewardTicketAmount: d.rewardTicketAmount,
+          startsAt: toDatetimeLocal(d.startsAt),
+          expiresAt: toDatetimeLocal(d.expiresAt),
+          couponExpiresAt: '',
+        });
+      })
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
+      .finally(() => setFormLoading(false));
   };
 
   const closeForm = (): void => {
@@ -116,7 +258,7 @@ const CouponEventsTab: React.FC = () => {
   };
 
   const updateField = <K extends keyof FormState>(key: K, value: FormState[K]): void => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => prev[key] === value ? prev : { ...prev, [key]: value });
   };
 
   const isFormValid = (): boolean => {
@@ -136,9 +278,9 @@ const CouponEventsTab: React.FC = () => {
       totalQuantity: form.totalQuantity,
       rewardTicketType: form.rewardTicketType,
       rewardTicketAmount: form.rewardTicketAmount,
-      startsAt: new Date(form.startsAt).toISOString(),
-      expiresAt: new Date(form.expiresAt).toISOString(),
-      couponExpiresAt: new Date(form.couponExpiresAt).toISOString(),
+      startsAt: form.startsAt + ':00',
+      expiresAt: form.expiresAt + ':00',
+      couponExpiresAt: form.couponExpiresAt + ':00',
     };
     try {
       if (editingId !== null) {
@@ -326,6 +468,11 @@ const CouponEventsTab: React.FC = () => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             >
+              {formLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-white/70">
+                  <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin" />
+                </div>
+              )}
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-bold text-slate-900 text-base">
                   {editingId !== null ? '쿠폰 이벤트 수정' : '새 쿠폰 이벤트'}
@@ -447,13 +594,7 @@ const CouponEventsTab: React.FC = () => {
                   <label htmlFor="starts-at" className="text-xs font-bold text-slate-500 mb-1.5 block">
                     이벤트 시작
                   </label>
-                  <input
-                    id="starts-at"
-                    type="datetime-local"
-                    value={form.startsAt}
-                    onChange={(e) => updateField('startsAt', e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
-                  />
+                  <DateTimeInput id="starts-at" value={form.startsAt} onChange={(v) => updateField('startsAt', v)} />
                 </div>
 
                 {/* 이벤트 종료 */}
@@ -461,13 +602,7 @@ const CouponEventsTab: React.FC = () => {
                   <label htmlFor="expires-at" className="text-xs font-bold text-slate-500 mb-1.5 block">
                     이벤트 종료
                   </label>
-                  <input
-                    id="expires-at"
-                    type="datetime-local"
-                    value={form.expiresAt}
-                    onChange={(e) => updateField('expiresAt', e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
-                  />
+                  <DateTimeInput id="expires-at" value={form.expiresAt} onChange={(v) => updateField('expiresAt', v)} />
                 </div>
 
                 {/* 쿠폰 만료일 */}
@@ -475,13 +610,7 @@ const CouponEventsTab: React.FC = () => {
                   <label htmlFor="coupon-expires-at" className="text-xs font-bold text-slate-500 mb-1.5 block">
                     쿠폰 만료일
                   </label>
-                  <input
-                    id="coupon-expires-at"
-                    type="datetime-local"
-                    value={form.couponExpiresAt}
-                    onChange={(e) => updateField('couponExpiresAt', e.target.value)}
-                    className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
-                  />
+                  <DateTimeInput id="coupon-expires-at" value={form.couponExpiresAt} onChange={(v) => updateField('couponExpiresAt', v)} />
                 </div>
 
                 {/* 제출 */}

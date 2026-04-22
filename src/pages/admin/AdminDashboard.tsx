@@ -190,6 +190,7 @@ const AdminDashboard: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
 
   // 신고 관리
   const [reportFilter, setReportFilter] = useState<AdminReportFilter>('ALL');
@@ -757,7 +758,8 @@ const AdminDashboard: React.FC = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22, delay: i * 0.06 }}
-                className="bg-white border border-slate-100 rounded-2xl p-4"
+                onClick={() => setSelectedAnnouncement(notice)}
+                className="bg-white border border-slate-100 rounded-2xl p-4 cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -1333,6 +1335,46 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 공지사항 상세 모달 */}
+      <AnimatePresence>
+        {selectedAnnouncement && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-5">
+            <motion.div
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedAnnouncement(null)}
+            />
+            <motion.div
+              className="relative w-full sm:max-w-[480px] bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-h-[80vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            >
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Megaphone size={16} className="text-amber-400 shrink-0" />
+                  <p className="text-base font-bold text-slate-900">{selectedAnnouncement.title}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedAnnouncement(null)}
+                  className="shrink-0 w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+                  aria-label="닫기"
+                >
+                  <X size={14} className="text-slate-500" />
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400 mb-3">
+                {new Date(selectedAnnouncement.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{selectedAnnouncement.content}</p>
             </motion.div>
           </div>
         )}

@@ -9,9 +9,9 @@ import type {
   CandidateGenderCountResponse,
   AnnouncementRegisterRequest,
   AdminQrVerifyRequest,
-  CouponEventPreviewItem,
   CouponEventRegisterRequest,
   CouponEventUpdateRequest,
+  CouponEventPreviewItem,
   AdminReportListItem,
   AdminReportDetailResponse,
   ReportStatusFilter,
@@ -90,9 +90,9 @@ export const verifyQrCode = (body: AdminQrVerifyRequest): Promise<ApiResponse<vo
 
 // --- 쿠폰 이벤트 관리 ---
 
-export const getAdminCouponEvents = (): Promise<ApiResponse<CouponEventPreviewItem[]>> =>
+export const getAdminCouponEvents = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<CouponEventPreviewItem>>> =>
   apiClient
-    .get<ApiResponse<CouponEventPreviewItem[]>>('/v1/admin/coupon-events')
+    .get<ApiResponse<PageResponse<CouponEventPreviewItem>>>('/v1/admin/coupon-events', { params })
     .then((r) => r.data);
 
 export const createAdminCouponEvent = (body: CouponEventRegisterRequest): Promise<ApiResponse<number>> =>

@@ -5,16 +5,18 @@ import {
   getAdminCandidateRegistrations,
   approveAdminCandidateRegistration,
   rejectAdminCandidateRegistration,
+  getAdminMemberDetail,
 } from '@/features/admin/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import type {
   AdminCandidateRegistrationItem,
+  AdminMemberDetail,
   CandidateRegistrationFilter,
   CandidateRegistrationStatus,
 } from '@/types';
 import {
   Search, X, CheckCircle2, XCircle, Clock, UserCheck, UserX,
-  ChevronRight, Loader2,
+  ChevronRight, Loader2, User,
 } from 'lucide-react';
 
 const STATUS_LABELS: Record<CandidateRegistrationStatus, string> = {
@@ -42,6 +44,7 @@ const CandidateRegistrationsTab: React.FC = () => {
 
   const [filter, setFilter] = useState<CandidateRegistrationFilter>('PENDING');
   const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [items, setItems] = useState<AdminCandidateRegistrationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasNext, setHasNext] = useState(false);
@@ -52,6 +55,10 @@ const CandidateRegistrationsTab: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
+
+  // 회원 상세
+  const [memberDetail, setMemberDetail] = useState<AdminMemberDetail | null>(null);
+  const [memberDetailLoading, setMemberDetailLoading] = useState(false);
 
   const fetchItems = useCallback((
     filterVal: CandidateRegistrationFilter,
@@ -89,8 +96,13 @@ const CandidateRegistrationsTab: React.FC = () => {
   }, [toast]);
 
   useEffect(() => {
-    fetchItems(filter, keyword);
-  }, [filter, keyword, fetchItems]);
+    const timer = setTimeout(() => setDebouncedKeyword(keyword), 300);
+    return () => clearTimeout(timer);
+  }, [keyword]);
+
+  useEffect(() => {
+    fetchItems(filter, debouncedKeyword);
+  }, [filter, debouncedKeyword, fetchItems]);
 
   const handleLoadMore = (): void => {
     if (!hasNext || loadingMore || items.length === 0) return;
@@ -141,6 +153,17 @@ const CandidateRegistrationsTab: React.FC = () => {
     setSelectedItem(item);
     setShowRejectForm(false);
     setRejectReason('');
+    setMemberDetail(null);
+  };
+
+  const handleViewMemberDetail = (memberId: number): void => {
+    setMemberDetailLoading(true);
+    getAdminMemberDetail(memberId)
+      .then((res) => {
+        if (res.data) setMemberDetail(res.data);
+      })
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
+      .finally(() => setMemberDetailLoading(false));
   };
 
   const FILTERS: { value: CandidateRegistrationFilter; label: string }[] = [
@@ -317,16 +340,76 @@ const CandidateRegistrationsTab: React.FC = () => {
                   </div>
                   <p className="text-xs text-slate-400">{selectedItem.memberLegalName}</p>
                 </div>
-                <button
-                  onClick={() => setSelectedItem(null)}
-                  className="p-1 text-slate-400 hover:text-slate-700 transition-colors"
-                  aria-label="닫기"
-                >
-                  <X size={20} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleViewMemberDetail(selectedItem.memberId)}
+                    disabled={memberDetailLoading}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold hover:bg-slate-200 disabled:opacity-40 transition-colors"
+                    aria-label="회원 상세보기"
+                  >
+                    {memberDetailLoading ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <User size={12} />
+                    )}
+                    상세보기
+                  </button>
+                  <button
+                    onClick={() => setSelectedItem(null)}
+                    className="p-1 text-slate-400 hover:text-slate-700 transition-colors"
+                    aria-label="닫기"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
-              {/* 상세 정보 */}
+              {/* 회원 상세 정보 */}
+              <AnimatePresence>
+                {memberDetail && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="mb-4 overflow-hidden"
+                  >
+                    <div className="bg-blue-50 rounded-2xl p-4 space-y-2">
+                      <p className="text-[10px] font-bold text-blue-400 mb-2">회원 상세 정보</p>
+                      <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
+                        <span className="text-slate-400 whitespace-nowrap">이메일</span>
+                        <span className="text-slate-700 font-medium break-all">{memberDetail.email}</span>
+                        <span className="text-slate-400">성별</span>
+                        <span className="text-slate-700 font-medium">{memberDetail.gender === 'MALE' ? '남성' : '여성'}</span>
+                        <span className="text-slate-400">MBTI</span>
+                        <span className="text-slate-700 font-medium">{memberDetail.mbti}</span>
+                        {memberDetail.instagramId && (
+                          <>
+                            <span className="text-slate-400">인스타그램</span>
+                            <span className="text-slate-700 font-medium">@{memberDetail.instagramId}</span>
+                          </>
+                        )}
+                        <span className="text-slate-400">역할</span>
+                        <span className="text-slate-700 font-medium">{memberDetail.role}</span>
+                      </div>
+                      {memberDetail.selfIntroduction && (
+                        <div className="pt-2 border-t border-blue-100">
+                          <p className="text-[10px] text-blue-400 mb-1">자기소개</p>
+                          <p className="text-xs text-slate-700 leading-relaxed">{memberDetail.selfIntroduction}</p>
+                        </div>
+                      )}
+                      {memberDetail.idealDescription && (
+                        <div className="pt-2 border-t border-blue-100">
+                          <p className="text-[10px] text-blue-400 mb-1">이상형</p>
+                          <p className="text-xs text-slate-700 leading-relaxed">{memberDetail.idealDescription}</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* 신청 상세 정보 */}
               <div className="space-y-3 mb-5">
                 <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
                   <div className="flex items-center justify-between">
