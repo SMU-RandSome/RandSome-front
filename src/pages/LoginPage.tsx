@@ -6,9 +6,9 @@ import { useAuth } from '@/store/authStore';
 import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
 import { getApiErrorMessage } from '@/lib/axios';
-import { ChevronLeft } from 'lucide-react';
 import { Orbs } from '@/components/ui/Orbs';
 import { Logo } from '@/components/ui/Logo';
+import { MobileHeader } from '@/components/layout/MobileHeader';
 
 const inputStyle: React.CSSProperties = {
   padding: '13px 16px',
@@ -18,12 +18,6 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid rgba(219,234,254,.9)',
   fontSize: 14,
   color: '#0f172a',
-};
-
-const glassHeaderStyle: React.CSSProperties = {
-  background: 'rgba(237,243,255,.9)',
-  backdropFilter: 'blur(24px)',
-  borderBottom: '1px solid rgba(59,130,246,.1)',
 };
 
 const gradientButtonStyle: React.CSSProperties = {
@@ -87,12 +81,7 @@ const LoginPage: React.FC = () => {
         <Orbs />
 
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
-        <header className="sticky top-0 z-50 px-4 h-14 flex items-center gap-3" style={glassHeaderStyle}>
-          <button onClick={() => navigate(-1)} className="p-1.5 -ml-1 rounded-xl hover:bg-white/50 transition-colors" aria-label="뒤로가기">
-            <ChevronLeft size={22} className="text-slate-700" />
-          </button>
-          <h1 className="text-lg font-bold text-slate-900">로그인</h1>
-        </header>
+        <MobileHeader title="로그인" onBack={() => navigate(-1)} />
 
         <div className="flex-1 flex flex-col justify-center p-5 relative z-10">
           <div className="flex flex-col items-center mb-10">

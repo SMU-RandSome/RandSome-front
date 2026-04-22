@@ -26,85 +26,8 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ announce
     setSelectedId(null);
   };
 
-  const modalHeader = (
-    <div className="flex items-center justify-between">
-      {selected ? (
-        <button
-          onClick={() => setSelectedId(null)}
-          className="flex items-center gap-1.5 text-sm font-semibold text-slate-900"
-        >
-          <ChevronRight size={16} className="rotate-180 text-slate-400" />
-          목록으로
-        </button>
-      ) : (
-        <div className="flex items-center gap-2">
-          <Megaphone size={16} className="text-amber-500" />
-          <h3 className="text-lg font-bold text-slate-900">공지사항</h3>
-          <span className="text-xs font-bold text-amber-500 bg-amber-100 px-2 py-0.5 rounded-full">
-            {announcements.length}
-          </span>
-        </div>
-      )}
-      <button
-        onClick={handleClose}
-        className="p-2 -mr-2 text-slate-400 hover:text-slate-600"
-        aria-label="닫기"
-      >
-        <X size={20} />
-      </button>
-    </div>
-  );
-
-  const modalContent = (
-    <AnimatePresence mode="wait">
-      {selected ? (
-        <motion.div
-          key="detail"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.2 }}
-        >
-          <h4 className="font-bold text-slate-900 text-base mb-1">{selected.title}</h4>
-          <p className="text-[11px] text-slate-400 mb-3">
-            {new Date(selected.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-          </p>
-          <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{selected.content}</p>
-        </motion.div>
-      ) : (
-        <motion.ul
-          key="list"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
-          transition={{ duration: 0.2 }}
-          className="space-y-1"
-        >
-          {announcements.map((notice, i) => (
-            <li key={notice.id}>
-              <button
-                onClick={() => setSelectedId(notice.id)}
-                className="w-full flex items-center gap-3 py-3.5 text-left group"
-              >
-                <span className="shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-600 text-[10px] font-bold flex items-center justify-center">
-                  {i + 1}
-                </span>
-                <span className="flex-1 text-sm font-medium text-slate-800 truncate group-hover:text-slate-900">
-                  {notice.title}
-                </span>
-                <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-400 shrink-0" />
-              </button>
-              {i < announcements.length - 1 && <div className="h-px bg-slate-100 ml-8" />}
-            </li>
-          ))}
-        </motion.ul>
-      )}
-    </AnimatePresence>
-  );
-
   return (
     <>
-      {/* 배너 */}
       <button
         onClick={handleOpen}
         className="w-full flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-left"
@@ -120,7 +43,6 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ announce
         <ChevronRight size={14} className="text-amber-400 shrink-0" />
       </button>
 
-      {/* 센터 모달 */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -140,9 +62,55 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ announce
             >
               <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[70vh] flex flex-col pointer-events-auto">
                 <div className="px-6 pt-6 pb-4 shrink-0 border-b border-slate-100">
-                  {modalHeader}
+                  <div className="flex items-center justify-between">
+                    {selected ? (
+                      <button
+                        onClick={() => setSelectedId(null)}
+                        className="flex items-center gap-1.5 text-sm font-semibold text-slate-900"
+                      >
+                        <ChevronRight size={16} className="rotate-180 text-slate-400" />
+                        목록으로
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Megaphone size={16} className="text-amber-500" />
+                        <h3 className="text-lg font-bold text-slate-900">공지사항</h3>
+                        <span className="text-xs font-bold text-amber-500 bg-amber-100 px-2 py-0.5 rounded-full">
+                          {announcements.length}
+                        </span>
+                      </div>
+                    )}
+                    <button onClick={handleClose} className="p-2 -mr-2 text-slate-400 hover:text-slate-600" aria-label="닫기">
+                      <X size={20} />
+                    </button>
+                  </div>
                 </div>
-                <div className="overflow-y-auto px-6 py-4">{modalContent}</div>
+                <div className="overflow-y-auto px-6 py-4">
+                  <AnimatePresence mode="wait">
+                    {selected ? (
+                      <motion.div key="detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                        <h4 className="font-bold text-slate-900 text-base mb-1">{selected.title}</h4>
+                        <p className="text-[11px] text-slate-400 mb-3">
+                          {new Date(selected.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{selected.content}</p>
+                      </motion.div>
+                    ) : (
+                      <motion.ul key="list" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.2 }} className="space-y-1">
+                        {announcements.map((notice, i) => (
+                          <li key={notice.id}>
+                            <button onClick={() => setSelectedId(notice.id)} className="w-full flex items-center gap-3 py-3.5 text-left group">
+                              <span className="shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-600 text-[10px] font-bold flex items-center justify-center">{i + 1}</span>
+                              <span className="flex-1 text-sm font-medium text-slate-800 truncate group-hover:text-slate-900">{notice.title}</span>
+                              <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-400 shrink-0" />
+                            </button>
+                            {i < announcements.length - 1 && <div className="h-px bg-slate-100 ml-8" />}
+                          </li>
+                        ))}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </motion.div>
           </>
