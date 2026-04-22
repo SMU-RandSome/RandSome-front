@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Orbs } from '@/components/ui/Orbs';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { useToast } from '@/components/ui/Toast';
-import { getAttendance, checkAttendance } from '@/features/attendance/api';
-import { getApiErrorMessage } from '@/lib/axios';
-import type { AttendanceResponse } from '@/types';
+import { useAttendance } from '@/features/attendance/hooks/useAttendance';
+import { useCheckAttendance } from '@/features/attendance/hooks/useCheckAttendance';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { CalendarCheck, Ticket, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -15,43 +13,15 @@ const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 const AttendancePage: React.FC = () => {
   const { isPWA } = useDisplayMode();
-  const { toast } = useToast();
-  const [attendance, setAttendance] = useState<AttendanceResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isChecking, setIsChecking] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    getAttendance()
-      .then((res) => {
-        if (!cancelled) setAttendance(res.data);
-      })
-      .catch(() => {
-        if (!cancelled) toast('출석 정보를 불러오지 못했습니다.', 'error');
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, []);
+  const { attendance, isLoading } = useAttendance();
+  const checkMutation = useCheckAttendance();
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const isCheckedToday = attendance?.attendanceDates.some((d) => d.startsWith(todayStr)) ?? false;
+  const isChecking = checkMutation.isPending;
 
   const handleCheckAttendance = (): void => {
-    setIsChecking(true);
-    checkAttendance()
-      .then(() => getAttendance())
-      .then((res) => {
-        setAttendance(res.data);
-        toast('출석 완료! 티켓이 지급되었습니다 🎟️', 'success');
-      })
-      .catch((err: unknown) => {
-        toast(getApiErrorMessage(err), 'error');
-      })
-      .finally(() => {
-        setIsChecking(false);
-      });
+    checkMutation.mutate();
   };
 
   // 이번 달 캘린더 계산

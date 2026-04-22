@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -7,20 +7,24 @@ import { Orbs } from '@/components/ui/Orbs';
 import { useToast } from '@/components/ui/Toast';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useAuth } from '@/store/authStore';
-import { registerCandidate } from '@/features/candidate/api';
-import { applyMatching } from '@/features/matching/api';
-import { getTicketBalance } from '@/features/ticket/api';
-import { getApiErrorMessage } from '@/lib/axios';
+import { useTicketBalance } from '@/hooks/useTicketBalance';
+import { useApplyMatching } from '@/features/matching/hooks/useApplyMatching';
+import { useRegisterCandidate } from '@/features/candidate/hooks/useRegisterCandidate';
 import { PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS } from '@/constants/tags';
-import type { PersonalityTag, FaceTypeTag, DatingStyleTag, TicketBalanceResponse, MatchingApplicationResponse } from '@/types';
+import type { PersonalityTag, FaceTypeTag, DatingStyleTag, MatchingApplicationResponse } from '@/types';
 import { MobileHeader } from '@/components/layout/MobileHeader';
-import { Heart, Ticket, Home, AlertTriangle, Minus, Plus } from 'lucide-react';
+import { Heart, Ticket, AlertTriangle, Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type MatchView = 'main' | 'register' | 'result';
+type MatchView = 'main' | 'register' | 'result' | 'loading';
 type MatchType = 'ideal' | 'random';
 
 const labelCss: React.CSSProperties = { fontSize: '11px', color: '#94a3b8', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' as const };
+
+const TAG_SELECTED_PERSONALITY: React.CSSProperties = { background: 'linear-gradient(135deg, #2563eb, #6366f1)', color: '#fff', boxShadow: '0 2px 10px rgba(37,99,235,.3)' };
+const TAG_SELECTED_FACE: React.CSSProperties = { background: 'linear-gradient(135deg, #ec4899, #f43f5e)', color: '#fff', boxShadow: '0 2px 10px rgba(236,72,153,.3)' };
+const TAG_SELECTED_DATING: React.CSSProperties = { background: 'linear-gradient(135deg, #7c3aed, #a855f7)', color: '#fff', boxShadow: '0 2px 10px rgba(124,58,237,.3)' };
+const TAG_UNSELECTED: React.CSSProperties = { background: 'rgba(255,255,255,.82)', color: '#475569', border: '1px solid rgba(219,234,254,.9)' };
 
 const MatchPage: React.FC = () => {
   const { toast } = useToast();
@@ -37,17 +41,12 @@ const MatchPage: React.FC = () => {
   const [datingStyleTag, setDatingStyleTag] = useState<DatingStyleTag | ''>('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmMode, setConfirmMode] = useState<'register' | 'match' | null>(null);
-  const [ticketBalance, setTicketBalance] = useState<TicketBalanceResponse | null>(null);
+  const { balance: ticketBalance } = useTicketBalance();
   const [matchResult, setMatchResult] = useState<MatchingApplicationResponse | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const applyMutation = useApplyMatching();
+  const registerMutation = useRegisterCandidate();
 
   const isAlreadyCandidate = user?.candidateRegistrationStatus === 'PENDING' || user?.candidateRegistrationStatus === 'APPROVED';
-
-  useEffect(() => {
-    let cancelled = false;
-    getTicketBalance().then((res) => { if (!cancelled && res.data) setTicketBalance(res.data); }).catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
 
   const currentBalance = activeTab === 'random' ? ticketBalance?.randomTicketCount ?? 0 : ticketBalance?.idealTicketCount ?? 0;
 
@@ -56,30 +55,61 @@ const MatchPage: React.FC = () => {
     setPersonalityTag(''); setFaceTypeTag(''); setDatingStyleTag(''); setMatchResult(null);
   }, []);
 
-  const handleConfirm = async (): Promise<void> => {
+  const submitting = applyMutation.isPending || registerMutation.isPending;
+
+  const handleConfirm = (): void => {
     if (submitting) return;
-    setSubmitting(true);
-    try {
-      if (confirmMode === 'register') {
-        await registerCandidate();
-        toast('후보 등록 신청이 완료되었습니다!', 'success');
-        setShowConfirm(false); setConfirmMode(null); reset();
-      } else if (confirmMode === 'match') {
-        const res = await applyMatching({
-          matchingType: activeTab === 'random' ? 'RANDOM' : 'IDEAL',
-          applicationCount: count,
-          ...(activeTab === 'ideal' && personalityTag && { preferredPersonalityTag: personalityTag as PersonalityTag }),
-          ...(activeTab === 'ideal' && faceTypeTag && { preferredFaceTypeTag: faceTypeTag as FaceTypeTag }),
-          ...(activeTab === 'ideal' && datingStyleTag && { preferredDatingStyleTag: datingStyleTag as DatingStyleTag }),
-        });
-        setShowConfirm(false); setConfirmMode(null);
-        if (res.data) {
-          setMatchResult(res.data); setView('result');
-          getTicketBalance().then((r) => { if (r.data) setTicketBalance(r.data); }).catch(() => {});
-        } else { toast('매칭 신청이 완료되었습니다!', 'success'); reset(); }
-      }
-    } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setSubmitting(false); }
+    if (confirmMode === 'register') {
+      registerMutation.mutate(undefined, {
+        onSuccess: () => {
+          setShowConfirm(false); setConfirmMode(null); reset();
+        },
+      });
+    } else if (confirmMode === 'match') {
+      setShowConfirm(false); setConfirmMode(null);
+      setView('loading');
+      applyMutation.mutate({
+        matchingType: activeTab === 'random' ? 'RANDOM' : 'IDEAL',
+        applicationCount: count,
+        ...(activeTab === 'ideal' && personalityTag && { preferredPersonalityTag: personalityTag as PersonalityTag }),
+        ...(activeTab === 'ideal' && faceTypeTag && { preferredFaceTypeTag: faceTypeTag as FaceTypeTag }),
+        ...(activeTab === 'ideal' && datingStyleTag && { preferredDatingStyleTag: datingStyleTag as DatingStyleTag }),
+      }, {
+        onSuccess: (res) => {
+          if (res.data) {
+            setMatchResult(res.data); setView('result');
+          } else { toast('매칭 신청이 완료되었습니다!', 'success'); reset(); }
+        },
+        onError: () => { setView('main'); },
+      });
+    }
   };
+
+  /* ── Loading View ── */
+  const renderLoading = (): React.ReactNode => (
+    <div className="relative flex flex-col min-h-screen items-center justify-center bg-member">
+      <Orbs />
+      <div className="flex flex-col items-center text-center px-6 relative z-10">
+        <div
+          className="w-[84px] h-[84px] rounded-full flex items-center justify-center mb-6 animate-[pulse-heart_1.2s_ease-in-out_infinite]"
+          style={{ background: 'linear-gradient(135deg, #ec4899, #f43f5e)', boxShadow: '0 0 48px rgba(236,72,153,.4)' }}
+        >
+          <Heart size={36} className="text-white fill-white" />
+        </div>
+        <h2 className="font-display text-[28px] text-slate-900 mb-2">매칭 중이에요</h2>
+        <p className="text-sm text-slate-500 mb-5">인연을 찾고 있어요, 잠시만 기다려 주세요</p>
+        <div className="flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-2 h-2 rounded-full animate-[dot-pulse_1.2s_ease-in-out_infinite]"
+              style={{ background: '#f472b6', animationDelay: `${i * 0.25}s` }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   /* ── Register View ── */
   const renderRegister = (): React.ReactNode => (
@@ -100,6 +130,10 @@ const MatchPage: React.FC = () => {
               ))}
             </ul>
           </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-2xl px-4 py-3 mb-4" style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.15)' }}>
+          <AlertTriangle size={14} className="text-red-400 shrink-0" />
+          <p className="text-xs font-medium text-red-500">허위 프로필 작성 시 신고 및 서비스 이용 제한을 받을 수 있습니다.</p>
         </div>
         <div className="space-y-3 pb-6">
           <button onClick={() => { setConfirmMode('register'); setShowConfirm(true); }} className="relative w-full h-14 rounded-2xl text-white text-lg font-bold overflow-hidden" style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)' }}>
@@ -126,9 +160,9 @@ const MatchPage: React.FC = () => {
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.1 }} className="w-[84px] h-[84px] rounded-full flex items-center justify-center mb-6" style={{ background: isPartialMatch ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'linear-gradient(135deg, #ec4899, #f43f5e)', boxShadow: isPartialMatch ? '0 0 40px rgba(245,158,11,.35)' : '0 0 40px rgba(236,72,153,.35)' }}>
             {isPartialMatch ? <AlertTriangle size={36} className="text-white" /> : <Heart size={36} className="text-white fill-white" />}
           </motion.div>
-          <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-display text-[30px] text-slate-900 mb-2">{isPartialMatch ? '부분 매칭 완료!' : '신청 완료!'}</motion.h2>
+          <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-display text-[30px] text-slate-900 mb-2">{isPartialMatch ? '부분 매칭 완료!' : '매칭 완료!'}</motion.h2>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="mb-6">
-            {isPartialMatch ? <p className="text-sm text-slate-500">요청 <span className="font-display text-[26px] text-slate-900 leading-none">{requestedCount}</span>명 중 <span className="font-display text-[26px] text-orange-600 leading-none">{matchedCount}</span>명만 매칭되었습니다.</p> : <p className="text-sm text-slate-500">오늘 22시에 결과를 공개해 드려요.</p>}
+            {isPartialMatch ? <p className="text-sm text-slate-500">요청 <span className="font-display text-[26px] text-slate-900 leading-none">{requestedCount}</span>명 중 <span className="font-display text-[26px] text-orange-600 leading-none">{matchedCount}</span>명만 매칭되었습니다.</p> : <p className="text-sm text-slate-500"><span className="font-display text-[26px] text-slate-900 leading-none">{matchedCount}</span>명의 인연이 매칭되었어요!</p>}
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="w-full rounded-2xl p-4 mb-8 flex items-center justify-center gap-2 text-sm font-semibold" style={{ background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(20px)', border: '1px solid rgba(59,130,246,.1)', color: '#475569' }}>
             <Ticket size={16} className="text-blue-500" />
@@ -140,7 +174,7 @@ const MatchPage: React.FC = () => {
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="w-full flex gap-3">
             <button onClick={() => { setMatchResult(null); reset(); }} className="flex-1 h-12 rounded-2xl text-sm font-bold" style={{ background: 'rgba(255,255,255,.72)', border: '1px solid rgba(59,130,246,.15)', color: '#475569' }}>다시 신청</button>
-            <button onClick={() => navigate('/home')} className="flex-1 h-12 rounded-2xl text-white text-sm font-bold" style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)' }}><span className="flex items-center justify-center gap-1.5"><Home size={16} /> 홈으로</span></button>
+            <button onClick={() => navigate('/requests/detail', { state: { applicationId: matchResult.matchingApplicationId } })} className="flex-1 h-12 rounded-2xl text-white text-sm font-bold" style={{ background: 'linear-gradient(135deg, #ec4899, #f43f5e)' }}><span className="flex items-center justify-center gap-1.5"><Heart size={16} className="fill-white" /> 보러가기</span></button>
           </motion.div>
         </div>
         <div className="h-20" />
@@ -158,7 +192,7 @@ const MatchPage: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           {PERSONALITY_TAGS.map(({ value, label }) => {
             const isSelected = personalityTag === value;
-            return <button key={value} onClick={() => setPersonalityTag(personalityTag === value ? '' : value)} className="px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200" style={isSelected ? { background: 'linear-gradient(135deg, #2563eb, #6366f1)', color: '#fff', boxShadow: '0 2px 10px rgba(37,99,235,.3)' } : { background: 'rgba(255,255,255,.82)', color: '#475569', border: '1px solid rgba(219,234,254,.9)' }}>{label}</button>;
+            return <button key={value} onClick={() => setPersonalityTag(personalityTag === value ? '' : value)} className="px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200" style={isSelected ? TAG_SELECTED_PERSONALITY : TAG_UNSELECTED}>{label}</button>;
           })}
         </div>
       </div>
@@ -167,7 +201,7 @@ const MatchPage: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           {FACE_TYPE_TAGS.map(({ value, label }) => {
             const isSelected = faceTypeTag === value;
-            return <button key={value} onClick={() => setFaceTypeTag(faceTypeTag === value ? '' : value)} className="px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200" style={isSelected ? { background: 'linear-gradient(135deg, #ec4899, #f43f5e)', color: '#fff', boxShadow: '0 2px 10px rgba(236,72,153,.3)' } : { background: 'rgba(255,255,255,.82)', color: '#475569', border: '1px solid rgba(219,234,254,.9)' }}>{label}</button>;
+            return <button key={value} onClick={() => setFaceTypeTag(faceTypeTag === value ? '' : value)} className="px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200" style={isSelected ? TAG_SELECTED_FACE : TAG_UNSELECTED}>{label}</button>;
           })}
         </div>
       </div>
@@ -176,7 +210,7 @@ const MatchPage: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           {DATING_STYLE_TAGS.map(({ value, label }) => {
             const isSelected = datingStyleTag === value;
-            return <button key={value} onClick={() => setDatingStyleTag(datingStyleTag === value ? '' : value)} className="px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200" style={isSelected ? { background: 'linear-gradient(135deg, #7c3aed, #a855f7)', color: '#fff', boxShadow: '0 2px 10px rgba(124,58,237,.3)' } : { background: 'rgba(255,255,255,.82)', color: '#475569', border: '1px solid rgba(219,234,254,.9)' }}>{label}</button>;
+            return <button key={value} onClick={() => setDatingStyleTag(datingStyleTag === value ? '' : value)} className="px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200" style={isSelected ? TAG_SELECTED_DATING : TAG_UNSELECTED}>{label}</button>;
           })}
         </div>
       </div>
@@ -193,8 +227,8 @@ const MatchPage: React.FC = () => {
   const renderRandomContent = (): React.ReactNode => (
     <div className="flex flex-col items-center justify-center text-center pt-16 pb-8">
       <span className="text-[52px] mb-4">✨</span>
-      <h3 className="font-display text-2xl text-slate-900 mb-2">무작위로 인연을 만나요!</h3>
-      <p className="text-sm text-slate-500 leading-relaxed max-w-[260px]">성별이 다른 후보자 중 랜덤으로<br />매칭해 드립니다. 운명에 맡겨보세요!</p>
+      <h3 className="font-display text-xl sm:text-2xl text-slate-900 mb-2">무작위로 인연을 만나요!</h3>
+      <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-[260px]">성별이 다른 후보자 중 랜덤으로<br />매칭해 드립니다. 운명에 맡겨보세요!</p>
       {!isAlreadyCandidate && (
         <div className="mt-8 w-full rounded-2xl p-4 flex items-center justify-between" style={{ background: 'rgba(255,255,255,.72)', border: '1px solid rgba(59,130,246,.1)' }}>
           <div className="text-left"><p className="text-sm font-bold text-slate-700">후보로 등록하기</p><p className="text-xs text-slate-400 mt-0.5">다른 친구가 나를 찾을 수 있어요</p></div>
@@ -235,7 +269,7 @@ const MatchPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-48">
+        <div className="relative z-10 flex-1 overflow-y-auto px-3.5 sm:px-4 pb-56 sm:pb-60">
           <AnimatePresence mode="wait">
             <motion.div key={activeTab} initial={{ opacity: 0, x: activeTab === 'ideal' ? -10 : 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: activeTab === 'ideal' ? 10 : -10 }} transition={{ duration: 0.2 }}>
               {activeTab === 'ideal' ? renderIdealContent() : renderRandomContent()}
@@ -244,7 +278,7 @@ const MatchPage: React.FC = () => {
         </div>
 
         </div>
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4 pt-6" style={{ paddingBottom: isPWA ? '84px' : '24px', background: 'linear-gradient(to top, rgba(237,243,255,1) 55%, rgba(237,243,255,0))' }}>
+        <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full ${isPWA ? 'max-w-[430px]' : 'max-w-2xl'} z-40 px-3.5 sm:px-4 pt-6`} style={{ paddingBottom: isPWA ? '84px' : '24px', background: 'linear-gradient(to top, rgba(237,243,255,1) 55%, rgba(237,243,255,0))' }}>
           <div className="flex items-center justify-between rounded-2xl px-4 py-3 mb-3" style={{ background: 'rgba(255,255,255,.82)', border: '1px solid rgba(219,234,254,.9)' }}>
             <span className="text-sm font-semibold text-slate-600">매칭 인원</span>
             <div className="flex items-center gap-4">
@@ -284,6 +318,7 @@ const MatchPage: React.FC = () => {
     </AnimatePresence>
   );
 
+  if (view === 'loading') return <MobileLayout>{renderLoading()}</MobileLayout>;
   if (view === 'result' && matchResult) return <MobileLayout>{renderResult()}{confirmModal}</MobileLayout>;
   if (view === 'register') return <MobileLayout>{renderRegister()}<BottomNav />{confirmModal}</MobileLayout>;
   return <MobileLayout>{renderMain()}{confirmModal}</MobileLayout>;

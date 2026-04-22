@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Orbs } from '@/components/ui/Orbs';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { getMatchingHistory, withdrawMatching } from '@/features/matching/api';
-import { getApiErrorMessage } from '@/lib/axios';
-import { useToast } from '@/components/ui/Toast';
+import { useMatchingHistory } from '@/features/matching/hooks/useMatchingHistory';
+import { useWithdrawMatching } from '@/features/matching/hooks/useWithdrawMatching';
 import type { MatchingHistoryItem, MatchingType } from '@/types';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { Heart, Sparkles, X, Calendar } from 'lucide-react';
@@ -16,7 +15,7 @@ import { motion, AnimatePresence } from 'motion/react';
 const getMatchingTypeLabel = (type: MatchingType): string =>
   type === 'RANDOM' ? '랜덤 매칭' : '이상형 매칭';
 
-type StatusKey = 'SUCCESS' | 'PENDING' | 'CANCELLED';
+type StatusKey = 'SUCCESS' | 'PARTIAL_MATCH' | 'PENDING' | 'FAILED' | 'CANCELLED';
 
 const STATUS_BADGE: Record<StatusKey, { bg: string; color: string; border: string; label: string }> = {
   SUCCESS: {
@@ -25,11 +24,23 @@ const STATUS_BADGE: Record<StatusKey, { bg: string; color: string; border: strin
     border: 'rgba(34,197,94,.25)',
     label: '매칭 성공',
   },
-  PENDING: {
-    bg: 'rgba(251,191,36,.14)',
+  PARTIAL_MATCH: {
+    bg: 'rgba(245,158,11,.12)',
     color: '#b45309',
-    border: 'rgba(251,191,36,.3)',
-    label: '22시 공개',
+    border: 'rgba(245,158,11,.25)',
+    label: '부분 매칭',
+  },
+  PENDING: {
+    bg: 'rgba(59,130,246,.1)',
+    color: '#2563eb',
+    border: 'rgba(59,130,246,.22)',
+    label: '매칭 대기',
+  },
+  FAILED: {
+    bg: 'rgba(239,68,68,.1)',
+    color: '#dc2626',
+    border: 'rgba(239,68,68,.22)',
+    label: '매칭 실패',
   },
   CANCELLED: {
     bg: 'rgba(148,163,184,.1)',
@@ -49,47 +60,15 @@ const glassCard: React.CSSProperties = {
 const RequestsPage: React.FC = () => {
   const navigate = useNavigate();
   const { isPWA } = useDisplayMode();
-  const { toast } = useToast();
-  const [items, setItems] = useState<MatchingHistoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [retryKey, setRetryKey] = useState(0);
+  const { items, isLoading, isError: loadError, refetch } = useMatchingHistory();
   const [withdrawTarget, setWithdrawTarget] = useState<MatchingHistoryItem | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoading(true);
-    setLoadError(false);
-    getMatchingHistory()
-      .then((res) => {
-        if (cancelled) return;
-        setItems(res.data ?? []);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setItems([]);
-        setLoadError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [retryKey]);
+  const withdrawMutation = useWithdrawMatching();
 
   const handleWithdrawConfirm = (): void => {
     if (!withdrawTarget) return;
-    const targetId = withdrawTarget.id;
-    withdrawMatching(targetId)
-      .then(() => {
-        setItems((prev) => prev.filter((item) => item.id !== targetId));
-        toast('신청이 취소되었습니다', 'success');
-      })
-      .catch((err: unknown) => {
-        toast(getApiErrorMessage(err), 'error');
-      })
-      .finally(() => {
-        setWithdrawTarget(null);
-      });
+    withdrawMutation.mutate(withdrawTarget.id, {
+      onSettled: () => setWithdrawTarget(null),
+    });
   };
 
   const formatDate = (iso: string): string => {
@@ -124,7 +103,7 @@ const RequestsPage: React.FC = () => {
               <p className="text-sm font-semibold text-slate-700">내역을 불러오지 못했습니다</p>
               <p className="text-xs text-slate-400">네트워크 연결을 확인하고 다시 시도해주세요.</p>
               <button
-                onClick={() => setRetryKey((k) => k + 1)}
+                onClick={() => refetch()}
                 className="mt-1 px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors"
               >
                 다시 시도
@@ -143,12 +122,12 @@ const RequestsPage: React.FC = () => {
               transition={{ duration: 0.3 }}
               className="space-y-3"
             >
-              {items.map((item, i) => (
+              {items.map((item) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <MatchingHistoryCard
                     item={item}
@@ -218,9 +197,10 @@ const MatchingHistoryCard: React.FC<{
   onViewResult: () => void;
   onWithdraw: () => void;
   formatDate: (iso: string) => string;
-}> = ({ item, onViewResult, formatDate }) => {
-  const isSuccess = item.applicationStatus === 'SUCCESS';
+}> = React.memo(({ item, onViewResult, formatDate }) => {
+  const hasResult = item.applicationStatus === 'SUCCESS' || item.applicationStatus === 'PARTIAL_MATCH';
   const isCancelled = item.applicationStatus === 'CANCELLED';
+  const isFailed = item.applicationStatus === 'FAILED';
   const isIdeal = item.matchingType === 'IDEAL';
 
   const badge = STATUS_BADGE[item.applicationStatus as StatusKey];
@@ -234,9 +214,17 @@ const MatchingHistoryCard: React.FC<{
         ? '0 4px 14px rgba(236,72,153,.3)'
         : '0 4px 14px rgba(59,130,246,.28)',
     },
+    PARTIAL_MATCH: {
+      bg: 'linear-gradient(135deg,#f59e0b,#ef4444)',
+      shadow: '0 4px 14px rgba(245,158,11,.3)',
+    },
     PENDING: {
       bg: 'linear-gradient(135deg,#2563eb,#6366f1)',
       shadow: '0 4px 14px rgba(59,130,246,.28)',
+    },
+    FAILED: {
+      bg: 'rgba(239,68,68,.15)',
+      shadow: 'none',
     },
     CANCELLED: {
       bg: 'rgba(226,232,240,.8)',
@@ -245,17 +233,13 @@ const MatchingHistoryCard: React.FC<{
   }[item.applicationStatus as StatusKey];
 
   return (
-    <motion.div
-      whileHover={{ y: -1 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      className="rounded-[20px] p-4 cursor-default"
+    <div
+      className={`rounded-[20px] p-4 hover:-translate-y-px active:scale-[0.98] transition-transform duration-200 ${hasResult ? 'cursor-pointer' : 'cursor-default'}`}
       style={{
         ...glassCard,
-        cursor: isSuccess ? 'pointer' : 'default',
         boxShadow: '0 2px 16px rgba(0,0,0,.05)',
       }}
-      onClick={isSuccess ? onViewResult : undefined}
+      onClick={hasResult ? onViewResult : undefined}
     >
       {/* Main row */}
       <div className="flex items-center gap-2.5">
@@ -263,8 +247,8 @@ const MatchingHistoryCard: React.FC<{
           className="w-[42px] h-[42px] rounded-[14px] flex items-center justify-center shrink-0"
           style={{ background: iconConfig.bg, boxShadow: iconConfig.shadow !== 'none' ? iconConfig.shadow : undefined }}
         >
-          {isCancelled ? (
-            <X size={19} className="text-slate-500" />
+          {isCancelled || isFailed ? (
+            <X size={19} className={isFailed ? 'text-red-400' : 'text-slate-500'} />
           ) : isIdeal ? (
             <Heart size={19} fill="white" className="text-white" />
           ) : (
@@ -287,42 +271,22 @@ const MatchingHistoryCard: React.FC<{
         </span>
       </div>
 
-      {/* Success inner card */}
-      {isSuccess && (
-        <div
-          className="mt-2.5 flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
-          style={{
-            background: 'linear-gradient(135deg,rgba(239,246,255,.8),rgba(252,231,243,.7))',
-            border: '1px solid rgba(255,255,255,.8)',
-          }}
-        >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: 'linear-gradient(135deg,#c7d2fe,#fbcfe8)' }}
-          >
-            <Heart size={14} fill="#334155" className="text-slate-700" />
-          </div>
-          <div className="flex-1">
-            <p className="text-[13px] font-semibold text-slate-900">
-              {item.applicationCount}명 매칭 완료
-            </p>
-            <p className="text-[11.5px] text-slate-500">{getMatchingTypeLabel(item.matchingType)}</p>
-          </div>
-          <span className="text-[11.5px] text-blue-600 font-semibold">결과 보기 →</span>
-        </div>
-      )}
-
-      {/* Cancelled reason */}
-      {isCancelled && (
-        <p
-          className="mt-2.5 pt-2.5 text-[12px] text-slate-400 leading-relaxed"
-          style={{ borderTop: '1px dashed rgba(226,232,240,.8)' }}
-        >
-          조건에 맞는 후보가 부족했어요. 조건을 넓혀 다시 신청해볼까요?
-        </p>
-      )}
-    </motion.div>
+      {/* Status summary */}
+      <div className="mt-2.5 pt-2.5 flex items-center gap-1.5" style={{ borderTop: '1px dashed rgba(226,232,240,.8)' }}>
+        <span
+          className="inline-block w-2 h-2 rounded-full shrink-0"
+          style={{ background: badge.color }}
+        />
+        <span className="text-[12px] font-medium" style={{ color: badge.color }}>
+          {badge.label}
+          {hasResult && ` · ${item.matchedCount}/${item.applicationCount}명`}
+        </span>
+        {hasResult && (
+          <span className="ml-auto text-[11px] text-blue-500 font-semibold">결과 보기 →</span>
+        )}
+      </div>
+    </div>
   );
-};
+});
 
 export default RequestsPage;

@@ -1,29 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getTicketBalance } from '@/features/ticket/api';
 import type { TicketBalanceResponse } from '@/types';
 
-export const useTicketBalance = (): { balance: TicketBalanceResponse | null; isLoading: boolean; refetch: () => void } => {
-  const [balance, setBalance] = useState<TicketBalanceResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [key, setKey] = useState(0);
+const TICKET_BALANCE_KEY = ['ticketBalance'] as const;
 
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoading(true);
-    getTicketBalance()
-      .then((res) => {
-        if (!cancelled) setBalance(res.data);
-      })
-      .catch(() => {
-        if (!cancelled) setBalance(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [key]);
+export const useTicketBalance = (): {
+  balance: TicketBalanceResponse | null;
+  isLoading: boolean;
+  refetch: () => void;
+} => {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: TICKET_BALANCE_KEY,
+    queryFn: async (): Promise<TicketBalanceResponse | null> => {
+      const res = await getTicketBalance();
+      return res.data ?? null;
+    },
+    staleTime: 1000 * 60 * 2, // 2분
+    gcTime: 1000 * 60 * 10, // 10분
+  });
 
-  const refetch = (): void => setKey((k) => k + 1);
+  const refetch = (): void => {
+    queryClient.invalidateQueries({ queryKey: TICKET_BALANCE_KEY });
+  };
 
-  return { balance, isLoading, refetch };
+  return { balance: data ?? null, isLoading, refetch };
 };
