@@ -13,7 +13,7 @@ export const useDashboard = (): { stats: DashboardResponse | null; isLoading: bo
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: fetchDashboard,
-    // staleTime은 App.tsx QueryClient 전역 기본값(5분) 상속
+    gcTime: 1000 * 60 * 30, // 30분
   });
 
   return { stats: data ?? null, isLoading };

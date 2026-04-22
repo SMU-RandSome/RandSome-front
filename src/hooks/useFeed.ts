@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { FeedItem } from '@/types';
 import { getFeed } from '@/features/feed/api';
 
-const POLL_INTERVAL = 10_000;
+const POLL_INTERVAL = 60_000;
 
 export const useFeed = (): { feed: FeedItem[]; isLoading: boolean } => {
   const { data, isLoading } = useQuery({
