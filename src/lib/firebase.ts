@@ -1,5 +1,4 @@
-import { initializeApp } from 'firebase/app';
-import { getMessaging, isSupported } from 'firebase/messaging';
+import type { FirebaseApp } from 'firebase/app';
 import type { Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
@@ -11,10 +10,20 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
 };
 
-const app = initializeApp(firebaseConfig);
+let appInstance: FirebaseApp | null = null;
+
+export const getFirebaseApp = async (): Promise<FirebaseApp> => {
+  if (!appInstance) {
+    const { initializeApp } = await import('firebase/app');
+    appInstance = initializeApp(firebaseConfig);
+  }
+  return appInstance;
+};
 
 export const getFirebaseMessaging = async (): Promise<Messaging | null> => {
+  const { isSupported, getMessaging } = await import('firebase/messaging');
   const supported = await isSupported();
   if (!supported) return null;
+  const app = await getFirebaseApp();
   return getMessaging(app);
 };
