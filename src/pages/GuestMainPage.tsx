@@ -12,9 +12,15 @@ import { motion } from 'motion/react';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { AnnouncementBanner } from '@/components/ui/AnnouncementBanner';
 
+const INFO_BADGES = [
+  { text: '19학번+', bg: 'rgba(99,102,241,.25)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,.4)' },
+  { text: '@sangmyung.kr', bg: 'rgba(59,130,246,.22)', color: '#93c5fd', borderColor: 'rgba(59,130,246,.4)' },
+  { text: '무료', bg: 'rgba(34,197,94,.18)', color: '#86efac', borderColor: 'rgba(34,197,94,.3)' },
+] as const;
+
 const GuestMainPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isPWA } = useDisplayMode();
+  const { isPWA, isStandalone } = useDisplayMode();
   const { stats } = useDashboard();
   const { announcements } = useAnnouncements();
 
@@ -26,7 +32,7 @@ const GuestMainPage: React.FC = () => {
 
   // 두 레이아웃 모두 동일한 다크 테마 사용
   return (
-    <MobileLayout className="!bg-transparent">
+    <MobileLayout className="!bg-transparent" outerClassName="!bg-guest-dark">
       <div className="flex-1 flex flex-col bg-guest-dark relative overflow-hidden min-h-screen">
         <Orbs dark />
         <Stars />
@@ -34,7 +40,8 @@ const GuestMainPage: React.FC = () => {
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
         {/* Header — PWA 전용 (웹은 WebShell이 담당) */}
         {isPWA && (
-          <header className="relative z-10 px-5 pt-14 pb-0 flex items-center gap-2.5">
+          <header className="relative z-10 px-5 pb-0 flex items-center gap-2.5"
+            style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
             <Logo />
             <h1 className="font-display text-[26px] tracking-tight">
               <span className="text-blue-400">Rand</span><span className="text-pink-400">some</span>
@@ -61,12 +68,12 @@ const GuestMainPage: React.FC = () => {
 
           <Logo hero />
 
-          <h2 className="font-display text-[38px] leading-[1.14] text-white mt-5 mb-3.5">
+          <h2 className="font-display text-[28px] sm:text-[34px] md:text-[38px] leading-[1.14] text-white mt-4 sm:mt-5 mb-3 sm:mb-3.5">
             축제의 설렘,<br />
             <span className="gt">새로운 인연을</span><br />
             지금 만나요
           </h2>
-          <p className="text-[13px] text-white/50 leading-[1.7]">
+          <p className="text-[12px] sm:text-[13px] text-white/50 leading-[1.7]">
             복잡한 부스 없이, 온라인으로 간편하게.<br />
             매일 22시, 오늘의 인연이 공개돼요.
           </p>
@@ -74,7 +81,7 @@ const GuestMainPage: React.FC = () => {
 
         {/* Stats */}
         <motion.div
-          className="mx-5 mb-5 py-4 flex rounded-[22px] border border-white/10"
+          className="mx-4 sm:mx-5 mb-4 sm:mb-5 py-3.5 sm:py-4 flex rounded-[22px] border border-white/10"
           style={{ background: 'rgba(255,255,255,.06)', backdropFilter: 'blur(20px)' }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -82,18 +89,18 @@ const GuestMainPage: React.FC = () => {
         >
           {statsConfig.map(({ label, value, unit, cls }, i) => (
             <div key={label} className="flex-1 text-center px-2" style={{ borderRight: i < 2 ? '1px solid rgba(255,255,255,.1)' : 'none' }}>
-              <p className="font-display text-[26px] leading-none">
+              <p className="font-display text-[22px] sm:text-[26px] leading-none">
                 <span className={cls}>{value}</span>
                 <span className="text-[10px] font-normal text-white/35 ml-0.5">{unit}</span>
               </p>
-              <p className="text-[10.5px] text-white/40 mt-1 font-medium">{label}</p>
+              <p className="text-[10px] sm:text-[10.5px] text-white/40 mt-1 font-medium">{label}</p>
             </div>
           ))}
         </motion.div>
 
         {/* Info card */}
         <motion.div
-          className="mx-5 mb-5 p-[18px_20px] rounded-[20px] border border-white/10"
+          className="mx-4 sm:mx-5 mb-4 sm:mb-5 p-[16px_18px] sm:p-[18px_20px] rounded-[20px] border border-white/10"
           style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)' }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -104,11 +111,7 @@ const GuestMainPage: React.FC = () => {
             @sangmyung.kr 이메일로 인증하고, 19학번 이상이면 매칭에 참여할 수 있어요.
           </p>
           <div className="flex gap-1.5 mt-3 flex-wrap">
-            {[
-              ['19학번+', 'rgba(99,102,241,.25)', '#a5b4fc', 'rgba(99,102,241,.4)'],
-              ['@sangmyung.kr', 'rgba(59,130,246,.22)', '#93c5fd', 'rgba(59,130,246,.4)'],
-              ['무료', 'rgba(34,197,94,.18)', '#86efac', 'rgba(34,197,94,.3)'],
-            ].map(([text, bg, color, borderColor]) => (
+            {INFO_BADGES.map(({ text, bg, color, borderColor }) => (
               <span
                 key={text}
                 className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
@@ -129,7 +132,7 @@ const GuestMainPage: React.FC = () => {
 
         {/* CTA buttons */}
         <motion.div
-          className={`px-5 ${isPWA ? 'pb-24' : 'pb-8'}`}
+          className={`px-4 sm:px-5 ${isPWA ? 'pb-20 sm:pb-24' : 'pb-6 sm:pb-8'}`}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.26 }}
@@ -168,7 +171,7 @@ const GuestMainPage: React.FC = () => {
 
         {/* Guest Bottom Nav (visual only) */}
         {isPWA && (
-          <nav className="fixed bottom-0 w-full max-w-[430px] glass-dark h-[76px] px-6 flex items-center justify-around z-50">
+          <nav className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full glass-dark h-[76px] px-6 flex items-center justify-around z-50 ${isStandalone ? 'max-w-[430px]' : ''}`}>
             <div className="flex flex-col items-center gap-1">
               <Heart size={21} className="text-pink-500" fill="currentColor" />
               <span className="text-[10px] font-bold text-pink-500">홈</span>

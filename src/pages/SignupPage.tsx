@@ -5,6 +5,7 @@ import { Orbs } from '@/components/ui/Orbs';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/store/authStore';
+import { useDisplayMode } from '@/store/displayModeStore';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
@@ -13,7 +14,6 @@ import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS } from '@/constants/tags';
 import type { MemberCreateRequest, Gender, Mbti, Department, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
 import {
-  ChevronLeft,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -22,11 +22,13 @@ import {
   ChevronRight,
   ExternalLink,
   Heart,
+  AlertCircle,
 } from 'lucide-react';
+import { MobileHeader } from '@/components/layout/MobileHeader';
 
 type SignupStep = 1 | 2 | 3;
 
-type TermsKey = 'service' | 'privacy' | 'disclaimer' | 'profilePublic';
+type TermsKey = 'service' | 'privacy' | 'thirdParty' | 'disclaimer' | 'profilePublic';
 
 interface TermsItem {
   key: TermsKey;
@@ -44,12 +46,13 @@ const TERMS_ITEMS: TermsItem[] = [
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
         <p>본 서비스는 상명대학교 천안캠퍼스 축제 기간 동안 운영되는 온라인 랜덤 매칭 서비스 <strong>Randsome</strong>입니다.</p>
         <ul className="space-y-2 list-none">
-          <li>• 본 서비스는 학생 간의 새로운 인연 형성을 돕기 위한 <strong>축제 이벤트 서비스</strong>입니다.</li>
-          <li>• 서비스 이용 대상은 <strong>상명대학교 재학생 또는 휴학생</strong>으로 제한됩니다.</li>
+          <li>• 본 서비스는 <strong>비영리 목적의 이벤트성 서비스</strong>로, 학생 간 교류 및 인연 형성을 지원하기 위해 제공됩니다.</li>
+          <li>• 이용 대상은 <strong>상명대학교 천안캠퍼스 재학생 및 휴학생</strong>으로 제한됩니다.</li>
           <li>• 회원은 매칭 후보 등록 및 랜덤 매칭 신청 기능을 이용할 수 있습니다.</li>
-          <li>• 매칭은 <strong>랜덤 방식 또는 추천 방식</strong>으로 진행되며 결과에 대한 만족도는 보장되지 않습니다.</li>
-          <li>• 허위 정보 입력, 타인 정보 도용, 부적절한 프로필 작성 등의 경우 서비스 이용이 제한될 수 있습니다.</li>
-          <li>• 본 서비스는 <strong>축제 기간 동안 한시적으로 운영</strong>되며 행사 종료 후 종료될 수 있습니다.</li>
+          <li>• 매칭은 <strong>랜덤 알고리즘 또는 추천 방식</strong>으로 진행되며, 결과에 대한 개인적 만족도는 보장되지 않습니다.</li>
+          <li>• 허위 정보 입력, 타인 정보 도용, 부적절한 프로필 작성 등 이용 목적에 어긋나는 행위가 확인될 경우 서비스 이용이 제한되거나 계정이 정지될 수 있습니다.</li>
+          <li>• 본 서비스는 <strong>축제 기간 동안 한시적으로 운영</strong>되며, 행사 종료 후 서비스 운영이 종료됩니다.</li>
+          <li>• 본 서비스는 <strong>무료로 제공</strong>되며, 별도의 결제 또는 환불 절차는 존재하지 않습니다.</li>
         </ul>
       </div>
     ),
@@ -60,45 +63,70 @@ const TERMS_ITEMS: TermsItem[] = [
     required: true,
     content: (
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
-        <p>서비스 운영을 위해 다음과 같은 개인정보를 수집합니다.</p>
+        <p>본 서비스는 개인정보 보호법에 따라 다음과 같이 개인정보를 수집·이용합니다.</p>
         <div>
           <p className="font-semibold text-slate-800 mb-1">수집 항목</p>
-          <p>학생 이메일, 성별, MBTI, 자기소개, 이상형 정보</p>
+          <p>학교 이메일, 성별, MBTI, 자기소개, 이상형 정보</p>
         </div>
         <div>
-          <p className="font-semibold text-slate-800 mb-1">수집 목적</p>
+          <p className="font-semibold text-slate-800 mb-1">수집 및 이용 목적</p>
           <ul className="space-y-1 list-none">
             <li>• 회원 식별 및 서비스 이용 관리</li>
             <li>• 매칭 서비스 제공</li>
-            <li>• 부정 이용 방지</li>
+            <li>• 부정 이용 방지 및 서비스 운영 관리</li>
           </ul>
         </div>
         <div>
-          <p className="font-semibold text-slate-800 mb-1">보관 기간</p>
-          <p>서비스 종료 후 일정 기간 내 파기</p>
+          <p className="font-semibold text-slate-800 mb-1">보유 및 이용 기간</p>
+          <p>서비스 종료 시 지체 없이 파기를 원칙으로 합니다. 단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관 후 파기합니다.</p>
         </div>
-        <p className="text-xs text-slate-400">※ 개인정보 수집 및 이용에 동의하지 않을 권리가 있으며, 동의하지 않을 경우 서비스 이용이 제한될 수 있습니다.</p>
+        <div>
+          <p className="font-semibold text-slate-800 mb-1">이용자 권리</p>
+          <ul className="space-y-1 list-none">
+            <li>• 개인정보 열람</li>
+            <li>• 정정 및 삭제</li>
+            <li>• 처리 정지 요청</li>
+          </ul>
+        </div>
+        <p className="text-xs text-slate-400">※ 이용자는 개인정보 수집 및 이용에 동의하지 않을 권리가 있으며, 동의하지 않을 경우 서비스 이용이 제한됩니다.</p>
+      </div>
+    ),
+  },
+  {
+    key: 'thirdParty',
+    label: '개인정보 처리 위탁 및 제3자 제공 동의',
+    required: true,
+    content: (
+      <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
+        <p>본 서비스는 이용자의 개인정보를 외부에 제공하지 않습니다.</p>
+        <p>다만, 서비스 운영을 위해 다음과 같은 업무를 위탁할 수 있습니다.</p>
+        <ul className="space-y-1 list-none">
+          <li>• 서버 및 데이터 저장 (클라우드 서비스)</li>
+          <li>• 이메일 발송 서비스</li>
+        </ul>
+        <p className="text-xs text-slate-400">※ 위탁된 업무는 관련 법령에 따라 안전하게 관리됩니다.</p>
       </div>
     ),
   },
   {
     key: 'disclaimer',
-    label: '운영 및 면책 동의',
+    label: '운영 정책 및 책임 범위 동의',
     required: true,
     content: (
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
         <p>본 서비스는 <strong>축제 이벤트 성격의 매칭 서비스</strong>로 다음 사항을 안내드립니다.</p>
         <ul className="space-y-2 list-none">
-          <li>• 매칭은 <strong>랜덤 알고리즘 또는 추천 방식</strong>으로 진행됩니다.</li>
-          <li>• 매칭 결과에 대한 개인적인 만족도는 보장되지 않습니다.</li>
-          <li>• 서비스 이용 중 발생하는 개인 간의 문제에 대해서는 운영자가 책임지지 않습니다.</li>
+          <li>• 매칭은 <strong>시스템에 의해 자동</strong>으로 이루어지며, 결과의 정확성 또는 만족도를 보장하지 않습니다.</li>
+          <li>• 이용자 간의 대화, 만남 등에서 발생하는 문제는 <strong>당사자 간 해결</strong>을 원칙으로 합니다.</li>
+          <li>• 운영자는 이용자 간 분쟁에 직접 개입하지 않습니다. 단, 운영자의 고의 또는 중대한 과실이 있는 경우에는 관련 법령에 따라 책임을 질 수 있습니다.</li>
         </ul>
         <div>
-          <p className="font-semibold text-slate-800 mb-1">서비스 제한 사유</p>
+          <p className="font-semibold text-slate-800 mb-1">서비스 이용 제한 사유</p>
           <ul className="space-y-1 list-none">
-            <li>• 부적절한 프로필 작성</li>
-            <li>• 타인에게 불쾌감을 주는 행위</li>
-            <li>• 서비스 목적에 맞지 않는 이용</li>
+            <li>• 허위 정보 입력 또는 타인 사칭</li>
+            <li>• 타인에게 불쾌감을 주는 행위 (욕설, 성희롱 등)</li>
+            <li>• 서비스 목적에 부합하지 않는 이용</li>
+            <li>• 기타 운영 정책 위반</li>
           </ul>
         </div>
       </div>
@@ -106,18 +134,25 @@ const TERMS_ITEMS: TermsItem[] = [
   },
   {
     key: 'profilePublic',
-    label: '매칭 시 프로필 정보 공개 동의',
+    label: '프로필 정보 공개 동의',
     required: true,
     content: (
       <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
-        <p>매칭 서비스 특성상 다음 정보가 <strong>매칭된 상대방에게 공개될 수 있습니다.</strong></p>
-        <ul className="space-y-1 list-none">
-          <li>• 닉네임</li>
-          <li>• 인스타그램 ID</li>
-          <li>• 자기소개</li>
-          <li>• MBTI</li>
-        </ul>
-        <p className="text-xs text-slate-400">해당 정보는 매칭 결과가 생성된 사용자에게만 공개됩니다.</p>
+        <p>서비스 특성상 매칭된 상대방에게 다음 정보가 공개될 수 있습니다.</p>
+        <div>
+          <p className="font-semibold text-slate-800 mb-1">공개 항목</p>
+          <ul className="space-y-1 list-none">
+            <li>• 닉네임</li>
+            <li>• 인스타그램 ID (선택 입력)</li>
+            <li>• 자기소개</li>
+            <li>• MBTI</li>
+          </ul>
+        </div>
+        <div>
+          <p className="font-semibold text-slate-800 mb-1">공개 범위</p>
+          <p>해당 정보는 <strong>매칭이 성사된 사용자에게만</strong> 제한적으로 공개되며, 제3자에게 별도로 제공되지 않습니다.</p>
+        </div>
+        <p className="text-xs text-slate-400">※ 이용자는 프로필 작성 시 타인의 개인정보를 포함하지 않아야 하며, 이를 위반할 경우 운영자는 해당 정보를 수정·삭제하거나 서비스 이용을 제한할 수 있습니다.</p>
       </div>
     ),
   },
@@ -153,6 +188,7 @@ const labelStyle: React.CSSProperties = {
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const { setUser } = useAuth();
+  const { isPWA } = useDisplayMode();
   const { toast } = useToast();
 
   const [step, setStep] = useState<SignupStep>(1);
@@ -170,7 +206,7 @@ const SignupPage: React.FC = () => {
     personalityTag: PersonalityTag | '';
     faceTypeTag: FaceTypeTag | '';
     datingStyleTag: DatingStyleTag | '';
-    terms: { service: boolean; privacy: boolean; disclaimer: boolean; profilePublic: boolean };
+    terms: { service: boolean; privacy: boolean; thirdParty: boolean; disclaimer: boolean; profilePublic: boolean };
   }>({
     realName: '',
     gender: '',
@@ -185,7 +221,7 @@ const SignupPage: React.FC = () => {
     personalityTag: '',
     faceTypeTag: '',
     datingStyleTag: '',
-    terms: { service: false, privacy: false, disclaimer: false, profilePublic: false },
+    terms: { service: false, privacy: false, thirdParty: false, disclaimer: false, profilePublic: false },
   });
 
   const [emailSent, setEmailSent] = useState(false);
@@ -214,12 +250,12 @@ const SignupPage: React.FC = () => {
     } catch (err) { toast(getApiErrorMessage(err), 'error'); }
   };
 
-  const requiredTermsAgreed = formData.terms.service && formData.terms.privacy && formData.terms.disclaimer && formData.terms.profilePublic;
+  const requiredTermsAgreed = formData.terms.service && formData.terms.privacy && formData.terms.thirdParty && formData.terms.disclaimer && formData.terms.profilePublic;
   const allTermsAgreed = requiredTermsAgreed;
 
   const toggleAllTerms = (): void => {
     const next = !allTermsAgreed;
-    setFormData((prev) => ({ ...prev, terms: { service: next, privacy: next, disclaimer: next, profilePublic: next } }));
+    setFormData((prev) => ({ ...prev, terms: { service: next, privacy: next, thirdParty: next, disclaimer: next, profilePublic: next } }));
   };
 
   const toggleTerm = (key: TermsKey): void => {
@@ -284,23 +320,19 @@ const SignupPage: React.FC = () => {
         <Orbs />
 
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
-        <header className="sticky top-0 z-50 flex items-center px-4 h-14"
-          style={{ background: 'rgba(237,243,255,.9)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(59,130,246,.1)' }}>
-          <button onClick={prevStep} className="flex items-center justify-center shrink-0"
-            style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,.8)', border: '1px solid rgba(219,234,254,.9)' }} aria-label="뒤로 가기">
-            <ChevronLeft size={20} className="text-slate-700" />
-          </button>
-          <h1 className="font-display text-lg text-slate-900 ml-3">회원가입</h1>
-          <span className="ml-auto text-xs font-bold text-blue-600">Step {step} / 3</span>
-        </header>
+        <MobileHeader
+          title="회원가입"
+          onBack={prevStep}
+          right={<span className="text-xs font-bold text-blue-600">Step {step} / 3</span>}
+        />
 
-        <div className="flex gap-2 px-5 py-3">
+        <div className="flex gap-2 px-4 sm:px-5 py-3">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex-1 rounded-full" style={{ height: 4, background: s <= step ? 'linear-gradient(135deg, #2563eb, #6366f1)' : 'rgba(226,232,240,.8)', transition: 'background .3s' }} />
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 pb-40 relative z-10">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 pb-36 sm:pb-40 relative z-10">
           {step === 1 && (
             <div className="space-y-6 pt-4">
               <div>
@@ -386,6 +418,10 @@ const SignupPage: React.FC = () => {
               <div>
                 <h2 className="font-display text-[22px] text-slate-900">👤 프로필을 설정해요</h2>
                 <p className="text-[13px] text-slate-500 mt-1">매칭 및 본인 확인을 위해 사용됩니다.</p>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl px-4 py-3" style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.15)' }}>
+                <AlertCircle size={14} className="text-red-400 shrink-0" />
+                <p className="text-xs font-medium text-red-500">허위 프로필 작성 시 신고 및 서비스 이용 제한을 받을 수 있습니다.</p>
               </div>
               <div className="space-y-5">
                 <div>
@@ -483,7 +519,7 @@ const SignupPage: React.FC = () => {
           )}
         </div>
 
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50 px-5 pb-8 pt-4" style={{ background: 'linear-gradient(to top, #edf3ff 60%, transparent)' }}>
+        <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full ${isPWA ? 'max-w-[430px]' : 'max-w-2xl'} z-50 px-4 sm:px-5 pb-6 sm:pb-8 pt-4`} style={{ background: 'linear-gradient(to top, #edf3ff 60%, transparent)' }}>
           <div className="flex gap-3">
             {step > 1 && (
               <button onClick={prevStep} className="flex-1 h-14 font-bold text-slate-600 transition-all" style={{ borderRadius: 16, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>이전</button>

@@ -16,6 +16,10 @@
   --font-display: "Do Hyeon", "Noto Sans KR", sans-serif;
 }
 
+html {
+  background: #edf3ff; /* 투명 상태바 뒤 배경색 */
+}
+
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -206,6 +210,16 @@ body {
 @keyframes breathe {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50%      { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes pulse-heart {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 1; }
 }
 
 .animate-morph            { animation: morph 4s ease-in-out infinite; will-change: border-radius; }

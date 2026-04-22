@@ -311,12 +311,13 @@ const MyPage: React.FC = () => {
             </p>
             <ul className="space-y-1.5">
               {[
-                '본 서비스는 학생 간의 새로운 인연 형성을 돕기 위한 축제 이벤트 서비스입니다.',
-                '서비스 이용 대상은 상명대학교 재학생 또는 휴학생으로 제한됩니다.',
+                '본 서비스는 비영리 목적의 이벤트성 서비스로, 학생 간 교류 및 인연 형성을 지원하기 위해 제공됩니다.',
+                '이용 대상은 상명대학교 천안캠퍼스 재학생 및 휴학생으로 제한됩니다.',
                 '회원은 매칭 후보 등록 및 랜덤 매칭 신청 기능을 이용할 수 있습니다.',
-                '매칭은 랜덤 방식 또는 추천 방식으로 진행되며 결과에 대한 만족도는 보장되지 않습니다.',
-                '허위 정보 입력, 타인 정보 도용, 부적절한 프로필 작성 등의 경우 서비스 이용이 제한될 수 있습니다.',
-                '본 서비스는 축제 기간 동안 한시적으로 운영되며 행사 종료 후 종료될 수 있습니다.',
+                '매칭은 랜덤 알고리즘 또는 추천 방식으로 진행되며, 결과에 대한 개인적 만족도는 보장되지 않습니다.',
+                '허위 정보 입력, 타인 정보 도용, 부적절한 프로필 작성 등 이용 목적에 어긋나는 행위가 확인될 경우 서비스 이용이 제한되거나 계정이 정지될 수 있습니다.',
+                '본 서비스는 축제 기간 동안 한시적으로 운영되며, 행사 종료 후 서비스 운영이 종료됩니다.',
+                '본 서비스는 무료로 제공되며, 별도의 결제 또는 환불 절차는 존재하지 않습니다.',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-1.5">
                   <span className="mt-1 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
@@ -334,31 +335,69 @@ const MyPage: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <p className="font-semibold text-slate-800 text-xs mb-1">수집 항목</p>
-                <p className="text-slate-500 text-xs">학생 이메일, 성별, MBTI, 자기소개, 이상형 정보</p>
+                <p className="text-slate-500 text-xs">학교 이메일, 성별, MBTI, 자기소개, 이상형 정보</p>
               </div>
               <div>
-                <p className="font-semibold text-slate-800 text-xs mb-1">수집 목적</p>
-                <p className="text-slate-500 text-xs">회원 식별 및 서비스 이용 관리 / 매칭 서비스 제공 / 부정 이용 방지</p>
+                <p className="font-semibold text-slate-800 text-xs mb-1">수집 및 이용 목적</p>
+                <p className="text-slate-500 text-xs">회원 식별 및 서비스 이용 관리 / 매칭 서비스 제공 / 부정 이용 방지 및 서비스 운영 관리</p>
               </div>
               <div>
-                <p className="font-semibold text-slate-800 text-xs mb-1">보관 기간</p>
-                <p className="text-slate-500 text-xs">서비스 종료 후 일정 기간 내 파기</p>
+                <p className="font-semibold text-slate-800 text-xs mb-1">보유 및 이용 기간</p>
+                <p className="text-slate-500 text-xs">서비스 종료 시 지체 없이 파기를 원칙으로 합니다. 단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관 후 파기합니다.</p>
               </div>
-              <p className="text-xs text-slate-400">※ 개인정보 수집 및 이용에 동의하지 않을 권리가 있으며, 동의하지 않을 경우 서비스 이용이 제한될 수 있습니다.</p>
+              <div>
+                <p className="font-semibold text-slate-800 text-xs mb-1">이용자 권리</p>
+                <p className="text-slate-500 text-xs">개인정보 열람 / 정정 및 삭제 / 처리 정지 요청</p>
+              </div>
+              <p className="text-xs text-slate-400">※ 이용자는 개인정보 수집 및 이용에 동의하지 않을 권리가 있으며, 동의하지 않을 경우 서비스 이용이 제한됩니다.</p>
             </div>
           </section>
 
           <div className="h-px bg-slate-100" />
 
-          {/* 3. 운영 및 면책 */}
+          {/* 3. 개인정보 처리 위탁 및 제3자 제공 */}
           <section>
-            <h3 className="font-bold text-slate-900 mb-2">3. 운영 및 면책 동의 (필수)</h3>
+            <h3 className="font-bold text-slate-900 mb-2">3. 개인정보 처리 위탁 및 제3자 제공 (필수)</h3>
+            <p className="text-slate-500 text-xs mb-2">본 서비스는 이용자의 개인정보를 외부에 제공하지 않습니다.</p>
+            <p className="text-slate-500 text-xs mb-2">다만, 서비스 운영을 위해 다음과 같은 업무를 위탁할 수 있습니다.</p>
             <ul className="space-y-1.5">
               {[
-                '매칭은 랜덤 알고리즘 또는 추천 방식으로 진행됩니다.',
-                '매칭 결과에 대한 개인적인 만족도는 보장되지 않습니다.',
-                '서비스 이용 중 발생하는 개인 간의 문제에 대해서는 운영자가 책임지지 않습니다.',
-                '부적절한 프로필 작성, 타인에게 불쾌감을 주는 행위 등의 경우 운영자가 서비스를 제한할 수 있습니다.',
+                '서버 및 데이터 저장 (클라우드 서비스)',
+                '이메일 발송 서비스',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-1.5">
+                  <span className="mt-1 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-slate-400 mt-2">※ 위탁된 업무는 관련 법령에 따라 안전하게 관리됩니다.</p>
+          </section>
+
+          <div className="h-px bg-slate-100" />
+
+          {/* 4. 운영 정책 및 책임 범위 */}
+          <section>
+            <h3 className="font-bold text-slate-900 mb-2">4. 운영 정책 및 책임 범위 (필수)</h3>
+            <ul className="space-y-1.5 mb-3">
+              {[
+                '매칭은 시스템에 의해 자동으로 이루어지며, 결과의 정확성 또는 만족도를 보장하지 않습니다.',
+                '이용자 간의 대화, 만남 등에서 발생하는 문제는 당사자 간 해결을 원칙으로 합니다.',
+                '운영자는 이용자 간 분쟁에 직접 개입하지 않습니다. 단, 운영자의 고의 또는 중대한 과실이 있는 경우에는 관련 법령에 따라 책임을 질 수 있습니다.',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-1.5">
+                  <span className="mt-1 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="font-semibold text-slate-800 text-xs mb-1">서비스 이용 제한 사유</p>
+            <ul className="space-y-1.5">
+              {[
+                '허위 정보 입력 또는 타인 사칭',
+                '타인에게 불쾌감을 주는 행위 (욕설, 성희롱 등)',
+                '서비스 목적에 부합하지 않는 이용',
+                '기타 운영 정책 위반',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-1.5">
                   <span className="mt-1 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
@@ -370,12 +409,15 @@ const MyPage: React.FC = () => {
 
           <div className="h-px bg-slate-100" />
 
-          {/* 4. 프로필 정보 공개 */}
+          {/* 5. 프로필 정보 공개 */}
           <section>
-            <h3 className="font-bold text-slate-900 mb-2">4. 프로필 정보 공개 동의 (필수)</h3>
-            <p className="text-slate-500 text-xs mb-2">매칭 서비스 특성상 다음 정보가 매칭된 상대방에게 공개될 수 있습니다.</p>
-            <p className="text-slate-500 text-xs mb-2">닉네임 / 인스타그램 ID / 자기소개 / MBTI</p>
-            <p className="text-xs text-slate-400">해당 정보는 매칭 결과가 생성된 사용자에게만 공개됩니다.</p>
+            <h3 className="font-bold text-slate-900 mb-2">5. 프로필 정보 공개 동의 (필수)</h3>
+            <p className="text-slate-500 text-xs mb-2">서비스 특성상 매칭된 상대방에게 다음 정보가 공개될 수 있습니다.</p>
+            <p className="font-semibold text-slate-800 text-xs mb-1">공개 항목</p>
+            <p className="text-slate-500 text-xs mb-2">닉네임 / 인스타그램 ID (선택 입력) / 자기소개 / MBTI</p>
+            <p className="font-semibold text-slate-800 text-xs mb-1">공개 범위</p>
+            <p className="text-slate-500 text-xs mb-2">해당 정보는 매칭이 성사된 사용자에게만 제한적으로 공개되며, 제3자에게 별도로 제공되지 않습니다.</p>
+            <p className="text-xs text-slate-400">※ 이용자는 프로필 작성 시 타인의 개인정보를 포함하지 않아야 하며, 이를 위반할 경우 운영자는 해당 정보를 수정·삭제하거나 서비스 이용을 제한할 수 있습니다.</p>
           </section>
         </div>
       ),
@@ -427,11 +469,6 @@ const MyPage: React.FC = () => {
                 {displayProfile?.gender === 'MALE' ? '남성' : '여성'} · {DEPARTMENT_OPTIONS.find((o) => o.value === displayProfile?.department || o.label === displayProfile?.department)?.label ?? displayProfile?.department ?? ''}
               </p>
               <div className="flex gap-1.5 mt-2 flex-wrap">
-                {candidateStatus === 'APPROVED' && (
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: 'rgba(59,130,246,.1)', color: '#1d4ed8', border: '1px solid rgba(59,130,246,.2)' }}>
-                    후보 등록됨
-                  </span>
-                )}
                 <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ background: 'rgba(236,72,153,.1)', color: '#db2777', border: '1px solid rgba(236,72,153,.2)' }}>
                   {displayProfile?.mbti}
                 </span>
@@ -500,7 +537,7 @@ const MyPage: React.FC = () => {
 
         {/* 후보 상태 banner */}
         <div
-          onClick={statusConfig.clickable ? () => navigate('/match') : undefined}
+          onClick={statusConfig.clickable ? () => navigate('/match?view=register') : undefined}
           className={`rounded-[18px] p-[14px_18px] flex items-center gap-3 mb-3 transition-all ${
             statusConfig.clickable ? 'cursor-pointer' : ''
           }`}
@@ -540,6 +577,7 @@ const MyPage: React.FC = () => {
         >
           {[
             { label: '내 쿠폰', icon: <Ticket size={16} className="text-purple-700" />, bg: 'rgba(139,92,246,.1)', onClick: () => navigate('/coupons') },
+            { label: '쿠폰 이벤트', icon: <Ticket size={16} className="text-violet-500" />, bg: 'rgba(139,92,246,.07)', onClick: () => navigate('/coupon-events') },
             { label: '티켓 이력', icon: <History size={16} className="text-green-700" />, bg: 'rgba(34,197,94,.1)', onClick: () => navigate('/tickets/history') },
             { label: 'QR 코드', icon: <QrCode size={16} className="text-slate-700" />, bg: 'rgba(15,23,42,.08)', onClick: () => navigate('/qr') },
           ].map(({ label, icon, bg, onClick }, i, arr) => (
@@ -902,6 +940,12 @@ const EditProfileSheet: React.FC<EditProfileSheetProps> = ({ editForm, setEditFo
               </div>
             </div>
           </div>
+        </div>
+
+        {/* 허위 프로필 경고 */}
+        <div className="flex items-center gap-2 rounded-2xl px-4 py-3" style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.15)' }}>
+          <AlertCircle size={14} className="text-red-400 shrink-0" />
+          <p className="text-xs font-medium text-red-500">허위 프로필 작성 시 신고 및 서비스 이용 제한을 받을 수 있습니다.</p>
         </div>
 
         {/* 저장/취소 버튼 */}
