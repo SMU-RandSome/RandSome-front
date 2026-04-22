@@ -63,7 +63,6 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               initial={{ opacity: 0, y: -20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-              layout
               className="pointer-events-auto min-w-[300px] max-w-[90%] bg-white rounded-full shadow-lg border border-slate-100 p-1 pr-2 flex items-center gap-3"
             >
               <div

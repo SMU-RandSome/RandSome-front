@@ -73,6 +73,17 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     calcRect();
     if (searchInputRef.current) searchInputRef.current.focus();
 
+    const handleClickOutside = (e: MouseEvent): void => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node) &&
+        !(e.target as Element).closest('[data-searchable-select-dropdown]')
+      ) {
+        setIsOpen(false);
+        setSearchQuery('');
+      }
+    };
+
     const close = (): void => setIsOpen(false);
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', close, true);
@@ -83,17 +94,6 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       window.removeEventListener('resize', close);
     };
   }, [isOpen]);
-
-  const handleClickOutside = (e: MouseEvent): void => {
-    if (
-      containerRef.current &&
-      !containerRef.current.contains(e.target as Node) &&
-      !(e.target as Element).closest('[data-searchable-select-dropdown]')
-    ) {
-      setIsOpen(false);
-      setSearchQuery('');
-    }
-  };
 
   const handleSelect = (optionValue: string): void => {
     onChange(optionValue);

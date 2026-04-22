@@ -1,18 +1,6 @@
 import React from 'react';
-import { motion } from 'motion/react';
 
-// motion.button은 onDragStart, onAnimationStart 등의 타입이 HTML 이벤트와 충돌하므로 제외
-type SafeButtonHTMLProps = Omit<
-  React.ButtonHTMLAttributes<HTMLButtonElement>,
-  | 'onDragStart'
-  | 'onDrag'
-  | 'onDragEnd'
-  | 'onAnimationStart'
-  | 'onAnimationEnd'
-  | 'onAnimationIteration'
->;
-
-interface ButtonProps extends SafeButtonHTMLProps {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
@@ -27,7 +15,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rounded-2xl';
+    'inline-flex items-center justify-center font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rounded-2xl active:scale-[0.98] transition-transform';
 
   const variants = {
     primary:
@@ -49,8 +37,7 @@ export const Button: React.FC<ButtonProps> = ({
   const widthStyles = fullWidth ? 'w-full' : '';
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.98 }}
+    <button
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`}
       {...props}
     >
@@ -60,6 +47,6 @@ export const Button: React.FC<ButtonProps> = ({
         </span>
       )}
       {children}
-    </motion.button>
+    </button>
   );
 };

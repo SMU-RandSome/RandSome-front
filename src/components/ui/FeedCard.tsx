@@ -43,7 +43,7 @@ export const FeedCard: React.FC<{ item: FeedItem }> = React.memo(({ item }) => {
             </>
           ) : (
             <>
-              <span className="font-display text-[26px] text-rose-500 leading-none">{item.requestCount}</span>명의 인연을 기다리고 있어요
+              <span className="font-display text-[16px] text-rose-500 leading-none">{item.requestCount}</span>명의 인연을 기다리고 있어요
             </>
           )}
         </p>

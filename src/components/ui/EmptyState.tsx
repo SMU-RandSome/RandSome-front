@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'motion/react';
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -15,9 +14,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   className = '',
 }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
+    <div
       className={`flex flex-col items-center justify-center py-12 px-4 text-center ${className}`}
     >
       <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-4xl mb-4">
@@ -27,6 +24,6 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       {description && (
         <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
       )}
-    </motion.div>
+    </div>
   );
 };

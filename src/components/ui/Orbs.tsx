@@ -5,7 +5,7 @@ interface OrbsProps {
 }
 
 /** 배경 장식 — 떠다니는 그라디언트 원 (디자인 v4) */
-export const Orbs: React.FC<OrbsProps> = ({ dark = false }) => {
+export const Orbs: React.FC<OrbsProps> = React.memo(({ dark = false }) => {
   if (dark) {
     return (
       <>
@@ -65,4 +65,4 @@ export const Orbs: React.FC<OrbsProps> = ({ dark = false }) => {
       />
     </>
   );
-};
+});
