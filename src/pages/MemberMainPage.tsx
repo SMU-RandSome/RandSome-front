@@ -1,31 +1,35 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { FeedCard } from '@/components/ui/FeedCard';
 import { FeedSkeleton } from '@/components/ui/Skeleton';
 import { Orbs } from '@/components/ui/Orbs';
-import { OnboardingTour } from '@/components/ui/OnboardingTour';
+import { CouponEventBanner } from '@/components/ui/CouponEventBanner';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useFeed } from '@/hooks/useFeed';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useTicketBalance } from '@/hooks/useTicketBalance';
+import { useCouponEvents } from '@/features/coupon/hooks/useCouponEvents';
 import { MobileHeader } from '@/components/layout/MobileHeader';
-import { Heart, Sparkles, UserPlus } from 'lucide-react';
+import { Heart, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
-import { AnnouncementBanner } from '@/components/ui/AnnouncementBanner';
 
 const MemberMainPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isPWA } = useDisplayMode();
-  const [showOnboarding, setShowOnboarding] = useState(true);
   const { feed, isLoading } = useFeed();
   const { stats } = useDashboard();
   const { balance: ticketBalance } = useTicketBalance();
   const { announcements } = useAnnouncements();
+  const { events: allCouponEvents } = useCouponEvents();
+  const couponBannerEvents = useMemo(
+    () => allCouponEvents.filter((e) => e.status === 'ACTIVE' || e.status === 'DRAFT'),
+    [allCouponEvents],
+  );
 
   const totalTickets = (ticketBalance?.randomTicketCount ?? 0) + (ticketBalance?.idealTicketCount ?? 0);
 
@@ -49,13 +53,13 @@ const MemberMainPage: React.FC = () => {
     }
     return (
       <AnimatePresence initial={false}>
-        {feed.map((item, i) => (
+        {feed.map((item) => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.3, delay: i * 0.03 }}
+            transition={{ duration: 0.3 }}
           >
             <FeedCard item={item} />
           </motion.div>
@@ -71,6 +75,7 @@ const MemberMainPage: React.FC = () => {
       <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
       <MobileHeader
         brand
+        announcements={announcements}
         right={
           <div
             className="w-9 h-9 rounded-[13px] flex items-center justify-center font-display text-[15px] text-slate-700"
@@ -82,25 +87,25 @@ const MemberMainPage: React.FC = () => {
       />
 
       {/* Dashboard */}
-      <section className="relative px-5 pt-5">
+      <section className="relative px-4 sm:px-5 pt-4 sm:pt-5">
         <motion.div
           className="mb-4"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="font-display text-[27px] leading-[1.2] text-slate-900">
+          <h2 className="font-display text-[23px] sm:text-[27px] leading-[1.2] text-slate-900">
             설레는 만남이<br />
             <span className="gt">지금 기다려요!</span>
           </h2>
-          <p className="text-[12.5px] text-slate-500 mt-1.5">
+          <p className="text-[12px] sm:text-[12.5px] text-slate-500 mt-1.5">
             안녕하세요, {user?.nickname}님 · 오늘도 인연이 쌓이고 있어요
           </p>
         </motion.div>
 
         {/* Stats */}
         <motion.div
-          className="flex py-4 rounded-[20px] shadow-[0_2px_20px_rgba(0,0,0,0.06)] mb-5"
+          className="flex py-3.5 sm:py-4 rounded-[20px] shadow-[0_2px_20px_rgba(0,0,0,0.06)] mb-4 sm:mb-5"
           style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -108,27 +113,22 @@ const MemberMainPage: React.FC = () => {
         >
           {statsConfig.map(({ label, value, unit, cls }, i) => (
             <div key={label} className="flex-1 text-center px-2" style={{ borderRight: i < 2 ? '1px solid rgba(226,232,240,.8)' : 'none' }}>
-              <p className="font-display text-[26px] leading-none">
+              <p className="font-display text-[22px] sm:text-[26px] leading-none">
                 <span className={cls}>{value}</span>
                 <span className="text-[10px] font-normal text-slate-400 ml-0.5">{unit}</span>
               </p>
-              <p className="text-[10.5px] text-slate-400 mt-1 font-medium">{label}</p>
+              <p className="text-[10px] sm:text-[10.5px] text-slate-400 mt-1 font-medium">{label}</p>
             </div>
           ))}
         </motion.div>
       </section>
 
-      {/* 공지사항 */}
-      {announcements.length > 0 && (
-        <div className="px-5 mb-3">
-          <AnnouncementBanner announcements={announcements} />
-        </div>
-      )}
+      <CouponEventBanner events={couponBannerEvents} />
 
       {/* Match CTA — dark full-width tile */}
       <motion.div
         onClick={() => navigate('/match')}
-        className="mx-5 mb-2.5 rounded-3xl p-[22px] cursor-pointer relative overflow-hidden"
+        className="mx-4 sm:mx-5 mb-2.5 rounded-3xl p-[18px] sm:p-[22px] cursor-pointer relative overflow-hidden active:scale-[0.98] transition-transform"
         style={{
           background: '#0c1535',
           boxShadow: '0 8px 32px rgba(12,21,53,.4)',
@@ -137,7 +137,6 @@ const MemberMainPage: React.FC = () => {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        whileTap={{ scale: 0.98 }}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/30 to-pink-500/22 pointer-events-none" />
         <div className="absolute -right-6 -bottom-6 opacity-[0.08]">
@@ -161,30 +160,9 @@ const MemberMainPage: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Candidate Registration tile */}
-      <motion.div
-        onClick={() => navigate('/match?view=register')}
-        className="mx-5 rounded-[20px] p-4 cursor-pointer flex items-center gap-3.5 shadow-[0_2px_16px_rgba(0,0,0,0.06)]"
-        style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.15 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        <div className="w-11 h-11 rounded-[15px] flex items-center justify-center shrink-0"
-          style={{ background: 'linear-gradient(135deg, rgba(37,99,235,.15), rgba(99,102,241,.15))' }}
-        >
-          <UserPlus size={20} className="text-blue-600" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-slate-900">후보 등록하기</p>
-          <p className="text-xs text-slate-500 mt-0.5">프로필 등록하고 매칭 기회를 높여요</p>
-        </div>
-        <span className="font-display text-base gt">무료</span>
-      </motion.div>
 
       {/* Feed */}
-      <section className={`px-5 pt-5 flex-1 overflow-y-auto ${isPWA ? 'pb-24' : 'pb-8'}`}>
+      <section className={`px-4 sm:px-5 pt-4 sm:pt-5 flex-1 overflow-y-auto ${isPWA ? 'pb-20 sm:pb-24' : 'pb-6 sm:pb-8'}`}>
         <div className="flex items-center gap-2 mb-3">
           <span className="w-[7px] h-[7px] rounded-full bg-green-500 animate-pulse-dot" />
           <h3 className="text-[13px] font-bold text-slate-900">지금 일어나고 있어요</h3>
@@ -205,9 +183,6 @@ const MemberMainPage: React.FC = () => {
       </div>
 
       <BottomNav />
-      {showOnboarding && user && (
-        <OnboardingTour userId={user.id} onDone={() => setShowOnboarding(false)} />
-      )}
     </div>
   );
 
