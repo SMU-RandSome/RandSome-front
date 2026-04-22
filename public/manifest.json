@@ -4,8 +4,8 @@
   "description": "상명대학교 축제 기간 이성 랜덤 매칭 서비스",
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#3b82f6",
-  "background_color": "#ffffff",
+  "theme_color": "#edf3ff",
+  "background_color": "#edf3ff",
   "icons": [
     {
       "src": "/vite.svg",

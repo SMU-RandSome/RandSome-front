@@ -38,14 +38,17 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      target: 'es2022',
       rollupOptions: {
         output: {
           manualChunks: {
-            'vendor-react': ['react', 'react-dom'],
             'vendor-router': ['react-router-dom'],
             'vendor-motion': ['motion'],
             'vendor-query': ['@tanstack/react-query'],
             'vendor-icons': ['lucide-react'],
+            'vendor-firebase': ['firebase/app', 'firebase/messaging'],
+            'vendor-axios': ['axios'],
+            'vendor-qrcode': ['html5-qrcode'],
           },
         },
       },
