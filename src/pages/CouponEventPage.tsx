@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { useToast } from '@/components/ui/Toast';
-import { getCouponEvent, issueCouponEvent } from '@/features/coupon/api';
-import { getApiErrorMessage } from '@/lib/axios';
-import type { CouponEventDetailItem } from '@/types';
+import { getCouponEvent } from '@/features/coupon/api';
+import { useIssueCoupon } from '@/features/coupon/hooks/useIssueCoupon';
 import { ChevronLeft, Ticket, Clock, Gift } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -17,6 +16,7 @@ const EVENT_TYPE_LABELS = {
 const STATUS_LABELS = {
   DRAFT: '준비중',
   ACTIVE: '진행중',
+  SOLD_OUT: '매진',
   ENDED: '종료됨',
 } as const;
 
@@ -30,50 +30,20 @@ const CouponEventPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { isPWA } = useDisplayMode();
-  const { toast } = useToast();
-  const [event, setEvent] = useState<CouponEventDetailItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [isClaiming, setIsClaiming] = useState(false);
+  const eventId = id ? parseInt(id, 10) : NaN;
 
-  useEffect(() => {
-    if (!id) return;
-    const eventId = parseInt(id, 10);
-    if (isNaN(eventId)) {
-      setLoadError(true);
-      setIsLoading(false);
-      return;
-    }
+  const { data: event, isLoading, isError } = useQuery({
+    queryKey: ['couponEvent', eventId],
+    queryFn: () => getCouponEvent(eventId).then((res) => res.data),
+    enabled: !isNaN(eventId),
+    staleTime: 1000 * 60 * 5,
+  });
 
-    let cancelled = false;
-    getCouponEvent(eventId)
-      .then((res) => {
-        if (!cancelled) setEvent(res.data);
-      })
-      .catch(() => {
-        if (!cancelled) setLoadError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [id]);
+  const issueMutation = useIssueCoupon();
 
   const handleClaim = (): void => {
-    if (!id || !event) return;
-    const eventId = parseInt(id, 10);
-    setIsClaiming(true);
-    issueCouponEvent(eventId)
-      .then(() => {
-        toast('쿠폰이 발급되었습니다! 쿠폰함을 확인해주세요 🎟️', 'success');
-        navigate('/coupons');
-      })
-      .catch((err: unknown) => {
-        toast(getApiErrorMessage(err), 'error');
-      })
-      .finally(() => {
-        setIsClaiming(false);
-      });
+    if (!event) return;
+    issueMutation.mutate(eventId);
   };
 
   const isActive = event?.status === 'ACTIVE';
@@ -98,7 +68,7 @@ const CouponEventPage: React.FC = () => {
             <div className="bg-white/80 rounded-3xl h-48 animate-shimmer-gradient" />
             <div className="bg-white/80 rounded-2xl h-24 animate-shimmer-gradient" />
           </div>
-        ) : loadError || !event ? (
+        ) : isError || !event ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <p className="text-2xl">⚠️</p>
             <p className="text-sm font-semibold text-slate-700">이벤트를 불러오지 못했습니다</p>
@@ -185,16 +155,16 @@ const CouponEventPage: React.FC = () => {
             >
               <button
                 onClick={handleClaim}
-                disabled={!canClaim || isClaiming}
+                disabled={!canClaim || issueMutation.isPending}
                 className={`w-full py-4 rounded-2xl text-base font-bold transition-all duration-200 ${
-                  canClaim && !isClaiming
+                  canClaim && !issueMutation.isPending
                     ? event.rewardTicketType === 'RANDOM'
                       ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-300/60 active:opacity-80'
                       : 'bg-gradient-to-r from-violet-500 to-purple-700 text-white shadow-lg shadow-violet-200/50 hover:shadow-violet-300/60 active:opacity-80'
                     : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 }`}
               >
-                {isClaiming ? (
+                {issueMutation.isPending ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                     처리중...

@@ -227,6 +227,7 @@ export interface MatchingHistoryItem {
   applicationStatus: MatchingApplicationStatus;
   appliedAt: string;
   applicationCount: number;
+  matchedCount: number;
 }
 
 export interface MatchingResultDetailItem {
@@ -271,7 +272,7 @@ export type CouponStatus = 'AVAILABLE' | 'USED' | 'EXPIRED';
 
 export type CouponEventType = 'HAPPY_HOUR' | 'SECRET_CODE';
 
-export type CouponEventStatus = 'DRAFT' | 'ACTIVE' | 'ENDED';
+export type CouponEventStatus = 'DRAFT' | 'ACTIVE' | 'SOLD_OUT' | 'ENDED';
 
 export interface CouponItem {
   id: number;

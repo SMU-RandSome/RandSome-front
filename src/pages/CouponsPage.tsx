@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Orbs } from '@/components/ui/Orbs';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { useToast } from '@/components/ui/Toast';
-import { getCoupons, useCoupon } from '@/features/coupon/api';
-import { getApiErrorMessage } from '@/lib/axios';
+import { getCoupons } from '@/features/coupon/api';
+import { useUseCouponMutation } from '@/features/coupon/hooks/useUseCoupon';
 import type { CouponItem, CouponStatus } from '@/types';
 
 type CouponFilter = 'ALL' | 'AVAILABLE' | 'USED_OR_EXPIRED';
@@ -27,13 +26,19 @@ const STATUS_LABELS: Record<CouponStatus, string> = {
 
 const formatExpiry = (iso: string): string => {
   const d = new Date(iso);
-  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  return d.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 };
 
 const CouponsPage: React.FC = () => {
   const navigate = useNavigate();
   const { isPWA } = useDisplayMode();
-  const { toast } = useToast();
   const [items, setItems] = useState<CouponItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -41,8 +46,8 @@ const CouponsPage: React.FC = () => {
   const [cursor, setCursor] = useState<number | undefined>(undefined);
   const [loadError, setLoadError] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<CouponItem | null>(null);
-  const [isUsing, setIsUsing] = useState(false);
   const [filter, setFilter] = useState<CouponFilter>('ALL');
+  const useCouponMutation = useUseCouponMutation();
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -93,21 +98,19 @@ const CouponsPage: React.FC = () => {
   const handleUseConfirm = (): void => {
     if (!confirmTarget) return;
     const targetId = confirmTarget.id;
-    setIsUsing(true);
-    useCoupon(targetId)
-      .then(() => {
+    // 낙관적 업데이트: 즉시 UI 반영
+    setItems((prev) =>
+      prev.map((c) => (c.id === targetId ? { ...c, status: 'USED' as CouponStatus } : c))
+    );
+    setConfirmTarget(null);
+    useCouponMutation.mutate(targetId, {
+      onError: () => {
+        // 실패 시 롤백
         setItems((prev) =>
-          prev.map((c) => (c.id === targetId ? { ...c, status: 'USED' as CouponStatus } : c))
+          prev.map((c) => (c.id === targetId ? { ...c, status: 'AVAILABLE' as CouponStatus } : c))
         );
-        toast('쿠폰이 사용되었습니다! 티켓이 지급됩니다 🎟️', 'success');
-      })
-      .catch((err: unknown) => {
-        toast(getApiErrorMessage(err), 'error');
-      })
-      .finally(() => {
-        setIsUsing(false);
-        setConfirmTarget(null);
-      });
+      },
+    });
   };
 
   return (
@@ -162,12 +165,9 @@ const CouponsPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {items.map((item, i) => (
-              <motion.div
+            {items.map((item) => (
+              <div
                 key={item.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: Math.min(i * 0.07, 0.35), ease: [0.22, 1, 0.36, 1] }}
                 className={`rounded-2xl overflow-hidden transition-opacity ${
                   item.status !== 'AVAILABLE' ? 'opacity-60' : ''
                 }`}
@@ -228,7 +228,7 @@ const CouponsPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
 
             <div ref={sentinelRef} className="h-1" />
@@ -252,7 +252,7 @@ const CouponsPage: React.FC = () => {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black z-[60]"
-              onClick={() => !isUsing && setConfirmTarget(null)}
+              onClick={() => !useCouponMutation.isPending && setConfirmTarget(null)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -274,18 +274,18 @@ const CouponsPage: React.FC = () => {
                 <div className="flex gap-2.5">
                   <button
                     onClick={() => setConfirmTarget(null)}
-                    disabled={isUsing}
+                    disabled={useCouponMutation.isPending}
                     className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all disabled:opacity-50"
                   >
                     취소
                   </button>
                   <button
                     onClick={handleUseConfirm}
-                    disabled={isUsing}
+                    disabled={useCouponMutation.isPending}
                     className="flex-1 py-3.5 rounded-2xl text-white text-sm font-bold active:opacity-80 shadow-md shadow-violet-200/40 transition-all disabled:opacity-50"
                     style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
                   >
-                    {isUsing ? '처리중...' : '사용 확인'}
+                    {useCouponMutation.isPending ? '처리중...' : '사용 확인'}
                   </button>
                 </div>
               </div>

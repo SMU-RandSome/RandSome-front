@@ -19,6 +19,7 @@ const TicketHistoryPage = React.lazy(() => import('@/pages/TicketHistoryPage'));
 const AttendancePage = React.lazy(() => import('@/pages/AttendancePage'));
 const CouponsPage = React.lazy(() => import('@/pages/CouponsPage'));
 const CouponEventPage = React.lazy(() => import('@/pages/CouponEventPage'));
+const CouponEventsPage = React.lazy(() => import('@/pages/CouponEventsPage'));
 const QrPage = React.lazy(() => import('@/pages/QrPage'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/AdminDashboard'));
 const AdminQrPage = React.lazy(() => import('@/pages/admin/AdminQrPage'));
@@ -103,6 +104,7 @@ export const router = createBrowserRouter([
           { path: '/tickets/history', element: <TicketHistoryPage /> },
           { path: '/attendance', element: <AttendancePage /> },
           { path: '/coupons', element: <CouponsPage /> },
+          { path: '/coupon-events', element: <CouponEventsPage /> },
           { path: '/coupon-events/:id', element: <CouponEventPage /> },
           { path: '/qr', element: <QrPage /> },
         ],
