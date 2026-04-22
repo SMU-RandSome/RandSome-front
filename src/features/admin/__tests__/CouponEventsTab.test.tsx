@@ -2,12 +2,18 @@ import React from 'react';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { renderWithProviders } from '@/test/utils';
 import CouponEventsTab from '@/features/admin/components/CouponEventsTab';
-import type { CouponEventPreviewItem } from '@/types';
+import type { CouponEventPreviewItem, CouponEventDetailItem } from '@/types';
 
 vi.mock('motion/react');
 
+// CouponEventsTab uses getCouponEvents / getCouponEvent from coupon API for reads
+vi.mock('@/features/coupon/api', () => ({
+  getCouponEvents: vi.fn(),
+  getCouponEvent: vi.fn(),
+}));
+
+// …and admin API for writes
 vi.mock('@/features/admin/api', () => ({
-  getAdminCouponEvents: vi.fn(),
   createAdminCouponEvent: vi.fn(),
   updateAdminCouponEvent: vi.fn(),
   deleteAdminCouponEvent: vi.fn(),
@@ -15,8 +21,8 @@ vi.mock('@/features/admin/api', () => ({
   deactivateAdminCouponEvent: vi.fn(),
 }));
 
+import { getCouponEvents, getCouponEvent } from '@/features/coupon/api';
 import {
-  getAdminCouponEvents,
   createAdminCouponEvent,
   updateAdminCouponEvent,
   deleteAdminCouponEvent,
@@ -24,7 +30,8 @@ import {
   deactivateAdminCouponEvent,
 } from '@/features/admin/api';
 
-const mockGetEvents = vi.mocked(getAdminCouponEvents);
+const mockGetEvents = vi.mocked(getCouponEvents);
+const mockGetEvent = vi.mocked(getCouponEvent);
 const mockCreate = vi.mocked(createAdminCouponEvent);
 const mockUpdate = vi.mocked(updateAdminCouponEvent);
 const mockDelete = vi.mocked(deleteAdminCouponEvent);
@@ -34,14 +41,9 @@ const mockDeactivate = vi.mocked(deactivateAdminCouponEvent);
 const makeDraftEvent = (id = 1): CouponEventPreviewItem => ({
   id,
   name: '해피아워 이벤트',
-  description: '테스트 설명',
+  eventType: 'HAPPY_HOUR',
   status: 'DRAFT',
-  type: 'HAPPY_HOUR',
-  rewardTicketType: 'RANDOM',
-  rewardAmount: 2,
-  startsAt: '2026-05-01T00:00:00Z',
-  expiresAt: '2026-05-02T00:00:00Z',
-  couponExpiresAt: '2026-05-10T00:00:00Z',
+  totalQuantity: 10,
 });
 
 const makeActiveEvent = (id = 2): CouponEventPreviewItem => ({
@@ -56,36 +58,56 @@ const makeEndedEvent = (id = 3): CouponEventPreviewItem => ({
   status: 'ENDED',
 });
 
-const emptyPage = () => ({
+const makeDraftDetail = (id = 1): CouponEventDetailItem => ({
+  id,
+  name: '해피아워 이벤트',
+  description: '테스트 설명',
+  eventType: 'HAPPY_HOUR',
+  status: 'DRAFT',
+  totalQuantity: 10,
+  rewardTicketType: 'RANDOM',
+  rewardTicketAmount: 2,
+  startsAt: '2026-05-01T00:00:00',
+  expiresAt: '2026-05-02T00:00:00',
+});
+
+const emptyList = () => ({
   result: 'SUCCESS' as const,
-  data: {
-    content: [] as CouponEventPreviewItem[],
-    currentPage: 0,
-    totalPages: 0,
-    totalElements: 0,
-    hasNext: false,
-    hasPrevious: false,
-  },
+  data: [] as CouponEventPreviewItem[],
   error: null,
 });
 
-const pageWith = (...events: CouponEventPreviewItem[]) => ({
+const listWith = (...events: CouponEventPreviewItem[]) => ({
   result: 'SUCCESS' as const,
-  data: {
-    content: events,
-    currentPage: 0,
-    totalPages: 1,
-    totalElements: events.length,
-    hasNext: false,
-    hasPrevious: false,
-  },
+  data: events,
   error: null,
 });
+
+// DateTimeInput renders 5 selects per instance (year/month/day/hour/minute).
+// index 0 = starts-at, 1 = expires-at, 2 = coupon-expires-at
+// waitFor is used after each change so that React 19 concurrent mode flushes the `parts` state
+// before the next event fires (otherwise the `update` closure sees stale `parts`).
+const fillDateTimeInput = async (
+  index: number,
+  year = '2026',
+  month = '05',
+  day = '01',
+): Promise<void> => {
+  fireEvent.change(screen.getAllByLabelText('연도')[index], { target: { value: year } });
+  await waitFor(() => expect(screen.getAllByLabelText('연도')[index]).toHaveValue(year));
+
+  fireEvent.change(screen.getAllByLabelText('월')[index], { target: { value: month } });
+  await waitFor(() => expect(screen.getAllByLabelText('월')[index]).toHaveValue(month));
+
+  fireEvent.change(screen.getAllByLabelText('일')[index], { target: { value: day } });
+  await waitFor(() => expect(screen.getAllByLabelText('일')[index]).toHaveValue(day));
+};
 
 describe('CouponEventsTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetEvents.mockResolvedValue(emptyPage());
+    mockGetEvents.mockResolvedValue(emptyList());
+    mockGetEvent.mockResolvedValue({ result: 'SUCCESS', data: makeDraftDetail(), error: null });
     mockCreate.mockResolvedValue({ result: 'SUCCESS', data: 1, error: null });
     mockUpdate.mockResolvedValue({ result: 'SUCCESS', data: null, error: null });
     mockDelete.mockResolvedValue({ result: 'SUCCESS', data: null, error: null });
@@ -97,7 +119,7 @@ describe('CouponEventsTab', () => {
 
   it('마운트 시 이벤트 목록 API 호출', async () => {
     renderWithProviders(<CouponEventsTab />);
-    await waitFor(() => expect(mockGetEvents).toHaveBeenCalledWith({ page: 0, size: 5 }));
+    await waitFor(() => expect(mockGetEvents).toHaveBeenCalledTimes(1));
   });
 
   it('빈 목록일 때 빈 상태 메시지 표시', async () => {
@@ -117,7 +139,7 @@ describe('CouponEventsTab', () => {
   // ── 이벤트 목록 ──
 
   it('DRAFT 이벤트에 "준비중" 뱃지 표시', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
     await waitFor(() => {
       expect(screen.getByText('해피아워 이벤트')).toBeInTheDocument();
@@ -126,7 +148,7 @@ describe('CouponEventsTab', () => {
   });
 
   it('ACTIVE 이벤트에 "활성" 뱃지 표시', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeActiveEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeActiveEvent()));
     renderWithProviders(<CouponEventsTab />);
     await waitFor(() => {
       expect(screen.getByText('활성 이벤트')).toBeInTheDocument();
@@ -135,7 +157,7 @@ describe('CouponEventsTab', () => {
   });
 
   it('ENDED 이벤트에 "종료" 뱃지 표시', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeEndedEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeEndedEvent()));
     renderWithProviders(<CouponEventsTab />);
     await waitFor(() => {
       expect(screen.getByText('종료된 이벤트')).toBeInTheDocument();
@@ -143,16 +165,16 @@ describe('CouponEventsTab', () => {
     });
   });
 
-  it('보상 정보(티켓 유형, 수량) 표시', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+  it('총 수량 표시', async () => {
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
     await waitFor(() =>
-      expect(screen.getByText('랜덤권 2장')).toBeInTheDocument(),
+      expect(screen.getByText('10개')).toBeInTheDocument(),
     );
   });
 
   it('이벤트 유형 라벨 표시', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
     await waitFor(() =>
       expect(screen.getByText('해피 아워')).toBeInTheDocument(),
@@ -162,7 +184,7 @@ describe('CouponEventsTab', () => {
   // ── 활성화/비활성화 토글 ──
 
   it('DRAFT 이벤트에 "활성화" 버튼 표시 및 클릭 시 API 호출', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
 
     const btn = await screen.findByText('활성화');
@@ -171,7 +193,7 @@ describe('CouponEventsTab', () => {
   });
 
   it('ACTIVE 이벤트에 "종료하기" 버튼 표시 및 클릭 시 API 호출', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeActiveEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeActiveEvent()));
     renderWithProviders(<CouponEventsTab />);
 
     const btn = await screen.findByText('종료하기');
@@ -180,7 +202,7 @@ describe('CouponEventsTab', () => {
   });
 
   it('ENDED 이벤트에는 활성화/종료 버튼 없음', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeEndedEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeEndedEvent()));
     renderWithProviders(<CouponEventsTab />);
 
     await waitFor(() => expect(screen.getByText('종료된 이벤트')).toBeInTheDocument());
@@ -216,10 +238,13 @@ describe('CouponEventsTab', () => {
 
     fireEvent.change(screen.getByLabelText('이벤트 이름'), { target: { value: '새 이벤트' } });
     fireEvent.change(screen.getByLabelText('설명'), { target: { value: '테스트 설명' } });
-    fireEvent.change(screen.getByLabelText('이벤트 시작'), { target: { value: '2026-05-01T00:00' } });
-    fireEvent.change(screen.getByLabelText('이벤트 종료'), { target: { value: '2026-05-02T00:00' } });
-    fireEvent.change(screen.getByLabelText('쿠폰 만료일'), { target: { value: '2026-05-10T00:00' } });
 
+    await fillDateTimeInput(0, '2026', '05', '01'); // 이벤트 시작
+    await fillDateTimeInput(1, '2026', '05', '02'); // 이벤트 종료
+    await fillDateTimeInput(2, '2026', '05', '10'); // 쿠폰 만료일
+
+    // Verify form is valid before clicking
+    await waitFor(() => expect(screen.getByText('생성하기')).not.toBeDisabled());
     fireEvent.click(screen.getByText('생성하기'));
     await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
 
@@ -228,17 +253,7 @@ describe('CouponEventsTab', () => {
     expect(callBody.description).toBe('테스트 설명');
     expect(callBody.type).toBe('HAPPY_HOUR');
     expect(callBody.rewardTicketType).toBe('RANDOM');
-    expect(callBody.rewardAmount).toBe(1);
-  });
-
-  it('SECRET_CODE 유형 선택 시 시크릿 코드 입력 필드 표시', async () => {
-    renderWithProviders(<CouponEventsTab />);
-    await waitFor(() => expect(screen.getByText('새 쿠폰 이벤트')).toBeInTheDocument());
-
-    fireEvent.click(screen.getByText('새 쿠폰 이벤트'));
-    fireEvent.click(screen.getByText('시크릿 코드'));
-
-    expect(screen.getByLabelText('시크릿 코드')).toBeInTheDocument();
+    expect(callBody.rewardTicketAmount).toBe(1);
   });
 
   it('닫기 버튼 클릭 시 모달 닫힘', async () => {
@@ -257,7 +272,7 @@ describe('CouponEventsTab', () => {
   // ── 수정 모달 ──
 
   it('수정 버튼 클릭 시 기존 데이터가 채워진 모달 열림', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
 
     await waitFor(() => expect(screen.getByText('해피아워 이벤트')).toBeInTheDocument());
@@ -265,18 +280,25 @@ describe('CouponEventsTab', () => {
 
     expect(screen.getByText('쿠폰 이벤트 수정')).toBeInTheDocument();
     expect(screen.getByLabelText('이벤트 이름')).toHaveValue('해피아워 이벤트');
-    expect(screen.getByLabelText('설명')).toHaveValue('테스트 설명');
+    await waitFor(() =>
+      expect(screen.getByLabelText('설명')).toHaveValue('테스트 설명'),
+    );
     expect(screen.getByText('수정하기')).toBeInTheDocument();
   });
 
   it('수정 폼 제출 시 updateAdminCouponEvent 호출', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
 
     await waitFor(() => expect(screen.getByText('해피아워 이벤트')).toBeInTheDocument());
     fireEvent.click(screen.getByLabelText('수정'));
 
+    // Wait for detail to load (description populated from getCouponEvent)
+    await waitFor(() => expect(screen.getByLabelText('설명')).toHaveValue('테스트 설명'));
+
     fireEvent.change(screen.getByLabelText('이벤트 이름'), { target: { value: '수정된 이름' } });
+    // couponExpiresAt is not returned by the API, must be filled manually
+    await fillDateTimeInput(2, '2026', '05', '10'); // 쿠폰 만료일
     fireEvent.click(screen.getByText('수정하기'));
 
     await waitFor(() => {
@@ -289,7 +311,7 @@ describe('CouponEventsTab', () => {
   // ── 삭제 ──
 
   it('삭제 버튼 클릭 시 확인 모달 열림', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
 
     await waitFor(() => expect(screen.getByText('해피아워 이벤트')).toBeInTheDocument());
@@ -300,13 +322,12 @@ describe('CouponEventsTab', () => {
   });
 
   it('삭제 확인 시 deleteAdminCouponEvent 호출', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
 
     await waitFor(() => expect(screen.getByText('해피아워 이벤트')).toBeInTheDocument());
     fireEvent.click(screen.getByLabelText('삭제'));
 
-    // 모달 내부의 삭제 버튼 (aria-label이 아닌 텍스트 버튼)
     const deleteButtons = screen.getAllByRole('button', { name: '삭제' });
     const confirmBtn = deleteButtons.find((btn) => btn.className.includes('bg-red-500'));
     fireEvent.click(confirmBtn!);
@@ -315,7 +336,7 @@ describe('CouponEventsTab', () => {
   });
 
   it('삭제 취소 시 모달 닫힘', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
 
     await waitFor(() => expect(screen.getByText('해피아워 이벤트')).toBeInTheDocument());
@@ -339,7 +360,7 @@ describe('CouponEventsTab', () => {
   });
 
   it('활성화 실패 시 에러 토스트 표시', async () => {
-    mockGetEvents.mockResolvedValue(pageWith(makeDraftEvent()));
+    mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     mockActivate.mockRejectedValue(new Error('Failed'));
     renderWithProviders(<CouponEventsTab />);
 
@@ -357,10 +378,9 @@ describe('CouponEventsTab', () => {
 
     fireEvent.click(screen.getByText('새 쿠폰 이벤트'));
     fireEvent.change(screen.getByLabelText('이벤트 이름'), { target: { value: '이벤트' } });
-    fireEvent.change(screen.getByLabelText('설명'), { target: { value: '설명' } });
-    fireEvent.change(screen.getByLabelText('이벤트 시작'), { target: { value: '2026-05-01T00:00' } });
-    fireEvent.change(screen.getByLabelText('이벤트 종료'), { target: { value: '2026-05-02T00:00' } });
-    fireEvent.change(screen.getByLabelText('쿠폰 만료일'), { target: { value: '2026-05-10T00:00' } });
+    await fillDateTimeInput(0, '2026', '05', '01'); // 이벤트 시작
+    await fillDateTimeInput(1, '2026', '05', '02'); // 이벤트 종료
+    await fillDateTimeInput(2, '2026', '05', '10'); // 쿠폰 만료일
     fireEvent.click(screen.getByText('생성하기'));
 
     await waitFor(() =>

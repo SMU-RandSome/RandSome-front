@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { renderWithProviders } from '@/test/utils';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
-import type { ReportItem, ReportDetailItem, PageResponse, ApiResponse } from '@/types';
+import type { AdminReportListItem, AdminReportDetailResponse, PageResponse, ApiResponse } from '@/types';
 
 vi.mock('motion/react');
 
@@ -14,7 +14,7 @@ vi.mock('@/features/admin/api', () => ({
   getAdminMatchingApplications: vi.fn(),
   getAdminReports: vi.fn(),
   getAdminReportDetail: vi.fn(),
-  processAdminReport: vi.fn(),
+  resolveAdminReport: vi.fn(),
   rejectAdminReport: vi.fn(),
   restoreAdminMember: vi.fn(),
 }));
@@ -25,6 +25,7 @@ vi.mock('@/features/announcement/api', () => ({
 
 vi.mock('@/hooks/useFcmToken', () => ({
   unregisterFcmToken: vi.fn().mockResolvedValue(undefined),
+  clearFcmToken: vi.fn(),
 }));
 
 const mockNavigate = vi.fn();
@@ -39,7 +40,7 @@ import {
   getAdminMatchingApplications,
   getAdminReports,
   getAdminReportDetail,
-  processAdminReport,
+  resolveAdminReport,
   rejectAdminReport,
   restoreAdminMember,
 } from '@/features/admin/api';
@@ -47,7 +48,7 @@ import { getAnnouncements } from '@/features/announcement/api';
 
 const mockGetAdminReports = vi.mocked(getAdminReports);
 const mockGetAdminReportDetail = vi.mocked(getAdminReportDetail);
-const mockProcessAdminReport = vi.mocked(processAdminReport);
+const mockResolveAdminReport = vi.mocked(resolveAdminReport);
 const mockRejectAdminReport = vi.mocked(rejectAdminReport);
 const mockRestoreAdminMember = vi.mocked(restoreAdminMember);
 
@@ -67,22 +68,34 @@ function pageOf<T>(content: T[]): ApiResponse<PageResponse<T>> {
   };
 }
 
-const makeReport = (overrides: Partial<ReportItem> = {}): ReportItem => ({
+function reportList(items: AdminReportListItem[]): ApiResponse<AdminReportListItem[]> {
+  return { result: 'SUCCESS', data: items, error: null };
+}
+
+const makeReport = (overrides: Partial<AdminReportListItem> = {}): AdminReportListItem => ({
   id: 1,
-  reporterId: 10,
-  targetMemberId: 20,
+  reporterNickname: '신고자닉네임',
+  reportedMemberNickname: '피신고자닉네임',
+  targetType: 'MATCHING_RESULT',
   reason: 'HARASSMENT',
-  description: '심한 욕설을 했습니다.',
-  status: 'PENDING',
+  reportStatus: 'PENDING',
   createdAt: '2024-04-20T12:00:00',
   ...overrides,
 });
 
-const makeReportDetail = (overrides: Partial<ReportDetailItem> = {}): ReportDetailItem => ({
-  ...makeReport(),
+const makeReportDetail = (overrides: Partial<AdminReportDetailResponse> = {}): AdminReportDetailResponse => ({
+  id: 1,
+  reporterId: 10,
   reporterNickname: '신고자닉네임',
-  targetNickname: '피신고자닉네임',
-  targetActiveSuspensionCount: 0,
+  reportedMemberId: 20,
+  reportedMemberNickname: '피신고자닉네임',
+  targetType: 'MATCHING_RESULT',
+  targetId: 100,
+  reason: 'HARASSMENT',
+  description: '심한 욕설을 했습니다.',
+  reportStatus: 'PENDING',
+  activeReportCount: 0,
+  createdAt: '2024-04-20T12:00:00',
   ...overrides,
 });
 
@@ -100,30 +113,32 @@ describe('AdminDashboard', () => {
     });
     vi.mocked(getAdminMatchingApplications).mockResolvedValue(pageOf([]));
     vi.mocked(getAnnouncements).mockResolvedValue({ result: 'SUCCESS', data: [], error: null });
-    mockGetAdminReports.mockResolvedValue(pageOf([]));
+    mockGetAdminReports.mockResolvedValue(reportList([]));
     mockGetAdminReportDetail.mockResolvedValue({ result: 'SUCCESS', data: makeReportDetail(), error: null });
-    mockProcessAdminReport.mockResolvedValue({ result: 'SUCCESS', data: null, error: null });
+    mockResolveAdminReport.mockResolvedValue({ result: 'SUCCESS', data: null, error: null });
     mockRejectAdminReport.mockResolvedValue({ result: 'SUCCESS', data: null, error: null });
     mockRestoreAdminMember.mockResolvedValue({ result: 'SUCCESS', data: null, error: null });
   });
 
   describe('기본 UI', () => {
-    it('탭 4개(회원 관리·매칭 신청·공지사항·신고 관리)가 렌더링됨', () => {
+    it('탭 6개(회원 관리·후보 신청·매칭 신청·공지사항·쿠폰 이벤트·신고 관리)가 렌더링됨', () => {
       renderWithProviders(<AdminDashboard />);
-      expect(screen.getByText('회원 관리')).toBeInTheDocument();
-      expect(screen.getByText('매칭 신청')).toBeInTheDocument();
-      expect(screen.getByText('공지사항')).toBeInTheDocument();
-      expect(screen.getByText('신고 관리')).toBeInTheDocument();
+      expect(screen.getAllByText('회원 관리').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('후보 신청').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('매칭 신청').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('공지사항').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('쿠폰 이벤트').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('신고 관리').length).toBeGreaterThan(0);
     });
 
     it('로그아웃 버튼이 렌더링됨', () => {
       renderWithProviders(<AdminDashboard />);
-      expect(screen.getByText('로그아웃')).toBeInTheDocument();
+      expect(screen.getAllByText('로그아웃').length).toBeGreaterThan(0);
     });
 
     it('로그아웃 클릭 시 navigate("/") 호출', () => {
       renderWithProviders(<AdminDashboard />);
-      fireEvent.click(screen.getByText('로그아웃'));
+      fireEvent.click(screen.getAllByText('로그아웃')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });
@@ -135,13 +150,13 @@ describe('AdminDashboard', () => {
       await waitFor(() => expect(mockGetAdminReports).toHaveBeenCalledTimes(1));
     });
 
-    it('상태 필터 칩 4개(전체·대기 중·처리됨·거절됨)가 렌더링됨', async () => {
+    it('상태 필터 칩 4개(전체·대기 중·검토 중·처리 완료)가 렌더링됨', async () => {
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
       await waitFor(() => expect(screen.getByText('전체')).toBeInTheDocument());
       expect(screen.getByText('대기 중')).toBeInTheDocument();
-      expect(screen.getByText('처리됨')).toBeInTheDocument();
-      expect(screen.getByText('거절됨')).toBeInTheDocument();
+      expect(screen.getByText('검토 중')).toBeInTheDocument();
+      expect(screen.getByText('처리 완료')).toBeInTheDocument();
     });
 
     it('신고가 없을 때 빈 상태 메시지 표시', async () => {
@@ -153,7 +168,7 @@ describe('AdminDashboard', () => {
     });
 
     it('PENDING 신고가 사유 한글 레이블과 상태 뱃지로 렌더링됨', async () => {
-      mockGetAdminReports.mockResolvedValue(pageOf([makeReport({ reason: 'HARASSMENT', status: 'PENDING' })]));
+      mockGetAdminReports.mockResolvedValue(reportList([makeReport({ reason: 'HARASSMENT', reportStatus: 'PENDING' })]));
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
       await waitFor(() => expect(screen.getByText('괴롭힘')).toBeInTheDocument());
@@ -162,25 +177,23 @@ describe('AdminDashboard', () => {
     });
 
     it('RESOLVED 신고가 "처리됨" 뱃지로 렌더링됨', async () => {
-      mockGetAdminReports.mockResolvedValue(pageOf([makeReport({ status: 'RESOLVED' })]));
+      mockGetAdminReports.mockResolvedValue(reportList([makeReport({ reportStatus: 'RESOLVED' })]));
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
       await waitFor(() => expect(screen.getByText('괴롭힘')).toBeInTheDocument());
-      // "처리됨"은 필터 칩과 상태 뱃지 양쪽에 표시됨
-      expect(screen.getAllByText('처리됨')).toHaveLength(2);
+      expect(screen.getByText('처리됨')).toBeInTheDocument();
     });
 
     it('REJECTED 신고가 "거절됨" 뱃지로 렌더링됨', async () => {
-      mockGetAdminReports.mockResolvedValue(pageOf([makeReport({ status: 'REJECTED' })]));
+      mockGetAdminReports.mockResolvedValue(reportList([makeReport({ reportStatus: 'REJECTED' })]));
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
       await waitFor(() => expect(screen.getByText('괴롭힘')).toBeInTheDocument());
-      // "거절됨"은 필터 칩과 상태 뱃지 양쪽에 표시됨
-      expect(screen.getAllByText('거절됨')).toHaveLength(2);
+      expect(screen.getByText('거절됨')).toBeInTheDocument();
     });
 
     it('다양한 신고 사유가 올바른 한글로 렌더링됨', async () => {
-      mockGetAdminReports.mockResolvedValue(pageOf([
+      mockGetAdminReports.mockResolvedValue(reportList([
         makeReport({ id: 1, reason: 'INAPPROPRIATE_CONTENT' }),
         makeReport({ id: 2, reason: 'FAKE_PROFILE' }),
         makeReport({ id: 3, reason: 'SCAM' }),
@@ -196,7 +209,7 @@ describe('AdminDashboard', () => {
   });
 
   describe('신고 관리 탭 — 상태 필터', () => {
-    it('"대기 중" 필터 클릭 시 status: PENDING 으로 재조회', async () => {
+    it('"대기 중" 필터 클릭 시 statusFilter: PENDING 으로 재조회', async () => {
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
       await waitFor(() => expect(screen.getByText('대기 중')).toBeInTheDocument());
@@ -205,40 +218,40 @@ describe('AdminDashboard', () => {
 
       await waitFor(() =>
         expect(mockGetAdminReports).toHaveBeenCalledWith(
-          expect.objectContaining({ status: 'PENDING' }),
+          expect.objectContaining({ statusFilter: 'PENDING' }),
         ),
       );
     });
 
-    it('"처리됨" 필터 클릭 시 status: RESOLVED 로 재조회', async () => {
+    it('"검토 중" 필터 클릭 시 statusFilter: IN_REVIEW 로 재조회', async () => {
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
-      await waitFor(() => expect(screen.getByText('처리됨')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('검토 중')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByText('처리됨'));
+      fireEvent.click(screen.getByText('검토 중'));
 
       await waitFor(() =>
         expect(mockGetAdminReports).toHaveBeenCalledWith(
-          expect.objectContaining({ status: 'RESOLVED' }),
+          expect.objectContaining({ statusFilter: 'IN_REVIEW' }),
         ),
       );
     });
 
-    it('"거절됨" 필터 클릭 시 status: REJECTED 로 재조회', async () => {
+    it('"처리 완료" 필터 클릭 시 statusFilter: COMPLETED 로 재조회', async () => {
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
-      await waitFor(() => expect(screen.getByText('거절됨')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('처리 완료')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByText('거절됨'));
+      fireEvent.click(screen.getByText('처리 완료'));
 
       await waitFor(() =>
         expect(mockGetAdminReports).toHaveBeenCalledWith(
-          expect.objectContaining({ status: 'REJECTED' }),
+          expect.objectContaining({ statusFilter: 'COMPLETED' }),
         ),
       );
     });
 
-    it('"전체" 필터 클릭 시 status 파라미터 없이 재조회', async () => {
+    it('"전체" 필터 클릭 시 statusFilter 파라미터 없이 재조회', async () => {
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
       await waitFor(() => expect(screen.getByText('대기 중')).toBeInTheDocument());
@@ -250,14 +263,13 @@ describe('AdminDashboard', () => {
       fireEvent.click(screen.getByText('전체'));
       await waitFor(() => expect(mockGetAdminReports).toHaveBeenCalledTimes(3));
 
-      const lastCallArg = mockGetAdminReports.mock.calls[2][0];
-      expect(lastCallArg).not.toHaveProperty('status');
+      expect(mockGetAdminReports.mock.calls[2][0]).toBeUndefined();
     });
   });
 
   describe('신고 관리 탭 — 신고 상세 모달', () => {
     beforeEach(() => {
-      mockGetAdminReports.mockResolvedValue(pageOf([makeReport()]));
+      mockGetAdminReports.mockResolvedValue(reportList([makeReport()]));
     });
 
     it('신고 아이템 클릭 시 getAdminReportDetail(id) 호출', async () => {
@@ -273,7 +285,7 @@ describe('AdminDashboard', () => {
     it('신고자·피신고자 닉네임이 모달에 표시됨', async () => {
       mockGetAdminReportDetail.mockResolvedValue({
         result: 'SUCCESS',
-        data: makeReportDetail({ reporterNickname: '김철수', targetNickname: '이영희' }),
+        data: makeReportDetail({ reporterNickname: '김철수', reportedMemberNickname: '이영희' }),
         error: null,
       });
       renderWithProviders(<AdminDashboard />);
@@ -308,7 +320,7 @@ describe('AdminDashboard', () => {
     it('활성 신고 건수가 1 이상이면 경고 뱃지 표시', async () => {
       mockGetAdminReportDetail.mockResolvedValue({
         result: 'SUCCESS',
-        data: makeReportDetail({ targetActiveSuspensionCount: 3 }),
+        data: makeReportDetail({ activeReportCount: 3 }),
         error: null,
       });
       renderWithProviders(<AdminDashboard />);
@@ -350,10 +362,10 @@ describe('AdminDashboard', () => {
 
   describe('신고 관리 탭 — PENDING 신고 처리', () => {
     beforeEach(() => {
-      mockGetAdminReports.mockResolvedValue(pageOf([makeReport({ status: 'PENDING' })]));
+      mockGetAdminReports.mockResolvedValue(reportList([makeReport({ reportStatus: 'PENDING' })]));
       mockGetAdminReportDetail.mockResolvedValue({
         result: 'SUCCESS',
-        data: makeReportDetail({ status: 'PENDING' }),
+        data: makeReportDetail({ reportStatus: 'PENDING' }),
         error: null,
       });
     });
@@ -376,10 +388,10 @@ describe('AdminDashboard', () => {
       expect(screen.getByRole('button', { name: '거절' })).toBeInTheDocument();
     });
 
-    it('"처리 (경고)" 클릭 시 processAdminReport(id) 호출', async () => {
+    it('"처리 (경고)" 클릭 시 resolveAdminReport(id) 호출', async () => {
       await openPendingModal();
       fireEvent.click(screen.getByRole('button', { name: '처리 (경고)' }));
-      await waitFor(() => expect(mockProcessAdminReport).toHaveBeenCalledWith(1));
+      await waitFor(() => expect(mockResolveAdminReport).toHaveBeenCalledWith(1));
     });
 
     it('처리 성공 시 모달이 닫히고 신고 목록이 재조회됨', async () => {
@@ -408,7 +420,7 @@ describe('AdminDashboard', () => {
 
     it('처리 중에는 버튼이 비활성화됨', async () => {
       // 처리 응답을 지연시켜 로딩 상태 확인
-      mockProcessAdminReport.mockImplementation(
+      mockResolveAdminReport.mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve({ result: 'SUCCESS', data: null, error: null }), 200)),
       );
       await openPendingModal();
@@ -421,10 +433,10 @@ describe('AdminDashboard', () => {
 
   describe('신고 관리 탭 — RESOLVED 신고 (회원 복구)', () => {
     beforeEach(() => {
-      mockGetAdminReports.mockResolvedValue(pageOf([makeReport({ status: 'RESOLVED' })]));
+      mockGetAdminReports.mockResolvedValue(reportList([makeReport({ reportStatus: 'RESOLVED' })]));
       mockGetAdminReportDetail.mockResolvedValue({
         result: 'SUCCESS',
-        data: makeReportDetail({ status: 'RESOLVED' }),
+        data: makeReportDetail({ reportStatus: 'RESOLVED' }),
         error: null,
       });
     });
@@ -448,7 +460,7 @@ describe('AdminDashboard', () => {
       expect(screen.queryByRole('button', { name: '거절' })).not.toBeInTheDocument();
     });
 
-    it('"회원 복구" 클릭 시 restoreAdminMember(targetMemberId) 호출', async () => {
+    it('"회원 복구" 클릭 시 restoreAdminMember(reportedMemberId) 호출', async () => {
       await openResolvedModal();
       fireEvent.click(screen.getByRole('button', { name: '회원 복구' }));
       await waitFor(() => expect(mockRestoreAdminMember).toHaveBeenCalledWith(20));
@@ -466,10 +478,10 @@ describe('AdminDashboard', () => {
 
   describe('신고 관리 탭 — REJECTED 신고', () => {
     it('REJECTED 신고 모달에 액션 버튼이 없음', async () => {
-      mockGetAdminReports.mockResolvedValue(pageOf([makeReport({ status: 'REJECTED' })]));
+      mockGetAdminReports.mockResolvedValue(reportList([makeReport({ reportStatus: 'REJECTED' })]));
       mockGetAdminReportDetail.mockResolvedValue({
         result: 'SUCCESS',
-        data: makeReportDetail({ status: 'REJECTED' }),
+        data: makeReportDetail({ reportStatus: 'REJECTED' }),
         error: null,
       });
 

@@ -5,6 +5,10 @@ import SignupPage from '@/pages/SignupPage';
 
 vi.mock('motion/react');
 
+vi.mock('@/hooks/useIsPWA', () => ({
+  useIsPWA: vi.fn().mockReturnValue({ isPWA: true, isStandalone: false }),
+}));
+
 vi.mock('@/features/auth/api', () => ({
   sendEmailVerificationCode: vi.fn(),
   verifyEmailCode: vi.fn(),

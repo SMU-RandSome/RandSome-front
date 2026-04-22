@@ -28,14 +28,9 @@ const mockPatch = vi.mocked(apiClient.patch);
 const makeEvent = (id = 1): CouponEventPreviewItem => ({
   id,
   name: '테스트 이벤트',
-  description: '설명',
+  eventType: 'HAPPY_HOUR',
   status: 'DRAFT',
-  type: 'HAPPY_HOUR',
-  rewardTicketType: 'RANDOM',
-  rewardAmount: 2,
-  startsAt: '2026-05-01T00:00:00Z',
-  expiresAt: '2026-05-02T00:00:00Z',
-  couponExpiresAt: '2026-05-10T00:00:00Z',
+  totalQuantity: 10,
 });
 
 const pageOf = (items: CouponEventPreviewItem[]): PageResponse<CouponEventPreviewItem> => ({
@@ -79,7 +74,7 @@ describe('Admin Coupon Event API', () => {
     expect(res.data).toBe(1);
   });
 
-  it('updateAdminCouponEvent — PUT /v1/admin/coupon-events/:id 호출', async () => {
+  it('updateAdminCouponEvent — PATCH /v1/admin/coupon-events/:id 호출', async () => {
     const body = {
       name: '수정',
       description: '수정 설명',
@@ -89,13 +84,12 @@ describe('Admin Coupon Event API', () => {
       startsAt: '2026-05-01T00:00:00Z',
       expiresAt: '2026-05-02T00:00:00Z',
       couponExpiresAt: '2026-05-10T00:00:00Z',
-      secretCode: 'ABC123',
     };
-    mockPut.mockResolvedValue({ data: { result: 'SUCCESS', data: null, error: null } });
+    mockPatch.mockResolvedValue({ data: { result: 'SUCCESS', data: null, error: null } });
 
     await updateAdminCouponEvent(5, body);
 
-    expect(mockPut).toHaveBeenCalledWith('/v1/admin/coupon-events/5', body);
+    expect(mockPatch).toHaveBeenCalledWith('/v1/admin/coupon-events/5', body);
   });
 
   it('deleteAdminCouponEvent — DELETE /v1/admin/coupon-events/:id 호출', async () => {
@@ -106,19 +100,19 @@ describe('Admin Coupon Event API', () => {
     expect(mockDelete).toHaveBeenCalledWith('/v1/admin/coupon-events/3');
   });
 
-  it('activateAdminCouponEvent — PATCH /v1/admin/coupon-events/:id/activate 호출', async () => {
-    mockPatch.mockResolvedValue({ data: { result: 'SUCCESS', data: null, error: null } });
+  it('activateAdminCouponEvent — POST /v1/admin/coupon-events/:id/activate 호출', async () => {
+    mockPost.mockResolvedValue({ data: { result: 'SUCCESS', data: null, error: null } });
 
     await activateAdminCouponEvent(7);
 
-    expect(mockPatch).toHaveBeenCalledWith('/v1/admin/coupon-events/7/activate');
+    expect(mockPost).toHaveBeenCalledWith('/v1/admin/coupon-events/7/activate');
   });
 
-  it('deactivateAdminCouponEvent — PATCH /v1/admin/coupon-events/:id/deactivate 호출', async () => {
-    mockPatch.mockResolvedValue({ data: { result: 'SUCCESS', data: null, error: null } });
+  it('deactivateAdminCouponEvent — POST /v1/admin/coupon-events/:id/deactivate 호출', async () => {
+    mockPost.mockResolvedValue({ data: { result: 'SUCCESS', data: null, error: null } });
 
     await deactivateAdminCouponEvent(7);
 
-    expect(mockPatch).toHaveBeenCalledWith('/v1/admin/coupon-events/7/deactivate');
+    expect(mockPost).toHaveBeenCalledWith('/v1/admin/coupon-events/7/deactivate');
   });
 });

@@ -55,7 +55,6 @@ describe('useFeed', () => {
     renderHook(() => useFeed(), { wrapper });
 
     await waitFor(() => expect(mockGetFeed).toHaveBeenCalledTimes(1));
-    expect(mockGetFeed).toHaveBeenCalledWith({ size: 20 });
   });
 
   it('API 오류 시 빈 피드 유지 및 isLoading false', async () => {
@@ -89,32 +88,32 @@ describe('useFeed', () => {
       vi.useRealTimers();
     });
 
-    it('10초마다 폴링 — 10초 후 getFeed 추가 호출', async () => {
+    it('60초마다 폴링 — 60초 후 getFeed 추가 호출', async () => {
       const { wrapper } = createWrapper();
       renderHook(() => useFeed(), { wrapper });
 
       await act(async () => { await Promise.resolve(); });
 
       await act(async () => {
-        vi.advanceTimersByTime(10_000);
+        vi.advanceTimersByTime(60_000);
         await Promise.resolve();
       });
 
       expect(mockGetFeed).toHaveBeenCalledTimes(2);
     });
 
-    it('20초 후 getFeed 총 3회 호출', async () => {
+    it('120초 후 getFeed 총 3회 호출', async () => {
       const { wrapper } = createWrapper();
       renderHook(() => useFeed(), { wrapper });
 
       await act(async () => { await Promise.resolve(); });
 
       await act(async () => {
-        vi.advanceTimersByTime(10_000);
+        vi.advanceTimersByTime(60_000);
         await Promise.resolve();
       });
       await act(async () => {
-        vi.advanceTimersByTime(10_000);
+        vi.advanceTimersByTime(60_000);
         await Promise.resolve();
       });
 

@@ -27,14 +27,14 @@ describe('useIsPWA', () => {
     mockMatchMedia(false);
     const { result } = renderHook(() => useIsPWA());
 
-    expect(result.current).toBe(false);
+    expect(result.current.isPWA).toBe(false);
   });
 
   it('standalone(PWA) 모드에서 true 반환', () => {
     mockMatchMedia(true);
     const { result } = renderHook(() => useIsPWA());
 
-    expect(result.current).toBe(true);
+    expect(result.current.isPWA).toBe(true);
   });
 
   it('matchMedia 이벤트 리스너를 등록함', () => {

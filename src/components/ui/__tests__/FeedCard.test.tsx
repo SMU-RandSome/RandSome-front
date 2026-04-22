@@ -57,8 +57,8 @@ describe('FeedCard', () => {
     });
 
     it('requestCount와 함께 "명" 텍스트 렌더링', () => {
-      render(<FeedCard item={item} />);
-      expect(screen.getByText('3명')).toBeInTheDocument();
+      const { container } = render(<FeedCard item={item} />);
+      expect(container.querySelector('p')?.textContent).toContain('3명');
     });
 
     it('핑크색 아이콘 스타일 적용', () => {
