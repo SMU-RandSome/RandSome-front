@@ -32,9 +32,15 @@ const DEVELOPERS: Developer[] = [
     highlight: 'UI/UX 구현 및 프론트엔드 아키텍처 전반',
   },
   {
+    type: 'ai',
+    name: 'Claude Design',
+    role: 'Designer',
+    highlight: '서비스 전체 UI 디자인 및 비주얼 아이덴티티',
+  },
+  {
     type: 'human',
     name: 'Taepung Kwak',
-    role: ['Product Manager', 'Team Lead', 'Backend Developer'],
+    role: ['Team Lead', 'Product Manager', 'Backend Developer'],
     major: '소프트웨어학과 22학번',
     highlight: '프로젝트 기획 및 팀 리딩',
     github: 'https://github.com/kwakseobang',
@@ -68,12 +74,12 @@ const TECH_STACK = [
   {
     label: 'Backend',
     color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-    items: ['Spring Boot 3.5', 'Java 21', 'MySQL', 'JWT'],
+    items: ['Spring Boot 3.5', 'Java 21', 'MySQL', 'Redis'],
   },
   {
     label: 'Infra',
     color: 'text-rose-600 bg-rose-50 border-rose-100',
-    items: ['AWS EC2', 'Firebase FCM', 'Nginx'],
+    items: ['AWS ECS Fargate', 'Firebase FCM', 'Nginx'],
   },
 ];
 
@@ -234,7 +240,6 @@ const AboutPage: React.FC = () => {
           <div className="flex gap-3">
             {[
               { label: '총 인원', value: '4명' },
-              { label: '개발 기간', value: '약 2주' },
               { label: '플랫폼', value: 'Web + PWA' },
             ].map(({ label, value }) => (
               <div key={label} className="flex-1 bg-white/8 border border-white/10 rounded-xl px-3 py-2.5 text-center">
