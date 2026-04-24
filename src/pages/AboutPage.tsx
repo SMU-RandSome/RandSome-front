@@ -148,7 +148,6 @@ const HumanCard: React.FC<{ dev: HumanDeveloper; index: number }> = ({ dev, inde
             {dev.github && (
               <a
                 href={dev.github}
-                target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${dev.name} GitHub`}
                 className="w-7 h-7 rounded-lg bg-white/80 hover:bg-white border border-slate-200/80 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all shrink-0"

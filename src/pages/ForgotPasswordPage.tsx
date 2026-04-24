@@ -41,7 +41,7 @@ const ForgotPasswordPage: React.FC = () => {
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>(1);
-  const [emailId, setEmailId] = useState('');
+  const [emailId, setEmailId] = useState(sessionStorage.getItem('forgot_email') ?? '');
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState('');
   const [codeVerified, setCodeVerified] = useState(false);
@@ -84,6 +84,7 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       const res = await updatePassword({ email, emailVerificationToken, newPassword });
       if (res.result === 'ERROR') { toast(res.error?.message ?? '오류가 발생했습니다.', 'error'); return; }
+      sessionStorage.removeItem('forgot_email');
       toast('비밀번호가 변경되었습니다. 다시 로그인해주세요.', 'success');
       navigate('/login', { replace: true });
     } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setIsLoading(false); }
@@ -121,11 +122,11 @@ const ForgotPasswordPage: React.FC = () => {
               <div>
                 <label htmlFor="email-id" className="block text-sm font-semibold text-slate-700 mb-2">학교 이메일</label>
                 <div className="flex items-center overflow-hidden" style={{ borderRadius: 14, border: '1px solid rgba(219,234,254,.9)' }}>
-                  <input id="email-id" type="text" placeholder="이메일 아이디" value={emailId} onChange={(e) => setEmailId(e.target.value)} disabled={codeSent} style={{ ...inputStyle, flex: 1, minWidth: 0, borderRadius: 0, border: 'none' }} className="outline-none focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)] transition-all placeholder:text-slate-400 disabled:text-slate-400 disabled:opacity-70" onKeyDown={(e) => { if (e.key === 'Enter' && emailId && !codeSent) void handleSendCode(); }} />
+                  <input id="email-id" type="text" placeholder="이메일 아이디" value={emailId} onChange={(e) => { sessionStorage.setItem('forgot_email', e.target.value); setEmailId(e.target.value); }} disabled={codeSent} style={{ ...inputStyle, flex: 1, minWidth: 0, borderRadius: 0, border: 'none' }} className="outline-none focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)] transition-all placeholder:text-slate-400 disabled:text-slate-400 disabled:opacity-70" onKeyDown={(e) => { if (e.key === 'Enter' && emailId && !codeSent) void handleSendCode(); }} />
                   <span className="shrink-0 text-sm text-slate-500 whitespace-nowrap" style={{ padding: '13px 14px', background: 'rgba(241,245,249,.9)', borderLeft: '1px solid rgba(219,234,254,.9)' }}>@sangmyung.kr</span>
                 </div>
               </div>
-              <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">학교 웹메일 바로가기 <ExternalLink size={12} /></a>
+              <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">학교 웹메일 바로가기 <ExternalLink size={12} /></a>
 
               {!codeSent && (
                 <div className="pt-1">

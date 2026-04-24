@@ -287,7 +287,6 @@ const MatchRequestDetailPage: React.FC = () => {
                 {p.instagramId && VALID_INSTAGRAM_ID.test(p.instagramId) && (
                   <a
                     href={`https://instagram.com/${p.instagramId}`}
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-[15px] rounded-[18px] text-white text-[15px] font-bold flex items-center justify-center gap-2 relative overflow-hidden mb-3"
                     style={{

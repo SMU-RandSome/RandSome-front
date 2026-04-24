@@ -213,7 +213,7 @@ const SignupPage: React.FC = () => {
     department: '',
     intro: '',
     idealType: '',
-    emailUsername: '',
+    emailUsername: sessionStorage.getItem('signup_email') ?? '',
     instagramId: '',
     password: '',
     passwordConfirm: '',
@@ -301,7 +301,7 @@ const SignupPage: React.FC = () => {
         localStorage.setItem('refreshToken', tokenRes.data.refreshToken);
         const profileRes = await getMyProfile();
         if (profileRes.data) setUser(profileRes.data);
-        toast('회원가입이 완료되었습니다! 환영합니다.', 'success'); navigate('/home');
+        sessionStorage.removeItem('signup_email'); toast('회원가입이 완료되었습니다! 환영합니다.', 'success'); navigate('/home');
       } catch { toast('회원가입이 완료되었습니다. 로그인해주세요.', 'success'); navigate('/login'); }
     } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setIsSubmitting(false); }
   };
@@ -343,14 +343,14 @@ const SignupPage: React.FC = () => {
                 <span style={labelStyle}>학교 이메일</span>
                 <div className="flex items-center gap-2">
                   <div className="flex flex-1 items-center overflow-hidden" style={{ borderRadius: 14, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', border: emailVerified ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(219,234,254,.9)' }}>
-                    <input type="text" placeholder="이메일 아이디" value={formData.emailUsername} onChange={(e) => setFormData({ ...formData, emailUsername: e.target.value })} disabled={emailVerified} className="flex-1 min-w-0 bg-transparent placeholder:text-slate-300 disabled:text-slate-400" style={{ padding: '13px 16px', fontSize: 16, color: '#1e293b', outline: 'none' }} />
+                    <input type="text" placeholder="이메일 아이디" value={formData.emailUsername} onChange={(e) => { sessionStorage.setItem('signup_email', e.target.value); setFormData({ ...formData, emailUsername: e.target.value }); }} disabled={emailVerified} className="flex-1 min-w-0 bg-transparent placeholder:text-slate-300 disabled:text-slate-400" style={{ padding: '13px 16px', fontSize: 16, color: '#1e293b', outline: 'none' }} />
                     <span className="shrink-0 whitespace-nowrap text-xs font-bold text-slate-400 px-3" style={{ borderLeft: '1px solid rgba(219,234,254,.9)', background: 'rgba(248,250,255,.6)', padding: '13px 12px' }}>@sangmyung.kr</span>
                   </div>
                   <button type="button" onClick={handleSendEmail} disabled={emailVerified || !formData.emailUsername.trim()} className="shrink-0 text-sm font-bold text-white disabled:opacity-50 transition-all" style={{ ...gradientBtnBase, height: 48, padding: '0 16px', ...(emailVerified ? { background: 'linear-gradient(135deg, #22c55e, #16a34a)' } : {}) }}>
                     {emailVerified ? <Check size={20} /> : emailSent ? '재전송' : '인증'}
                   </button>
                 </div>
-                <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">🏫 학교 웹메일 바로가기 <ExternalLink size={12} /></a>
+                <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">🏫 학교 웹메일 바로가기 <ExternalLink size={12} /></a>
                 {emailVerified ? (
                   <p className="text-xs text-green-600 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> 인증이 완료되었습니다.</p>
                 ) : emailSent && (

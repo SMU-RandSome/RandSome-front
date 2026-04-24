@@ -39,7 +39,6 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="https://www.sangmyung.kr"
-                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors duration-150"
                 >
@@ -66,7 +65,6 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="https://github.com/kwakseobang"
-                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors duration-150"
                 >
