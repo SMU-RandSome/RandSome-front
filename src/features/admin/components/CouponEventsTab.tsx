@@ -133,6 +133,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({ id, value, onChange }) =>
           value={parts.year}
           onChange={(e) => update({ year: e.target.value })}
           className={`${DT_SELECT_CLS} flex-[3]`}
+          style={{ fontSize: '16px' }}
           aria-label="연도"
         >
           <option value="">년도</option>
@@ -144,6 +145,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({ id, value, onChange }) =>
           value={parts.month}
           onChange={(e) => update({ month: e.target.value })}
           className={`${DT_SELECT_CLS} flex-[2]`}
+          style={{ fontSize: '16px' }}
           aria-label="월"
         >
           <option value="">월</option>
@@ -155,6 +157,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({ id, value, onChange }) =>
           value={parts.day}
           onChange={(e) => update({ day: e.target.value })}
           className={`${DT_SELECT_CLS} flex-[2]`}
+          style={{ fontSize: '16px' }}
           aria-label="일"
         >
           <option value="">일</option>
@@ -169,6 +172,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({ id, value, onChange }) =>
           value={parts.hour}
           onChange={(e) => update({ hour: e.target.value })}
           className={`${DT_SELECT_CLS} flex-1`}
+          style={{ fontSize: '16px' }}
           aria-label="시"
         >
           {DT_HOURS.map((h) => (
@@ -180,6 +184,7 @@ const DateTimeInput: React.FC<DateTimeInputProps> = ({ id, value, onChange }) =>
           value={parts.minute}
           onChange={(e) => update({ minute: e.target.value })}
           className={`${DT_SELECT_CLS} flex-1`}
+          style={{ fontSize: '16px' }}
           aria-label="분"
         >
           {DT_MINUTES.map((m) => (
@@ -534,6 +539,7 @@ const CouponEventsTab: React.FC = () => {
                     onChange={(e) => updateField('name', e.target.value)}
                     placeholder="이벤트 이름 입력"
                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors"
+                    style={{ fontSize: '16px' }}
                   />
                 </div>
 
@@ -549,6 +555,7 @@ const CouponEventsTab: React.FC = () => {
                     placeholder="이벤트 설명 입력"
                     rows={3}
                     className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 resize-none transition-colors"
+                    style={{ fontSize: '16px' }}
                   />
                 </div>
 
@@ -585,6 +592,7 @@ const CouponEventsTab: React.FC = () => {
                     value={form.totalQuantity}
                     onChange={(e) => updateField('totalQuantity', Number(e.target.value))}
                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+                    style={{ fontSize: '16px' }}
                   />
                 </div>
 
@@ -621,6 +629,7 @@ const CouponEventsTab: React.FC = () => {
                     value={form.rewardTicketAmount}
                     onChange={(e) => updateField('rewardTicketAmount', Number(e.target.value))}
                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+                    style={{ fontSize: '16px' }}
                   />
                 </div>
 

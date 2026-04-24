@@ -150,7 +150,8 @@ const AdminQrPage: React.FC = () => {
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="sticky top-0 z-50 bg-white border-b border-slate-100 px-5 h-14 flex items-center gap-3"
+        className="sticky top-0 z-50 bg-white border-b border-slate-100 px-5 flex items-center gap-3"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
       >
         <button
           onClick={() => navigate('/admin')}
@@ -279,6 +280,7 @@ const AdminQrPage: React.FC = () => {
                     if (e.key === 'Enter') handleManualSubmit();
                   }}
                   className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors"
+                  style={{ fontSize: '16px' }}
                 />
                 <button
                   onClick={handleManualSubmit}

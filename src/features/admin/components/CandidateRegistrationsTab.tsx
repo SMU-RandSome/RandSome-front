@@ -201,6 +201,7 @@ const CandidateRegistrationsTab: React.FC = () => {
           <input
             type="text"
             className="w-full h-9 pl-9 pr-9 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition-all"
+            style={{ fontSize: '16px' }}
             placeholder="닉네임 또는 실명 검색"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
@@ -499,6 +500,7 @@ const CandidateRegistrationsTab: React.FC = () => {
                         onChange={(e) => setRejectReason(e.target.value)}
                         rows={3}
                         className="w-full px-3 py-2.5 bg-white border border-red-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-400 resize-none transition-colors"
+                        style={{ fontSize: '16px' }}
                       />
                       <div className="flex gap-2">
                         <button

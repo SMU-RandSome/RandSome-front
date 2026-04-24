@@ -570,6 +570,7 @@ const AdminDashboard: React.FC = () => {
           value={matchingDate}
           onChange={(e) => { setMatchingDate(e.target.value); setMatchingPage(1); }}
           className="h-8 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-slate-400 transition-colors"
+          style={{ fontSize: '16px' }}
         />
 
         {/* 키워드 */}
@@ -581,6 +582,7 @@ const AdminDashboard: React.FC = () => {
             onChange={(e) => { setMatchingKeyword(e.target.value); setMatchingPage(1); }}
             placeholder="닉네임 또는 실명"
             className="h-8 pl-8 pr-8 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors w-40"
+            style={{ fontSize: '16px' }}
           />
           <AnimatePresence>
             {matchingKeyword && (
@@ -721,6 +723,7 @@ const AdminDashboard: React.FC = () => {
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 transition-colors"
+          style={{ fontSize: '16px' }}
         />
         <textarea
           placeholder="내용"
@@ -728,6 +731,7 @@ const AdminDashboard: React.FC = () => {
           onChange={(e) => setNewContent(e.target.value)}
           rows={4}
           className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 resize-none transition-colors"
+          style={{ fontSize: '16px' }}
         />
         <button
           onClick={handlePostAnnouncement}
@@ -930,7 +934,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* ── 상단 헤더 ── */}
-      <header className="fixed top-0 left-0 right-0 h-14 z-50 bg-white border-b border-slate-200 flex items-center px-3 lg:px-6 gap-2 lg:gap-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 flex items-center px-3 lg:px-6 gap-2 lg:gap-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', height: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
         {/* 모바일 햄버거 */}
         <button
           onClick={() => setDrawerOpen(true)}
@@ -1001,7 +1005,7 @@ const AdminDashboard: React.FC = () => {
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             >
               {/* 드로어 헤더 */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+              <div className="flex items-center justify-between px-5 border-b border-slate-800" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))', paddingBottom: '1rem' }}>
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white">
                     <Heart size={12} fill="currentColor" />
@@ -1024,9 +1028,9 @@ const AdminDashboard: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="flex pt-14 min-h-screen">
+      <div className="flex min-h-screen" style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
         {/* ── 좌측 사이드바 (데스크탑 전용) ── */}
-        <aside className="hidden lg:flex fixed left-0 top-14 bottom-0 w-56 bg-slate-900 flex-col z-40">
+        <aside className="hidden lg:flex fixed left-0 bottom-0 w-56 bg-slate-900 flex-col z-40" style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
           {renderSidebarContent()}
         </aside>
 
@@ -1058,6 +1062,7 @@ const AdminDashboard: React.FC = () => {
                   <input
                     type="text"
                     className="w-full h-10 pl-10 pr-10 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition-all shadow-sm"
+                    style={{ fontSize: '16px' }}
                     placeholder="닉네임 또는 실명 검색"
                     value={searchTerm}
                     onChange={(e) => handleSearchChange(e.target.value)}
@@ -1210,6 +1215,7 @@ const AdminDashboard: React.FC = () => {
                           onChange={(e) => setSuspendReason(e.target.value)}
                           rows={3}
                           className="w-full px-3 py-2.5 bg-white border border-red-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-400 resize-none transition-colors"
+                          style={{ fontSize: '16px' }}
                         />
                         <div className="flex gap-2">
                           <button
