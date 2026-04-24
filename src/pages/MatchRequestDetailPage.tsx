@@ -113,7 +113,7 @@ const MatchRequestDetailPage: React.FC = () => {
         {/* Header */}
         <div
           className="sticky top-0 z-10 px-5 pb-4 border-b border-white/8"
-          style={{ background: 'rgba(4,13,30,.88)', backdropFilter: 'blur(24px)', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+          style={{ background: 'rgba(4,13,30,.88)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -223,7 +223,7 @@ const MatchRequestDetailPage: React.FC = () => {
                 {p.selfIntroduction && (
                   <div
                     className="rounded-[20px] p-[18px_20px] mb-3"
-                    style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.1)' }}
+                    style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.1)' }}
                   >
                     <div className="flex items-center gap-1.5 mb-2.5">
                       <div className="w-[22px] h-[22px] rounded-[7px] bg-blue-500/30 flex items-center justify-center">
@@ -238,7 +238,7 @@ const MatchRequestDetailPage: React.FC = () => {
                 {/* Ideal type */}
                 <div
                   className="rounded-[20px] p-[18px_20px] mb-4"
-                  style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.1)' }}
+                  style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.1)' }}
                 >
                   <div className="flex items-center gap-1.5 mb-2.5">
                     <div className="w-[22px] h-[22px] rounded-[7px] bg-pink-500/30 flex items-center justify-center">

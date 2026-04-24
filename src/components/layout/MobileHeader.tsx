@@ -20,7 +20,7 @@ interface MobileHeaderProps {
 
 const HEADER_STYLE: React.CSSProperties = {
   background: 'rgba(237,243,255,.9)',
-  backdropFilter: 'blur(24px)',
+  backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
 };
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({ title, brand, onBack, right, announcements }) => {

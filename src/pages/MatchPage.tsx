@@ -184,7 +184,7 @@ const MatchPage: React.FC = () => {
               <p className="text-sm text-slate-500"><span className="font-display text-[26px] text-slate-900 leading-none">{matchedCount}</span>명의 인연이 매칭되었어요!</p>
             )}
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="w-full rounded-2xl p-4 mb-8 flex items-center justify-center gap-2 text-sm font-semibold" style={{ background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(20px)', border: '1px solid rgba(59,130,246,.1)', color: '#475569' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="w-full rounded-2xl p-4 mb-8 flex items-center justify-center gap-2 text-sm font-semibold" style={{ background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(59,130,246,.1)', color: '#475569' }}>
             <Ticket size={16} className="text-blue-500" />
             {isNoMatch ? (
               <>티켓 <span className="font-display text-[18px] font-bold text-slate-700 leading-none">{refundedTickets}</span>장 전액 환불 · 남은 티켓 <span className="font-display text-[18px] font-bold text-slate-700 leading-none">{remainingBalance}</span>장</>
@@ -328,7 +328,7 @@ const MatchPage: React.FC = () => {
       {showConfirm && (
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black z-[60]" onClick={() => setShowConfirm(false)} />
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] rounded-3xl w-[calc(100%-2rem)] max-w-[380px] p-6" style={{ background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(24px)', border: '1px solid rgba(59,130,246,.1)' }}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] rounded-3xl w-[calc(100%-2rem)] max-w-[380px] p-6" style={{ background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(59,130,246,.1)' }}>
             <h3 className="text-xl font-bold text-slate-900 mb-2">{confirmMode === 'register' ? '후보 등록 신청' : '매칭 신청'}</h3>
             <p className="text-sm text-slate-600 mb-2">{confirmMode === 'register' ? '후보로 등록하시겠어요?' : `${count}명의 ${activeTab === 'random' ? '무작위' : '이상형'} 매칭을 신청하시겠어요?`}</p>
             {confirmMode === 'match' && <p className="text-xs text-slate-400 mb-4 flex items-center gap-1.5"><Ticket size={12} />{activeTab === 'random' ? '랜덤권' : '이상형권'} <span className="font-display text-sm font-bold text-slate-600 leading-none">{count}</span>장 차감</p>}

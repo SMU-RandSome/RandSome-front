@@ -462,7 +462,7 @@ const MyPage: React.FC = () => {
         {/* 프로필 카드 with stats */}
         <div
           className="rounded-3xl p-5 pb-0 shadow-[0_6px_28px_rgba(0,0,0,0.08)] relative overflow-hidden mb-3.5"
-          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
         >
           <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full opacity-[0.07] pointer-events-none" style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', filter: 'blur(28px)' }} />
           <button
@@ -590,7 +590,7 @@ const MyPage: React.FC = () => {
         <p className="text-[11px] font-bold text-slate-400 tracking-[.08em] uppercase mb-2 ml-1">활동</p>
         <div
           className="rounded-[18px] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.05)] mb-5"
-          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
         >
           {[
             { label: '내 쿠폰', icon: <Ticket size={16} className="text-purple-700" />, bg: 'rgba(139,92,246,.1)', onClick: () => navigate('/coupons') },
@@ -617,7 +617,7 @@ const MyPage: React.FC = () => {
         <p className="text-[11px] font-bold text-slate-400 tracking-[.08em] uppercase mb-2 ml-1">설정</p>
         <div
           className="rounded-[18px] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.05)]"
-          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
         >
           {/* 비밀번호 변경 */}
           <button

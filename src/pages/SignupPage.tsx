@@ -342,7 +342,7 @@ const SignupPage: React.FC = () => {
               <div className="space-y-3">
                 <span style={labelStyle}>학교 이메일</span>
                 <div className="flex items-center gap-2">
-                  <div className="flex flex-1 items-center overflow-hidden" style={{ borderRadius: 14, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', border: emailVerified ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(219,234,254,.9)' }}>
+                  <div className="flex flex-1 items-center overflow-hidden" style={{ borderRadius: 14, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: emailVerified ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(219,234,254,.9)' }}>
                     <input type="text" placeholder="이메일 아이디" value={formData.emailUsername} onChange={(e) => { sessionStorage.setItem('signup_email', e.target.value); setFormData({ ...formData, emailUsername: e.target.value }); }} disabled={emailVerified} className="flex-1 min-w-0 bg-transparent placeholder:text-slate-300 disabled:text-slate-400" style={{ padding: '13px 16px', fontSize: 16, color: '#1e293b', outline: 'none' }} />
                     <span className="shrink-0 whitespace-nowrap text-xs font-bold text-slate-400 px-3" style={{ borderLeft: '1px solid rgba(219,234,254,.9)', background: 'rgba(248,250,255,.6)', padding: '13px 12px' }}>@sangmyung.kr</span>
                   </div>
@@ -389,13 +389,13 @@ const SignupPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <button type="button" onClick={toggleAllTerms} className="w-full flex items-center gap-3 p-4 transition-colors" style={{ borderRadius: 16, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', border: allTermsAgreed ? '2px solid #6366f1' : '2px solid rgba(219,234,254,.9)' }}>
+                <button type="button" onClick={toggleAllTerms} className="w-full flex items-center gap-3 p-4 transition-colors" style={{ borderRadius: 16, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: allTermsAgreed ? '2px solid #6366f1' : '2px solid rgba(219,234,254,.9)' }}>
                   <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors" style={{ background: allTermsAgreed ? 'linear-gradient(135deg, #2563eb, #6366f1)' : 'rgba(255,255,255,.6)', border: allTermsAgreed ? 'none' : '2px solid rgba(203,213,225,.6)' }}>
                     {allTermsAgreed && <Check size={13} className="text-white" strokeWidth={3} />}
                   </div>
                   <span className="font-bold text-slate-900 text-sm">전체 동의</span>
                 </button>
-                <div className="overflow-hidden divide-y" style={{ borderRadius: 16, background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>
+                <div className="overflow-hidden divide-y" style={{ borderRadius: 16, background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>
                   {TERMS_ITEMS.map((item) => (
                     <div key={item.key} className="flex items-center gap-3 px-4 py-3" style={{ borderColor: 'rgba(219,234,254,.5)' }}>
                       <button type="button" onClick={() => toggleTerm(item.key)} className="flex items-center gap-3 flex-1 text-left">
@@ -480,7 +480,7 @@ const SignupPage: React.FC = () => {
                   <span style={labelStyle}>이상형</span>
                   <textarea placeholder="어떤 사람을 찾고 계신가요?" value={formData.idealType} onChange={(e) => setFormData({ ...formData, idealType: e.target.value })} maxLength={500} className="placeholder:text-slate-300 resize-none" style={{ ...glassInputStyle, minHeight: 112 }} />
                 </div>
-                <div className="p-4 space-y-4" style={{ borderRadius: 16, background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>
+                <div className="p-4 space-y-4" style={{ borderRadius: 16, background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>
                   <div className="mb-2">
                     <p className="text-sm font-bold text-slate-900 mb-1">나를 표현하는 태그</p>
                     <p className="text-xs text-slate-500">이상형 매칭에 사용됩니다 (각 카테고리에서 1개 선택)</p>
@@ -521,7 +521,7 @@ const SignupPage: React.FC = () => {
         <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full ${isPWA ? 'max-w-[430px]' : 'max-w-2xl'} z-50 px-4 sm:px-5 pt-4`} style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)', background: 'linear-gradient(to top, #edf3ff 60%, transparent)' }}>
           <div className="flex gap-3">
             {step > 1 && (
-              <button onClick={prevStep} className="flex-1 h-14 font-bold text-slate-600 transition-all" style={{ borderRadius: 16, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>이전</button>
+              <button onClick={prevStep} className="flex-1 h-14 font-bold text-slate-600 transition-all" style={{ borderRadius: 16, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>이전</button>
             )}
             <button onClick={step === 3 ? handleSubmit : nextStep} disabled={isSubmitting || (step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid) || (step === 3 && !isStep3Valid)} className="flex-[2] h-14 text-base font-bold text-white disabled:opacity-50 transition-all relative overflow-hidden" style={{ ...gradientBtnBase, fontSize: 16 }}>
               <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-[inherit] pointer-events-none">
@@ -538,7 +538,7 @@ const SignupPage: React.FC = () => {
         {openTerm && (
           <div className="fixed inset-0 z-50 flex justify-center items-end">
             <div className="absolute inset-0 bg-black/40" onClick={() => setOpenTermKey(null)} />
-            <div className="relative w-full max-w-2xl flex flex-col max-h-[85vh]" style={{ borderRadius: '24px 24px 0 0', background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(24px)' }}>
+            <div className="relative w-full max-w-2xl flex flex-col max-h-[85vh]" style={{ borderRadius: '24px 24px 0 0', background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
               <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0" style={{ borderBottom: '1px solid rgba(219,234,254,.9)' }}>
                 <div>
                   <h3 className="font-bold text-slate-900 text-base">{openTerm.label}</h3>

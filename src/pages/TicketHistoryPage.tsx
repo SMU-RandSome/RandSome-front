@@ -67,15 +67,16 @@ const TicketHistoryPage: React.FC = () => {
     })
       .then((res) => {
         const page = res.data;
-        if (!page) return;
-        setItems((prev) => nextCursor ? [...prev, ...page.items] : page.items);
-        setHasNext(page.hasNext);
-        setCursor(page.nextCursor ?? undefined);
+        if (page) {
+          setItems((prev) => nextCursor ? [...prev, ...page.items] : page.items);
+          setHasNext(page.hasNext);
+          setCursor(page.nextCursor ?? undefined);
+        }
+        setIsLoading(false);
+        setIsFetchingMore(false);
       })
       .catch(() => {
         if (!nextCursor) setLoadError(true);
-      })
-      .finally(() => {
         setIsLoading(false);
         setIsFetchingMore(false);
       });
@@ -168,7 +169,7 @@ const TicketHistoryPage: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, delay: Math.min(i * 0.06, 0.3), ease: [0.22, 1, 0.36, 1] }}
                   className="rounded-2xl p-4 flex items-center gap-3"
-                  style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+                  style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                     item.actionType === 'EARN'

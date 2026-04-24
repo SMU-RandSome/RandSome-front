@@ -93,7 +93,7 @@ const GuestMainPage: React.FC = () => {
         {/* Stats */}
         <motion.div
           className="mx-4 sm:mx-5 mb-4 sm:mb-5 py-3.5 sm:py-4 flex rounded-[22px] border border-white/10"
-          style={{ background: 'rgba(255,255,255,.06)', backdropFilter: 'blur(20px)' }}
+          style={{ background: 'rgba(255,255,255,.06)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
@@ -112,7 +112,7 @@ const GuestMainPage: React.FC = () => {
         {/* Info card */}
         <motion.div
           className="mx-4 sm:mx-5 mb-4 sm:mb-5 p-[16px_18px] sm:p-[18px_20px] rounded-[20px] border border-white/10"
-          style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)' }}
+          style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.18 }}

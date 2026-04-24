@@ -52,7 +52,7 @@ const STATUS_BADGE: Record<StatusKey, { bg: string; color: string; border: strin
 
 const glassCard: React.CSSProperties = {
   background: 'rgba(255,255,255,.82)',
-  backdropFilter: 'blur(20px) saturate(180%)',
+  backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)',
   border: '1px solid rgba(255,255,255,.65)',
 };
 
@@ -163,7 +163,7 @@ const RequestsPage: React.FC = () => {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] rounded-3xl w-[calc(100%-2rem)] max-w-[380px] p-6"
-                style={{ background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(24px)', border: '1px solid rgba(59,130,246,.1)' }}
+                style={{ background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(59,130,246,.1)' }}
               >
                 <h3 className="text-xl font-bold text-slate-900 mb-2">신청 취소</h3>
                 <p className="text-sm text-slate-600 mb-6">정말 신청을 취소하시겠어요?</p>

@@ -106,7 +106,7 @@ const MemberMainPage: React.FC = () => {
         {/* Stats */}
         <motion.div
           className="flex py-3.5 sm:py-4 rounded-[20px] shadow-[0_2px_20px_rgba(0,0,0,0.06)] mb-4 sm:mb-5"
-          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+          style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.05 }}

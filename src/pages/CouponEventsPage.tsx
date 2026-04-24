@@ -67,7 +67,7 @@ const CouponEventsPage: React.FC = () => {
                 className="w-full text-left flex items-center gap-3 rounded-[20px] px-4 py-3 shadow-[0_2px_16px_rgba(0,0,0,0.06)] cursor-pointer"
                 style={{
                   background: 'rgba(255,255,255,.82)',
-                  backdropFilter: 'blur(20px) saturate(180%)',
+                  backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                   border: '1px solid rgba(255,255,255,.65)',
                 }}
               >

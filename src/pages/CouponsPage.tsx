@@ -67,15 +67,16 @@ const CouponsPage: React.FC = () => {
     getCoupons({ filter, lastCouponId: nextCursor, size: 20 })
       .then((res) => {
         const page = res.data;
-        if (!page) return;
-        setItems((prev) => nextCursor ? [...prev, ...page.items] : page.items);
-        setHasNext(page.hasNext);
-        setCursor(page.nextCursor ?? undefined);
+        if (page) {
+          setItems((prev) => nextCursor ? [...prev, ...page.items] : page.items);
+          setHasNext(page.hasNext);
+          setCursor(page.nextCursor ?? undefined);
+        }
+        setIsLoading(false);
+        setIsFetchingMore(false);
       })
       .catch(() => {
         if (!nextCursor) setLoadError(true);
-      })
-      .finally(() => {
         setIsLoading(false);
         setIsFetchingMore(false);
       });
@@ -176,7 +177,7 @@ const CouponsPage: React.FC = () => {
                 className={`rounded-2xl overflow-hidden transition-opacity ${
                   item.status !== 'AVAILABLE' ? 'opacity-60' : ''
                 }`}
-                style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
+                style={{ background: 'rgba(255,255,255,.82)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', border: '1px solid rgba(255,255,255,.65)' }}
               >
                 {/* 쿠폰 상단 색띠 */}
                 <div
@@ -267,7 +268,7 @@ const CouponsPage: React.FC = () => {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] rounded-2xl w-[calc(100%-2rem)] max-w-[360px]"
-              style={{ background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(20px) saturate(180%)' }}
+              style={{ background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
             >
               <div className="p-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-1">쿠폰 사용</h3>

@@ -14,7 +14,7 @@ const inputStyle: React.CSSProperties = {
   padding: '13px 16px',
   borderRadius: 14,
   background: 'rgba(255,255,255,.85)',
-  backdropFilter: 'blur(10px)',
+  backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
   border: '1px solid rgba(219,234,254,.9)',
   fontSize: 16,
   color: '#0f172a',

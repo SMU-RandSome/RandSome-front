@@ -74,7 +74,7 @@ export const CouponEventBanner: React.FC<CouponEventBannerProps> = ({ events }) 
     <div className="mx-4 sm:mx-5 mt-2.5 mb-3">
       <motion.div
         className="relative overflow-hidden rounded-[18px] shadow-[0_2px_16px_rgba(0,0,0,0.06)]"
-        style={{ background: style.bg, border: `1px solid ${style.border}`, backdropFilter: 'blur(20px) saturate(180%)' }}
+        style={{ background: style.bg, border: `1px solid ${style.border}`, backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)' }}
         drag={events.length > 1 ? 'x' : false}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.15}
