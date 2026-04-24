@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
             'vendor-icons': ['lucide-react'],
             'vendor-firebase': ['firebase/app', 'firebase/messaging'],
             'vendor-axios': ['axios'],
-            'vendor-qrcode': ['html5-qrcode'],
+            'vendor-qrcode': ['qr-scanner'],
           },
         },
       },

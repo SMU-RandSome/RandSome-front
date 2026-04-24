@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Html5Qrcode } from 'html5-qrcode';
+import QrScanner from 'qr-scanner';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useToast } from '@/components/ui/Toast';
 import { verifyQrCode } from '@/features/admin/api';
@@ -30,55 +30,54 @@ const AdminQrPage: React.FC = () => {
   const [scannedToken, setScannedToken] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
 
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const scannerContainerRef = useRef<HTMLDivElement>(null);
+  const scannerRef = useRef<QrScanner | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const isScannerRunning = useRef(false);
   const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── 스캐너 시작/정지 ─────────────────────────────────────────
-  const stopScanner = useCallback(async (): Promise<void> => {
+  const stopScanner = useCallback((): void => {
     if (scannerRef.current && isScannerRunning.current) {
-      try {
-        await scannerRef.current.stop();
-      } catch {
-        // 이미 정지된 상태일 수 있음
-      }
+      scannerRef.current.stop();
       isScannerRunning.current = false;
+      setIsCameraReady(false);
     }
   }, []);
 
   const startScanner = useCallback(async (): Promise<void> => {
-    if (!scannerContainerRef.current) return;
-    if (isScannerRunning.current) return;
-
-    const containerId = 'admin-qr-reader';
-    scannerContainerRef.current.id = containerId;
+    if (!videoRef.current || isScannerRunning.current) return;
+    setIsCameraReady(false);
 
     if (!scannerRef.current) {
-      scannerRef.current = new Html5Qrcode(containerId);
+      scannerRef.current = new QrScanner(
+        videoRef.current,
+        (result) => {
+          setScannedToken(result.data);
+          setIsConfirmOpen(true);
+          scannerRef.current?.stop();
+          isScannerRunning.current = false;
+          setIsCameraReady(false);
+        },
+        {
+          preferredCamera: 'environment',
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          maxScansPerSecond: 10,
+        },
+      );
     }
 
     try {
-      await scannerRef.current.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        (decodedText) => {
-          setScannedToken(decodedText);
-          setIsConfirmOpen(true);
-          stopScanner();
-        },
-        () => {
-          // 스캔 실패 시 무시 (계속 스캔 중)
-        },
-      );
+      await scannerRef.current.start();
       isScannerRunning.current = true;
-    } catch (err) {
-      console.error('카메라 시작 실패:', err);
+      setIsCameraReady(true);
+    } catch {
       toast('카메라를 시작할 수 없습니다. 권한을 확인해주세요.', 'error');
       setMode('manual');
     }
-  }, [toast, stopScanner]);
+  }, [toast]);
 
   // 모드 변경 시 스캐너 시작/정지
   useEffect(() => {
@@ -89,16 +88,29 @@ const AdminQrPage: React.FC = () => {
     }
   }, [mode, isConfirmOpen, startScanner, stopScanner]);
 
+  // 앱 전환 후 복귀 시 카메라 재시작
+  useEffect(() => {
+    const handleVisibility = (): void => {
+      if (document.visibilityState === 'visible' && mode === 'camera' && !isConfirmOpen && !isScannerRunning.current) {
+        startScanner();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [mode, isConfirmOpen, startScanner]);
+
   // 언마운트 시 정리
   useEffect(() => {
     return () => {
       if (restartTimerRef.current) {
         clearTimeout(restartTimerRef.current);
       }
-      if (scannerRef.current && isScannerRunning.current) {
-        scannerRef.current.stop().catch(() => {});
-        isScannerRunning.current = false;
+      if (scannerRef.current) {
+        scannerRef.current.stop();
+        scannerRef.current.destroy();
+        scannerRef.current = null;
       }
+      isScannerRunning.current = false;
     };
   }, []);
 
@@ -245,11 +257,13 @@ const AdminQrPage: React.FC = () => {
               transition={{ duration: 0.2 }}
             >
               <div className="bg-slate-900 rounded-2xl overflow-hidden relative">
-                <div
-                  ref={scannerContainerRef}
-                  className="w-full aspect-square [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover [&_#qr-shaded-region]:!border-[3px] [&_#qr-shaded-region]:!border-blue-400 [&_img]:hidden"
+                <video
+                  ref={videoRef}
+                  className="w-full aspect-square object-cover"
+                  playsInline
+                  muted
                 />
-                {!isScannerRunning.current && !isConfirmOpen && (
+                {!isCameraReady && !isConfirmOpen && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-900/80">
                     <div className="w-8 h-8 border-3 border-slate-600 border-t-white rounded-full animate-spin" />
                     <p className="text-xs text-slate-400">카메라 로딩 중...</p>
