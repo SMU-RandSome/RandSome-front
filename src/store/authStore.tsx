@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react';
 import { unregisterFcmToken, clearFcmToken } from '@/hooks/useFcmToken';
+import { refreshAccessToken } from '@/lib/axios';
 import type { AuthUser, UserRole, Gender } from '@/types';
 
 interface AuthContextType {
@@ -26,6 +27,17 @@ const isValidAuthUser = (data: unknown): data is AuthUser => {
     VALID_GENDERS.includes(u.gender as Gender) &&
     VALID_ROLES.includes(u.role as UserRole)
   );
+};
+
+const isAccessTokenExpired = (): boolean => {
+  const token = localStorage.getItem('accessToken');
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1])) as { exp?: number };
+    return Date.now() / 1000 >= (payload.exp ?? 0);
+  } catch {
+    return true;
+  }
 };
 
 const getStoredUser = (): AuthUser | null => {
@@ -62,6 +74,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     clearFcmToken(); // 즉시 동기 삭제 (로컬 캐시)
     unregisterFcmToken().catch(() => {}); // 비동기 서버 정리
   }, []);
+
+  // 앱 마운트 및 탭 복귀 시 access token 만료 여부를 미리 확인하고 갱신
+  useEffect(() => {
+    const tryRefresh = async (): Promise<void> => {
+      if (!localStorage.getItem('refreshToken')) return;
+      if (!isAccessTokenExpired()) return;
+
+      try {
+        await refreshAccessToken();
+      } catch {
+        logout();
+      }
+    };
+
+    tryRefresh();
+
+    const handleVisibility = (): void => {
+      if (document.visibilityState === 'visible') void tryRefresh();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [logout]);
 
   // useMemo로 context 값 안정화 — user 변경 시에만 하위 트리 리렌더링
   const value = useMemo(

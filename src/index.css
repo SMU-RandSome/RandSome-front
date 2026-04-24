@@ -20,6 +20,13 @@ html {
   background: #edf3ff; /* 투명 상태바 뒤 배경색 */
 }
 
+/* PWA standalone 모드에서 네이티브 pull-to-refresh 비활성화 (커스텀 사용) */
+@media (display-mode: standalone) {
+  html {
+    overscroll-behavior-y: contain;
+  }
+}
+
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

@@ -6,7 +6,13 @@ import { DisplayModeProvider } from '@/store/displayModeStore';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import FcmInitializer from '@/components/FcmInitializer';
+import { useAppResume } from '@/hooks/useAppResume';
 import { router } from '@/router';
+
+const AppLifecycle: React.FC = () => {
+  useAppResume();
+  return null;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +31,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <AppLifecycle />
         <MotionConfig reducedMotion="user">
           <DisplayModeProvider>
             <AuthProvider>

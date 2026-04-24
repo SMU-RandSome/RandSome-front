@@ -34,7 +34,7 @@ let refreshPromise: Promise<string> | null = null;
 // 로그아웃 리다이렉트 중복 실행 방지
 let isRedirectingToLogin = false;
 
-const refreshAccessToken = async (): Promise<string> => {
+export const refreshAccessToken = async (): Promise<string> => {
   const refreshToken = localStorage.getItem('refreshToken');
   if (!refreshToken) throw new Error('No refresh token');
 
