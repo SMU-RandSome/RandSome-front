@@ -45,6 +45,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
   const selectedOption = options.find((opt) => opt.value === value);
@@ -78,16 +79,18 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
     const handleClickOutside = (e: MouseEvent | TouchEvent): void => {
       if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node) &&
-        !(e.target as Element).closest('[data-searchable-select-dropdown]')
-      ) {
-        setIsOpen(false);
-        setSearchQuery('');
-      }
+        containerRef.current?.contains(e.target as Node) ||
+        dropdownRef.current?.contains(e.target as Node)
+      ) return;
+      setIsOpen(false);
+      setSearchQuery('');
     };
 
-    const close = (): void => { setIsOpen(false); setSearchQuery(''); };
+    const close = (e: Event): void => {
+      if (dropdownRef.current?.contains(e.target as Node)) return;
+      setIsOpen(false);
+      setSearchQuery('');
+    };
 
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside as EventListener, { passive: true });
@@ -120,6 +123,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const dropdown = isOpen && rect
     ? createPortal(
         <div
+          ref={dropdownRef}
           data-searchable-select-dropdown
           style={{
             position: 'fixed',
