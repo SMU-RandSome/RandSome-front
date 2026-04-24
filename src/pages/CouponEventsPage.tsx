@@ -29,7 +29,10 @@ const CouponEventsPage: React.FC = () => {
 
   return (
     <MobileLayout>
-      <header className="sticky top-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] px-4 h-14 flex items-center gap-3">
+      <header
+        className="sticky top-0 z-50 glass border-b border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.03)] px-4 flex items-center gap-3"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
+      >
         <button
           onClick={() => navigate(-1)}
           className="p-1.5 -ml-1 rounded-xl hover:bg-slate-100 transition-colors"

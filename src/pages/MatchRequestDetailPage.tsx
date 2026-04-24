@@ -4,7 +4,6 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Orbs } from '@/components/ui/Orbs';
 import { Stars } from '@/components/ui/Stars';
 import { useToast } from '@/components/ui/Toast';
-import { useDisplayMode } from '@/store/displayModeStore';
 import { getMatchingResult } from '@/features/matching/api';
 import { createReport } from '@/features/report/api';
 import { getApiErrorMessage } from '@/lib/axios';
@@ -55,7 +54,6 @@ interface LocationState {
 const MatchRequestDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isPWA } = useDisplayMode();
   const { applicationId } = (location.state as LocationState) ?? {};
 
   const [results, setResults] = useState<MatchingResultDetailItem[]>([]);
@@ -114,8 +112,8 @@ const MatchRequestDetailPage: React.FC = () => {
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
         {/* Header */}
         <div
-          className={`sticky top-0 z-10 px-5 pb-4 border-b border-white/8 ${isPWA ? 'pt-14' : 'pt-4'}`}
-          style={{ background: 'rgba(4,13,30,.88)', backdropFilter: 'blur(24px)' }}
+          className="sticky top-0 z-10 px-5 pb-4 border-b border-white/8"
+          style={{ background: 'rgba(4,13,30,.88)', backdropFilter: 'blur(24px)', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
