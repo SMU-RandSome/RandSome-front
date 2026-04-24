@@ -13,7 +13,7 @@ import { useRegisterCandidate } from '@/features/candidate/hooks/useRegisterCand
 import { PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS } from '@/constants/tags';
 import type { PersonalityTag, FaceTypeTag, DatingStyleTag, MatchingApplicationResponse } from '@/types';
 import { MobileHeader } from '@/components/layout/MobileHeader';
-import { Heart, Ticket, AlertTriangle, Minus, Plus } from 'lucide-react';
+import { Heart, Ticket, AlertTriangle, Minus, Plus, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type MatchView = 'main' | 'register' | 'result' | 'loading';
@@ -135,7 +135,7 @@ const MatchPage: React.FC = () => {
           <AlertTriangle size={14} className="text-red-400 shrink-0" />
           <p className="text-xs font-medium text-red-500">허위 프로필 작성 시 신고 및 서비스 이용 제한을 받을 수 있습니다.</p>
         </div>
-        <div className="space-y-3 pb-6">
+        <div className="space-y-3" style={{ paddingBottom: isPWA ? 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)' : '1.5rem' }}>
           <button onClick={() => { setConfirmMode('register'); setShowConfirm(true); }} className="relative w-full h-14 rounded-2xl text-white text-lg font-bold overflow-hidden" style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)' }}>
             <span className="absolute inset-0 overflow-hidden rounded-[inherit] pointer-events-none"><span className="absolute top-0 h-full w-[55%] bg-gradient-to-r from-transparent via-white/25 to-transparent animate-sheen" /></span>
             <span className="relative">등록 신청하기</span>
@@ -152,29 +152,53 @@ const MatchPage: React.FC = () => {
     if (!matchResult) return null;
     const { requestedCount, matchedCount, refundedTickets, isPartialMatch } = matchResult;
     const remainingBalance = activeTab === 'random' ? ticketBalance?.randomTicketCount ?? 0 : ticketBalance?.idealTicketCount ?? 0;
+    const isNoMatch = matchedCount === 0;
+
+    const iconBg = isNoMatch
+      ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+      : isPartialMatch
+        ? 'linear-gradient(135deg, #f59e0b, #ef4444)'
+        : 'linear-gradient(135deg, #ec4899, #f43f5e)';
+    const iconShadow = isNoMatch
+      ? '0 0 40px rgba(239,68,68,.35)'
+      : isPartialMatch
+        ? '0 0 40px rgba(245,158,11,.35)'
+        : '0 0 40px rgba(236,72,153,.35)';
+    const title = isNoMatch ? '아무도 매칭되지 않았어요' : isPartialMatch ? '부분 매칭 완료!' : '매칭 완료!';
+
     return (
       <div className="relative flex flex-col min-h-screen items-center justify-center bg-member">
         <Orbs />
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col items-center justify-center relative z-10">
         <div className="flex flex-col items-center text-center px-6 w-full max-w-sm">
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.1 }} className="w-[84px] h-[84px] rounded-full flex items-center justify-center mb-6" style={{ background: isPartialMatch ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'linear-gradient(135deg, #ec4899, #f43f5e)', boxShadow: isPartialMatch ? '0 0 40px rgba(245,158,11,.35)' : '0 0 40px rgba(236,72,153,.35)' }}>
-            {isPartialMatch ? <AlertTriangle size={36} className="text-white" /> : <Heart size={36} className="text-white fill-white" />}
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.1 }} className="w-[84px] h-[84px] rounded-full flex items-center justify-center mb-6" style={{ background: iconBg, boxShadow: iconShadow }}>
+            {isNoMatch ? <XCircle size={36} className="text-white" /> : isPartialMatch ? <AlertTriangle size={36} className="text-white" /> : <Heart size={36} className="text-white fill-white" />}
           </motion.div>
-          <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-display text-[30px] text-slate-900 mb-2">{isPartialMatch ? '부분 매칭 완료!' : '매칭 완료!'}</motion.h2>
+          <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-display text-[30px] text-slate-900 mb-2">{title}</motion.h2>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="mb-6">
-            {isPartialMatch ? <p className="text-sm text-slate-500">요청 <span className="font-display text-[26px] text-slate-900 leading-none">{requestedCount}</span>명 중 <span className="font-display text-[26px] text-orange-600 leading-none">{matchedCount}</span>명만 매칭되었습니다.</p> : <p className="text-sm text-slate-500"><span className="font-display text-[26px] text-slate-900 leading-none">{matchedCount}</span>명의 인연이 매칭되었어요!</p>}
+            {isNoMatch ? (
+              <p className="text-sm text-slate-500">요청한 <span className="font-display text-[26px] text-slate-900 leading-none">{requestedCount}</span>명과 매칭할 후보가 없었어요.</p>
+            ) : isPartialMatch ? (
+              <p className="text-sm text-slate-500">요청 <span className="font-display text-[26px] text-slate-900 leading-none">{requestedCount}</span>명 중 <span className="font-display text-[26px] text-orange-600 leading-none">{matchedCount}</span>명만 매칭되었습니다.</p>
+            ) : (
+              <p className="text-sm text-slate-500"><span className="font-display text-[26px] text-slate-900 leading-none">{matchedCount}</span>명의 인연이 매칭되었어요!</p>
+            )}
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="w-full rounded-2xl p-4 mb-8 flex items-center justify-center gap-2 text-sm font-semibold" style={{ background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(20px)', border: '1px solid rgba(59,130,246,.1)', color: '#475569' }}>
             <Ticket size={16} className="text-blue-500" />
-            {isPartialMatch ? (
+            {isNoMatch ? (
+              <>티켓 <span className="font-display text-[18px] font-bold text-slate-700 leading-none">{refundedTickets}</span>장 전액 환불 · 남은 티켓 <span className="font-display text-[18px] font-bold text-slate-700 leading-none">{remainingBalance}</span>장</>
+            ) : isPartialMatch ? (
               <>매칭되지 않은 <span className="font-display text-[18px] font-bold text-slate-700 leading-none">{refundedTickets}</span>장 환불 · 남은 티켓 <span className="font-display text-[18px] font-bold text-slate-700 leading-none">{remainingBalance}</span>장</>
             ) : (
               <>티켓 사용 완료 · 남은 티켓 <span className="font-display text-[18px] font-bold text-slate-700 leading-none">{remainingBalance}</span>장</>
             )}
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="w-full flex gap-3">
-            <button onClick={() => { setMatchResult(null); reset(); }} className="flex-1 h-12 rounded-2xl text-sm font-bold" style={{ background: 'rgba(255,255,255,.72)', border: '1px solid rgba(59,130,246,.15)', color: '#475569' }}>다시 신청</button>
-            <button onClick={() => navigate('/requests/detail', { state: { applicationId: matchResult.matchingApplicationId } })} className="flex-1 h-12 rounded-2xl text-white text-sm font-bold" style={{ background: 'linear-gradient(135deg, #ec4899, #f43f5e)' }}><span className="flex items-center justify-center gap-1.5"><Heart size={16} className="fill-white" /> 보러가기</span></button>
+            <button onClick={() => { setMatchResult(null); reset(); }} className={`h-12 rounded-2xl text-sm font-bold ${isNoMatch ? 'flex-1' : 'flex-1'}`} style={{ background: 'rgba(255,255,255,.72)', border: '1px solid rgba(59,130,246,.15)', color: '#475569' }}>다시 신청</button>
+            {!isNoMatch && (
+              <button onClick={() => navigate('/requests/detail', { state: { applicationId: matchResult.matchingApplicationId } })} className="flex-1 h-12 rounded-2xl text-white text-sm font-bold" style={{ background: 'linear-gradient(135deg, #ec4899, #f43f5e)' }}><span className="flex items-center justify-center gap-1.5"><Heart size={16} className="fill-white" /> 보러가기</span></button>
+            )}
           </motion.div>
         </div>
         <div className="h-20" />
