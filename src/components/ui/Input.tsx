@@ -32,7 +32,7 @@ export const Input: React.FC<InputProps> = ({
         id={inputId}
         className={`w-full px-4 py-3.5 bg-white/80 backdrop-blur-sm border ${
           error ? 'border-red-400 focus:border-red-400' : 'border-slate-200/80 focus:border-blue-400'
-        } focus:outline-none transition-all duration-200 text-slate-900 placeholder:text-slate-300/80 text-sm rounded-2xl ${className}`}
+        } focus:outline-none transition-all duration-200 text-slate-900 placeholder:text-slate-300/80 text-base rounded-2xl ${className}`}
         {...props}
       />
       {helperText && !error && (

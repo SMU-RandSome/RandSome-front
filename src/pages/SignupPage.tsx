@@ -166,7 +166,7 @@ const glassInputStyle: React.CSSProperties = {
   backdropFilter: 'blur(10px)',
   WebkitBackdropFilter: 'blur(10px)',
   border: '1px solid rgba(219,234,254,.9)',
-  fontSize: 14,
+  fontSize: 16, // 모바일 Safari zoom-in 방지 (16px 미만 시 자동 zoom)
   color: '#1e293b',
   outline: 'none',
   width: '100%',

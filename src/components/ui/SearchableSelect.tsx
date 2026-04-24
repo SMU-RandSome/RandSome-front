@@ -71,9 +71,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     calcRect();
-    if (searchInputRef.current) searchInputRef.current.focus();
 
-    const handleClickOutside = (e: MouseEvent): void => {
+    // 터치 디바이스에서는 auto-focus 생략 — 키보드가 올라오면 scroll 이벤트가 발생해 드롭다운이 즉시 닫히는 버그 방지
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (searchInputRef.current && !isTouchDevice) searchInputRef.current.focus();
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent): void => {
       if (
         containerRef.current &&
         !containerRef.current.contains(e.target as Node) &&
@@ -84,12 +87,21 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       }
     };
 
-    const close = (): void => setIsOpen(false);
+    const close = (): void => { setIsOpen(false); setSearchQuery(''); };
+
     document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', close, true);
+    document.addEventListener('touchstart', handleClickOutside as EventListener, { passive: true });
+
+    // 모바일 키보드 등장 시 scroll 이벤트가 즉시 발생하므로, scroll 리스너를 지연 등록
+    const scrollTimer = setTimeout(() => {
+      window.addEventListener('scroll', close, true);
+    }, 300);
+
     window.addEventListener('resize', close);
     return () => {
+      clearTimeout(scrollTimer);
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside as EventListener);
       window.removeEventListener('scroll', close, true);
       window.removeEventListener('resize', close);
     };
@@ -130,7 +142,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={searchPlaceholder}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all text-sm shadow-sm"
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all text-base shadow-sm"
               />
             </div>
           </div>
