@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Logo } from '@/components/ui/Logo';
@@ -23,6 +23,17 @@ const GuestMainPage: React.FC = () => {
   const { isPWA, isStandalone } = useDisplayMode();
   const { stats } = useDashboard();
   const { announcements } = useAnnouncements();
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const prev = meta?.getAttribute('content') ?? '#edf3ff';
+    meta?.setAttribute('content', '#020c1e');
+    document.documentElement.style.background = '#020c1e';
+    return () => {
+      meta?.setAttribute('content', prev);
+      document.documentElement.style.background = '';
+    };
+  }, []);
 
   const statsConfig = useMemo(() => [
     { label: '매칭 후보', value: stats?.candidateCount?.toLocaleString() ?? '-', unit: '명', cls: 'gt' },
