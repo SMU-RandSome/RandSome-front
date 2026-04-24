@@ -98,7 +98,7 @@ const ForgotPasswordPage: React.FC = () => {
         <Orbs />
 
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
-        <header className="sticky top-0 z-50 px-4 h-14 flex items-center gap-3" style={glassHeaderStyle}>
+        <header className="sticky top-0 z-50 px-4 flex items-center gap-3" style={{ ...glassHeaderStyle, paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}>
           <button onClick={() => (step > 1 ? setStep(1) : navigate(-1))} className="p-1.5 -ml-1 rounded-xl hover:bg-white/50 transition-colors" aria-label="뒤로가기">
             <ChevronLeft size={22} className="text-slate-700" />
           </button>

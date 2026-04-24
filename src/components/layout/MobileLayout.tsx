@@ -12,10 +12,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children, className 
 
   if (isPWA) {
     return (
-      <div className={`min-h-screen bg-member flex justify-center items-start font-sans text-slate-900 ${outerClassName}`}>
+      <div className={`min-h-screen bg-member flex justify-center items-start font-sans text-slate-900 overflow-x-hidden ${outerClassName}`}>
         <div
-          className={`w-full min-h-screen bg-member relative flex flex-col overflow-x-hidden ${isStandalone ? 'max-w-[430px] shadow-[0_0_40px_rgba(0,0,0,0.08)]' : ''} ${className}`}
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          className={`w-full min-h-screen bg-member relative flex flex-col ${isStandalone ? 'max-w-[430px] shadow-[0_0_40px_rgba(0,0,0,0.08)]' : ''} ${className}`}
         >
           {children}
         </div>
