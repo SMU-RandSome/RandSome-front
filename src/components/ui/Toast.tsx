@@ -55,7 +55,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed top-4 left-0 right-0 z-[100] flex flex-col items-center gap-2 pointer-events-none">
+      <div
+        className="fixed left-0 right-0 z-[100] flex flex-col items-center gap-2 pointer-events-none"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+      >
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
