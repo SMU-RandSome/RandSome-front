@@ -16,7 +16,7 @@ const inputStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,.85)',
   backdropFilter: 'blur(10px)',
   border: '1px solid rgba(219,234,254,.9)',
-  fontSize: 14,
+  fontSize: 16,
   color: '#0f172a',
 };
 
@@ -156,14 +156,14 @@ const ForgotPasswordPage: React.FC = () => {
               <div>
                 <label htmlFor="new-password" className="block text-sm font-semibold text-slate-700 mb-2">새 비밀번호</label>
                 <div className="flex items-center overflow-hidden" style={{ borderRadius: 14, border: '1px solid rgba(219,234,254,.9)', background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)' }}>
-                  <input id="new-password" type={showPassword ? 'text' : 'password'} placeholder="8자 이상 입력해주세요" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 14, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
+                  <input id="new-password" type={showPassword ? 'text' : 'password'} placeholder="8자 이상 입력해주세요" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 16, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
                   <button type="button" onClick={() => setShowPassword((v) => !v)} className="px-3 text-slate-400 hover:text-slate-600 transition-colors" aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                 </div>
               </div>
               <div>
                 <label htmlFor="new-password-confirm" className="block text-sm font-semibold text-slate-700 mb-2">새 비밀번호 확인</label>
                 <div className="flex items-center overflow-hidden" style={{ borderRadius: 14, border: '1px solid rgba(219,234,254,.9)', background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)' }}>
-                  <input id="new-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} placeholder="비밀번호를 다시 입력해주세요" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 14, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
+                  <input id="new-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} placeholder="비밀번호를 다시 입력해주세요" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 16, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
                   <button type="button" onClick={() => setShowPasswordConfirm((v) => !v)} className="px-3 text-slate-400 hover:text-slate-600 transition-colors" aria-label={showPasswordConfirm ? '비밀번호 숨기기' : '비밀번호 보기'}>{showPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                 </div>
                 {newPasswordConfirm && newPassword !== newPasswordConfirm && <p className="text-xs text-red-500 mt-1.5">비밀번호가 일치하지 않습니다.</p>}
