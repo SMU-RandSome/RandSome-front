@@ -97,6 +97,14 @@ const MatchRequestDetailPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKey);
   }, [go]);
 
+  // html 배경을 다크로 오버라이드 — 어떤 레이어가 화면을 덮지 못해도 흰색 노출 방지
+  useEffect(() => {
+    const el = document.documentElement;
+    const prev = el.style.background;
+    el.style.background = 'linear-gradient(160deg, #020c1e 0%, #071132 50%, #0d1e50 100%)';
+    return () => { el.style.background = prev; };
+  }, []);
+
   if (!applicationId) return null;
 
   const p = results[idx];
@@ -104,12 +112,15 @@ const MatchRequestDetailPage: React.FC = () => {
   const isLast = idx === results.length - 1;
 
   return (
-    <MobileLayout className="!bg-transparent">
-      <div className="flex-1 flex flex-col bg-guest-dark relative overflow-hidden min-h-screen">
-        <Orbs dark />
-        <Stars />
+    <MobileLayout className="!bg-transparent" outerClassName="bg-guest-dark">
+      <div className="flex flex-col bg-guest-dark relative min-h-screen" style={{ minHeight: '100dvh' }}>
+        {/* Orbs/Stars 장식: flex 레이아웃에 영향 없이 독립적으로 overflow-hidden 처리 */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <Orbs dark />
+          <Stars />
+        </div>
 
-        <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
+        <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10 min-h-0">
         {/* Header */}
         <div
           className="sticky top-0 z-10 px-5 pb-4 border-b border-white/8"
@@ -427,7 +438,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ target, onClose, onSuccess })
             onChange={(e) => setDescription(e.target.value)}
             placeholder="신고 내용을 자세히 적어주세요"
             rows={3}
-            className="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent resize-none transition-all mb-5"
+            className="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent resize-none transition-all mb-5"
           />
           <div className="flex gap-2.5">
             <button

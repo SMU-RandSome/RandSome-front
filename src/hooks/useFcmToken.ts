@@ -6,6 +6,9 @@ export const FCM_TOKEN_KEY = 'fcmToken';
 export const FCM_ENABLED_KEY = 'fcmEnabled';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
 
+// 동시에 여러 syncDeviceToken 호출이 발생하지 않도록 in-flight 가드
+let syncInFlight = false;
+
 /** 로그인 시 권한이 이미 허용된 경우 자동으로 토큰을 동기화한다. */
 export const useFcmToken = (isAuthenticated: boolean): void => {
   useEffect(() => {
@@ -37,12 +40,16 @@ export const registerFcmToken = async (): Promise<boolean> => {
 
   const cached = localStorage.getItem(FCM_TOKEN_KEY);
   if (cached !== token) {
+    if (syncInFlight) return false;
+    syncInFlight = true;
     try {
       await syncDeviceToken({ deviceToken: token });
       localStorage.setItem(FCM_TOKEN_KEY, token);
     } catch (err) {
       if (import.meta.env.DEV) console.error('FCM 토큰 서버 동기화 실패:', err);
       return false;
+    } finally {
+      syncInFlight = false;
     }
   }
   localStorage.setItem(FCM_ENABLED_KEY, 'true');
