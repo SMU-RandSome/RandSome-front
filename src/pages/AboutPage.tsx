@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { ArrowLeft, Github, Heart, Server, Sparkles, Cloud, Bot, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Heart, Server, Sparkles, Cloud, Bot, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface HumanDeveloper {
@@ -11,7 +11,6 @@ interface HumanDeveloper {
   role: string | string[];
   major: string;
   highlight: string;
-  github?: string;
   accent: 'emerald' | 'rose' | 'sky';
 }
 
@@ -43,7 +42,6 @@ const DEVELOPERS: Developer[] = [
     role: ['Team Lead', 'Product Manager', 'Backend Developer'],
     major: '소프트웨어학과 22학번',
     highlight: '프로젝트 기획 및 팀 리딩',
-    github: 'https://github.com/kwakseobang',
     accent: 'emerald',
   },
   {
@@ -52,7 +50,6 @@ const DEVELOPERS: Developer[] = [
     role: 'Infrastructure Developer',
     major: '소프트웨어학과 22학번',
     highlight: '운영 환경 구성 및 배포 안정화',
-    github: 'https://github.com/y22jun',
     accent: 'rose',
   },
   {
@@ -149,18 +146,8 @@ const HumanCard: React.FC<{ dev: HumanDeveloper; index: number }> = ({ dev, inde
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-0.5">
+          <div className="flex items-center gap-2 mb-0.5">
             <p className="font-bold text-slate-900 text-base">{dev.name}</p>
-            {dev.github && (
-              <a
-                href={dev.github}
-                rel="noopener noreferrer"
-                aria-label={`${dev.name} GitHub`}
-                className="w-7 h-7 rounded-lg bg-white/80 hover:bg-white border border-slate-200/80 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all shrink-0"
-              >
-                <Github size={14} />
-              </a>
-            )}
           </div>
           <div className="mb-2 flex flex-col items-start gap-1">
             <div className="flex flex-wrap gap-1">
