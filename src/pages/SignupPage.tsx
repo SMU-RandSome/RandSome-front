@@ -173,7 +173,6 @@ const glassInputStyle: React.CSSProperties = {
   transition: 'border-color .2s, box-shadow .2s',
 };
 
-const glassInputFocusRing = '0 0 0 3px rgba(59,130,246,.12)';
 
 const labelStyle: React.CSSProperties = {
   fontSize: 11,
@@ -358,7 +357,7 @@ const SignupPage: React.FC = () => {
                   <div className="space-y-2">
                     <p className="text-xs text-blue-600 font-medium">인증 메일이 발송되었습니다. 코드를 입력해주세요.</p>
                     <div className="flex items-center gap-2">
-                      <input type="text" placeholder="인증코드 입력" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} style={glassInputStyle} onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(59,130,246,.5)'; e.currentTarget.style.boxShadow = glassInputFocusRing; }} onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(219,234,254,.9)'; e.currentTarget.style.boxShadow = 'none'; }} />
+                      <input type="text" placeholder="인증코드 입력" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} style={glassInputStyle} />
                       <button type="button" onClick={handleVerifyCode} disabled={!verificationCode.trim()} className="shrink-0 text-sm font-bold text-white disabled:opacity-50 transition-all" style={{ ...gradientBtnBase, height: 46, padding: '0 16px' }}>확인</button>
                     </div>
                   </div>
@@ -369,14 +368,14 @@ const SignupPage: React.FC = () => {
                 <div>
                   <label htmlFor="signup-password" style={labelStyle}>비밀번호</label>
                   <div className="relative">
-                    <input id="signup-password" type={showPassword ? 'text' : 'password'} placeholder="8자 이상 입력해주세요" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(59,130,246,.5)'; e.currentTarget.style.boxShadow = glassInputFocusRing; }} onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(219,234,254,.9)'; e.currentTarget.style.boxShadow = 'none'; }} />
+                    <input id="signup-password" type={showPassword ? 'text' : 'password'} placeholder="8자 이상 입력해주세요" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
                     <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                   </div>
                 </div>
                 <div>
                   <label htmlFor="signup-password-confirm" style={labelStyle}>비밀번호 확인</label>
                   <div className="relative">
-                    <input id="signup-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} placeholder="다시 한번 입력해주세요" value={formData.passwordConfirm} onChange={(e) => setFormData({ ...formData, passwordConfirm: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(59,130,246,.5)'; e.currentTarget.style.boxShadow = glassInputFocusRing; }} onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(219,234,254,.9)'; e.currentTarget.style.boxShadow = 'none'; }} />
+                    <input id="signup-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} placeholder="다시 한번 입력해주세요" value={formData.passwordConfirm} onChange={(e) => setFormData({ ...formData, passwordConfirm: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
                     <button type="button" onClick={() => setShowPasswordConfirm((v) => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">{showPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                   </div>
                 </div>
@@ -426,7 +425,7 @@ const SignupPage: React.FC = () => {
               <div className="space-y-5">
                 <div>
                   <span style={labelStyle}>실명</span>
-                  <input type="text" placeholder="홍길동" value={formData.realName} onChange={(e) => setFormData({ ...formData, realName: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(59,130,246,.5)'; e.currentTarget.style.boxShadow = glassInputFocusRing; }} onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(219,234,254,.9)'; e.currentTarget.style.boxShadow = 'none'; }} />
+                  <input type="text" placeholder="홍길동" value={formData.realName} onChange={(e) => setFormData({ ...formData, realName: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
                 </div>
                 <div>
                   <span style={labelStyle}>학과</span>
@@ -460,7 +459,7 @@ const SignupPage: React.FC = () => {
                 </div>
                 <div>
                   <span style={labelStyle}>인스타그램 ID</span>
-                  <input type="text" placeholder="아이디만 입력해주세요 (예: randsome_official)" value={formData.instagramId} onChange={(e) => setFormData({ ...formData, instagramId: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(59,130,246,.5)'; e.currentTarget.style.boxShadow = glassInputFocusRing; }} onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(219,234,254,.9)'; e.currentTarget.style.boxShadow = 'none'; }} />
+                  <input type="text" placeholder="아이디만 입력해주세요 (예: randsome_official)" value={formData.instagramId} onChange={(e) => setFormData({ ...formData, instagramId: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
                 </div>
               </div>
             </div>
@@ -475,11 +474,11 @@ const SignupPage: React.FC = () => {
               <div className="space-y-6">
                 <div>
                   <span style={labelStyle}>자기 소개</span>
-                  <textarea placeholder="자신을 표현할 수 있는 멋진 소개글을 작성해주세요!" value={formData.intro} onChange={(e) => setFormData({ ...formData, intro: e.target.value })} maxLength={500} className="placeholder:text-slate-300 resize-none" style={{ ...glassInputStyle, minHeight: 112 }} onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(59,130,246,.5)'; e.currentTarget.style.boxShadow = glassInputFocusRing; }} onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(219,234,254,.9)'; e.currentTarget.style.boxShadow = 'none'; }} />
+                  <textarea placeholder="자신을 표현할 수 있는 멋진 소개글을 작성해주세요!" value={formData.intro} onChange={(e) => setFormData({ ...formData, intro: e.target.value })} maxLength={500} className="placeholder:text-slate-300 resize-none" style={{ ...glassInputStyle, minHeight: 112 }} />
                 </div>
                 <div>
                   <span style={labelStyle}>이상형</span>
-                  <textarea placeholder="어떤 사람을 찾고 계신가요?" value={formData.idealType} onChange={(e) => setFormData({ ...formData, idealType: e.target.value })} maxLength={500} className="placeholder:text-slate-300 resize-none" style={{ ...glassInputStyle, minHeight: 112 }} onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(59,130,246,.5)'; e.currentTarget.style.boxShadow = glassInputFocusRing; }} onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(219,234,254,.9)'; e.currentTarget.style.boxShadow = 'none'; }} />
+                  <textarea placeholder="어떤 사람을 찾고 계신가요?" value={formData.idealType} onChange={(e) => setFormData({ ...formData, idealType: e.target.value })} maxLength={500} className="placeholder:text-slate-300 resize-none" style={{ ...glassInputStyle, minHeight: 112 }} />
                 </div>
                 <div className="p-4 space-y-4" style={{ borderRadius: 16, background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>
                   <div className="mb-2">

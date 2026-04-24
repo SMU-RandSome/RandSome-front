@@ -39,9 +39,9 @@ export const Select: React.FC<SelectProps> = ({
           id={selectId}
           className={`w-full px-4 py-3 rounded-xl border appearance-none bg-white ${
             error
-              ? 'border-red-500 focus:ring-red-200'
-              : 'border-slate-200 focus:ring-blue-200'
-          } focus:border-blue-500 focus:ring-4 focus:outline-none transition-all text-slate-900 ${className}`}
+              ? 'border-red-500 focus:border-red-500'
+              : 'border-slate-200 focus:border-blue-500'
+          } focus:outline-none transition-all text-slate-900 ${className}`}
           {...props}
         >
           <option value="" disabled>
