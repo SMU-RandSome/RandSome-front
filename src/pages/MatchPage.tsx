@@ -302,7 +302,7 @@ const MatchPage: React.FC = () => {
         </div>
 
         </div>
-        <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full ${isPWA ? 'max-w-[430px]' : 'max-w-2xl'} z-40 px-3.5 sm:px-4 pt-6`} style={{ paddingBottom: isPWA ? '84px' : '24px', background: 'linear-gradient(to top, rgba(237,243,255,1) 55%, rgba(237,243,255,0))' }}>
+        <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full ${isPWA ? 'max-w-[430px]' : 'max-w-2xl'} z-40 px-3.5 sm:px-4 pt-6`} style={{ paddingBottom: isPWA ? 'calc(env(safe-area-inset-bottom, 0px) + 84px)' : '24px', background: 'linear-gradient(to top, rgba(237,243,255,1) 55%, rgba(237,243,255,0))' }}>
           <div className="flex items-center justify-between rounded-2xl px-4 py-3 mb-3" style={{ background: 'rgba(255,255,255,.82)', border: '1px solid rgba(219,234,254,.9)' }}>
             <span className="text-sm font-semibold text-slate-600">매칭 인원</span>
             <div className="flex items-center gap-4">

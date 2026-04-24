@@ -46,7 +46,7 @@ const AttendancePage: React.FC = () => {
       <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
       <MobileHeader title="출석 체크" />
 
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 relative z-10 ${isPWA ? 'pb-24' : 'pb-8'}`}>
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 relative z-10 ${isPWA ? 'pb-28' : 'pb-8'}`}>
         {/* 출석 현황 카드 */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}

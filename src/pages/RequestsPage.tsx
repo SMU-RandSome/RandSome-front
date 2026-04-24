@@ -86,7 +86,7 @@ const RequestsPage: React.FC = () => {
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
         <MobileHeader title="신청내역" />
 
-        <div className={`flex-1 overflow-y-auto p-4 ${isPWA ? 'pb-24' : 'pb-8'}`}>
+        <div className={`flex-1 overflow-y-auto p-4 ${isPWA ? 'pb-28' : 'pb-8'}`}>
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -279,7 +279,7 @@ const MatchingHistoryCard: React.FC<{
         />
         <span className="text-[12px] font-medium" style={{ color: badge.color }}>
           {badge.label}
-          {hasResult && ` · ${item.matchedCount}/${item.applicationCount}명`}
+          {(hasResult || isFailed) && ` · ${item.matchedCount}/${item.applicationCount}명`}
         </span>
         {hasResult && (
           <span className="ml-auto text-[11px] text-blue-500 font-semibold">결과 보기 →</span>

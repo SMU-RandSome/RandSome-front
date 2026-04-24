@@ -143,7 +143,7 @@ const GuestMainPage: React.FC = () => {
 
         {/* CTA buttons */}
         <motion.div
-          className={`px-4 sm:px-5 ${isPWA ? 'pb-20 sm:pb-24' : 'pb-6 sm:pb-8'}`}
+          className={`px-4 sm:px-5 ${isPWA ? 'pb-28 sm:pb-32' : 'pb-6 sm:pb-8'}`}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.26 }}
@@ -182,7 +182,7 @@ const GuestMainPage: React.FC = () => {
 
         {/* Guest Bottom Nav (visual only) */}
         {isPWA && (
-          <nav className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full glass-dark h-[76px] px-6 flex items-center justify-around z-50 ${isStandalone ? 'max-w-[430px]' : ''}`}>
+          <nav className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full glass-dark px-6 flex items-center justify-around z-50 ${isStandalone ? 'max-w-[430px]' : ''}`} style={{ height: 'calc(76px + env(safe-area-inset-bottom, 0px))', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             <div className="flex flex-col items-center gap-1">
               <Heart size={21} className="text-pink-500" fill="currentColor" />
               <span className="text-[10px] font-bold text-pink-500">홈</span>

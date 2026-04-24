@@ -458,7 +458,7 @@ const MyPage: React.FC = () => {
         }
       />
 
-      <div className={`flex-1 overflow-y-auto p-5 ${isPWA ? 'pb-24' : 'pb-8'}`}>
+      <div className={`flex-1 overflow-y-auto p-5 ${isPWA ? 'pb-28' : 'pb-8'}`}>
         {/* 프로필 카드 with stats */}
         <div
           className="rounded-3xl p-5 pb-0 shadow-[0_6px_28px_rgba(0,0,0,0.08)] relative overflow-hidden mb-3.5"

@@ -518,7 +518,7 @@ const SignupPage: React.FC = () => {
           )}
         </div>
 
-        <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full ${isPWA ? 'max-w-[430px]' : 'max-w-2xl'} z-50 px-4 sm:px-5 pb-6 sm:pb-8 pt-4`} style={{ background: 'linear-gradient(to top, #edf3ff 60%, transparent)' }}>
+        <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full ${isPWA ? 'max-w-[430px]' : 'max-w-2xl'} z-50 px-4 sm:px-5 pt-4`} style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)', background: 'linear-gradient(to top, #edf3ff 60%, transparent)' }}>
           <div className="flex gap-3">
             {step > 1 && (
               <button onClick={prevStep} className="flex-1 h-14 font-bold text-slate-600 transition-all" style={{ borderRadius: 16, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(219,234,254,.9)' }}>이전</button>
