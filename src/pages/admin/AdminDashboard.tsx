@@ -199,6 +199,8 @@ const AdminDashboard: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<AdminReportDetailResponse | null>(null);
   const [reportDetailLoading, setReportDetailLoading] = useState(false);
   const [isProcessingReport, setIsProcessingReport] = useState(false);
+  const [showReportSuspendForm, setShowReportSuspendForm] = useState(false);
+  const [reportSuspendReason, setReportSuspendReason] = useState('');
 
   const fetchCandidateStats = useCallback((): void => {
     getCandidateGenderCount()
@@ -293,6 +295,8 @@ const AdminDashboard: React.FC = () => {
 
   const handleReportClick = async (reportId: number): Promise<void> => {
     setReportDetailLoading(true);
+    setShowReportSuspendForm(false);
+    setReportSuspendReason('');
     try {
       const res = await getAdminReportDetail(reportId);
       if (res.data) setSelectedReport(res.data);
@@ -322,6 +326,27 @@ const AdminDashboard: React.FC = () => {
     try {
       await rejectAdminReport(reportId);
       toast('신고가 거절되었습니다.', 'info');
+      setSelectedReport(null);
+      fetchReports(reportFilter);
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setIsProcessingReport(false);
+    }
+  };
+
+  const handleSuspendFromReport = async (reportId: number, memberId: number): Promise<void> => {
+    if (!reportSuspendReason.trim()) {
+      toast('정지 사유를 입력해주세요.', 'error');
+      return;
+    }
+    setIsProcessingReport(true);
+    try {
+      await suspendAdminMember(memberId, { reason: reportSuspendReason.trim() });
+      await resolveAdminReport(reportId);
+      toast('회원 정지 및 신고 처리가 완료되었습니다.', 'success');
+      setReportSuspendReason('');
+      setShowReportSuspendForm(false);
       setSelectedReport(null);
       fetchReports(reportFilter);
     } catch (err) {
@@ -1330,8 +1355,42 @@ const AdminDashboard: React.FC = () => {
                           disabled={isProcessingReport}
                           className="w-full h-11 rounded-2xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
-                          {isProcessingReport ? '처리 중...' : '처리 (경고)'}
+                          {isProcessingReport && !showReportSuspendForm ? '처리 중...' : '처리 (경고)'}
                         </button>
+                        {showReportSuspendForm ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={reportSuspendReason}
+                              onChange={(e) => setReportSuspendReason(e.target.value)}
+                              placeholder="정지 사유를 입력해주세요"
+                              className="w-full h-20 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-red-300"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleSuspendFromReport(selectedReport.id, selectedReport.reportedMemberId)}
+                                disabled={isProcessingReport}
+                                className="flex-1 h-11 rounded-2xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              >
+                                {isProcessingReport ? '처리 중...' : '정지 확인'}
+                              </button>
+                              <button
+                                onClick={() => { setShowReportSuspendForm(false); setReportSuspendReason(''); }}
+                                disabled={isProcessingReport}
+                                className="flex-1 h-11 rounded-2xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setShowReportSuspendForm(true)}
+                            disabled={isProcessingReport}
+                            className="w-full h-11 rounded-2xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            회원 정지
+                          </button>
+                        )}
                         <button
                           onClick={() => handleRejectReport(selectedReport.id)}
                           disabled={isProcessingReport}
