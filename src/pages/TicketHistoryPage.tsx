@@ -136,13 +136,13 @@ const TicketHistoryPage: React.FC = () => {
       </div>
 
       <div className={`flex-1 overflow-y-auto p-4 relative z-10 ${isPWA ? 'pb-8' : 'pb-6'}`}>
-        {isLoading ? (
+        {isLoading && items.length === 0 ? (
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="rounded-2xl p-4 h-16 animate-shimmer-gradient" style={{ background: 'rgba(255,255,255,.82)', border: '1px solid rgba(255,255,255,.65)' }} />
             ))}
           </div>
-        ) : loadError ? (
+        ) : loadError && items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <p className="text-2xl">⚠️</p>
             <p className="text-sm font-semibold text-slate-700">이력을 불러오지 못했습니다</p>
@@ -153,14 +153,14 @@ const TicketHistoryPage: React.FC = () => {
               다시 시도
             </button>
           </div>
-        ) : items.length === 0 ? (
+        ) : !isLoading && items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Ticket size={40} className="text-slate-300" />
             <p className="text-sm font-semibold text-slate-500">티켓 이력이 없습니다</p>
           </div>
         ) : (
           <AnimatePresence>
-            <div className="space-y-2.5">
+            <div className="space-y-2.5" style={{ opacity: isLoading ? 0.5 : 1, transition: 'opacity 0.15s' }}>
               {items.map((item, i) => (
                 <motion.div
                   key={item.id}
