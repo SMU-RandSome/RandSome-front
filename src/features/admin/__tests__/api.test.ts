@@ -7,7 +7,7 @@ import {
   activateAdminCouponEvent,
   deactivateAdminCouponEvent,
 } from '@/features/admin/api';
-import type { CouponEventPreviewItem, PageResponse } from '@/types';
+import type { AdminCouponEventPreviewItem } from '@/types';
 
 vi.mock('@/lib/axios', () => ({
   apiClient: {
@@ -25,7 +25,7 @@ const mockPut = vi.mocked(apiClient.put);
 const mockDelete = vi.mocked(apiClient.delete);
 const mockPatch = vi.mocked(apiClient.patch);
 
-const makeEvent = (id = 1): CouponEventPreviewItem => ({
+const makeEvent = (id = 1): AdminCouponEventPreviewItem => ({
   id,
   name: '테스트 이벤트',
   eventType: 'HAPPY_HOUR',
@@ -33,25 +33,16 @@ const makeEvent = (id = 1): CouponEventPreviewItem => ({
   totalQuantity: 10,
 });
 
-const pageOf = (items: CouponEventPreviewItem[]): PageResponse<CouponEventPreviewItem> => ({
-  content: items,
-  currentPage: 0,
-  totalPages: 1,
-  totalElements: items.length,
-  hasNext: false,
-  hasPrevious: false,
-});
-
 describe('Admin Coupon Event API', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('getAdminCouponEvents — GET /v1/admin/coupon-events 호출', async () => {
-    const data = pageOf([makeEvent()]);
+    const data = [makeEvent()];
     mockGet.mockResolvedValue({ data: { result: 'SUCCESS', data, error: null } });
 
-    const res = await getAdminCouponEvents({ page: 0, size: 5 });
+    const res = await getAdminCouponEvents();
 
-    expect(mockGet).toHaveBeenCalledWith('/v1/admin/coupon-events', { params: { page: 0, size: 5 } });
+    expect(mockGet).toHaveBeenCalledWith('/v1/admin/coupon-events');
     expect(res.data).toEqual(data);
   });
 

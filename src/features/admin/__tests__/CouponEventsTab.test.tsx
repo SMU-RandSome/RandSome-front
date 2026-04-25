@@ -2,18 +2,14 @@ import React from 'react';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { renderWithProviders } from '@/test/utils';
 import CouponEventsTab from '@/features/admin/components/CouponEventsTab';
-import type { CouponEventPreviewItem, CouponEventDetailItem } from '@/types';
+import type { AdminCouponEventPreviewItem, CouponEventDetailItem } from '@/types';
 
 vi.mock('motion/react');
 
-// CouponEventsTab uses getCouponEvents / getCouponEvent from coupon API for reads
-vi.mock('@/features/coupon/api', () => ({
-  getCouponEvents: vi.fn(),
-  getCouponEvent: vi.fn(),
-}));
-
-// …and admin API for writes
+// CouponEventsTab uses admin API for both reads and writes
 vi.mock('@/features/admin/api', () => ({
+  getAdminCouponEvents: vi.fn(),
+  getAdminCouponEvent: vi.fn(),
   createAdminCouponEvent: vi.fn(),
   updateAdminCouponEvent: vi.fn(),
   deleteAdminCouponEvent: vi.fn(),
@@ -21,8 +17,9 @@ vi.mock('@/features/admin/api', () => ({
   deactivateAdminCouponEvent: vi.fn(),
 }));
 
-import { getCouponEvents, getCouponEvent } from '@/features/coupon/api';
 import {
+  getAdminCouponEvents,
+  getAdminCouponEvent,
   createAdminCouponEvent,
   updateAdminCouponEvent,
   deleteAdminCouponEvent,
@@ -30,29 +27,32 @@ import {
   deactivateAdminCouponEvent,
 } from '@/features/admin/api';
 
-const mockGetEvents = vi.mocked(getCouponEvents);
-const mockGetEvent = vi.mocked(getCouponEvent);
+const mockGetEvents = vi.mocked(getAdminCouponEvents);
+const mockGetEvent = vi.mocked(getAdminCouponEvent);
 const mockCreate = vi.mocked(createAdminCouponEvent);
 const mockUpdate = vi.mocked(updateAdminCouponEvent);
 const mockDelete = vi.mocked(deleteAdminCouponEvent);
 const mockActivate = vi.mocked(activateAdminCouponEvent);
 const mockDeactivate = vi.mocked(deactivateAdminCouponEvent);
 
-const makeDraftEvent = (id = 1): CouponEventPreviewItem => ({
+const makeDraftEvent = (id = 1): AdminCouponEventPreviewItem => ({
   id,
   name: '해피아워 이벤트',
   eventType: 'HAPPY_HOUR',
   status: 'DRAFT',
   totalQuantity: 10,
+  remainingQuantity: 10,
+  startsAt: '2026-05-01T00:00:00',
+  expiresAt: '2026-05-02T00:00:00',
 });
 
-const makeActiveEvent = (id = 2): CouponEventPreviewItem => ({
+const makeActiveEvent = (id = 2): AdminCouponEventPreviewItem => ({
   ...makeDraftEvent(id),
   name: '활성 이벤트',
   status: 'ACTIVE',
 });
 
-const makeEndedEvent = (id = 3): CouponEventPreviewItem => ({
+const makeEndedEvent = (id = 3): AdminCouponEventPreviewItem => ({
   ...makeDraftEvent(id),
   name: '종료된 이벤트',
   status: 'ENDED',
@@ -73,11 +73,11 @@ const makeDraftDetail = (id = 1): CouponEventDetailItem => ({
 
 const emptyList = () => ({
   result: 'SUCCESS' as const,
-  data: [] as CouponEventPreviewItem[],
+  data: [] as AdminCouponEventPreviewItem[],
   error: null,
 });
 
-const listWith = (...events: CouponEventPreviewItem[]) => ({
+const listWith = (...events: AdminCouponEventPreviewItem[]) => ({
   result: 'SUCCESS' as const,
   data: events,
   error: null,
@@ -169,7 +169,7 @@ describe('CouponEventsTab', () => {
     mockGetEvents.mockResolvedValue(listWith(makeDraftEvent()));
     renderWithProviders(<CouponEventsTab />);
     await waitFor(() =>
-      expect(screen.getByText('10개')).toBeInTheDocument(),
+      expect(screen.getByText(/10개/)).toBeInTheDocument(),
     );
   });
 
