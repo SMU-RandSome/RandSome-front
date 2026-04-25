@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/components/ui/Toast';
@@ -33,9 +33,10 @@ import type {
 import {
   X, ChevronRight, Search, ChevronLeft, Megaphone, Plus,
   CheckCircle2, XCircle, Dice5, Heart, Flag, RotateCcw, QrCode,
-  Users, Tag, LogOut, ShieldCheck, UserCheck, AlertTriangle, Menu,
+  Users, Tag, LogOut, ShieldCheck, UserCheck, AlertTriangle, Menu, Bell, BellOff,
 } from 'lucide-react';
 import { getApiErrorMessage } from '@/lib/axios';
+import { FCM_ENABLED_KEY, registerFcmToken, unregisterFcmToken } from '@/hooks/useFcmToken';
 
 const CouponEventsTab = React.lazy(() => import('@/features/admin/components/CouponEventsTab'));
 const CandidateRegistrationsTab = React.lazy(() => import('@/features/admin/components/CandidateRegistrationsTab'));
@@ -160,6 +161,14 @@ const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // 알림
+  const [notifEnabled, setNotifEnabled] = useState<boolean>(
+    typeof Notification !== 'undefined' &&
+      Notification.permission === 'granted' &&
+      localStorage.getItem(FCM_ENABLED_KEY) === 'true',
+  );
+  const notifLoadingRef = useRef(false);
 
   // 통계
   const [candidateStats, setCandidateStats] = useState<CandidateGenderCountResponse | null>(null);
@@ -399,6 +408,32 @@ const AdminDashboard: React.FC = () => {
     logout();
     navigate('/');
   };
+
+  const handleNotificationToggle = useCallback(async (): Promise<void> => {
+    if (typeof Notification === 'undefined') {
+      toast('이 브라우저는 알림을 지원하지 않습니다.', 'error');
+      return;
+    }
+    if (notifLoadingRef.current) return;
+    notifLoadingRef.current = true;
+    try {
+      if (notifEnabled) {
+        await unregisterFcmToken();
+        setNotifEnabled(false);
+        toast('알림을 껐습니다.', 'info');
+      } else {
+        const success = await registerFcmToken();
+        if (success) {
+          setNotifEnabled(true);
+          toast('알림을 켰습니다.', 'success');
+        }
+      }
+    } catch {
+      toast('알림 설정 중 오류가 발생했습니다.', 'error');
+    } finally {
+      notifLoadingRef.current = false;
+    }
+  }, [notifEnabled, toast]);
 
   const handleTabChange = (tab: AdminTab): void => {
     setActiveTab(tab);
@@ -687,7 +722,7 @@ const AdminDashboard: React.FC = () => {
                         {app.applicationStatus === 'PENDING' && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">
                             <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                            처리중
+                            처리중 · {app.applicationCount}명 신청
                           </span>
                         )}
                         {isSuccess && (
@@ -705,11 +740,11 @@ const AdminDashboard: React.FC = () => {
                         {isFailed && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
                             <XCircle size={9} />
-                            매칭 실패
+                            매칭 실패 · {app.applicationCount}명 신청
                           </span>
                         )}
                         {isCancelled && (
-                          <span className="text-[10px] text-slate-400 font-medium">취소됨</span>
+                          <span className="text-[10px] text-slate-400 font-medium">취소됨 · {app.applicationCount}명 신청</span>
                         )}
                       </div>
                     </div>
@@ -1002,6 +1037,18 @@ const AdminDashboard: React.FC = () => {
             <span className="hidden sm:inline">QR 스캔</span>
           </button>
           <button
+            onClick={handleNotificationToggle}
+            className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              notifEnabled
+                ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            }`}
+            aria-label={notifEnabled ? '알림 끄기' : '알림 켜기'}
+          >
+            {notifEnabled ? <Bell size={14} /> : <BellOff size={14} />}
+            <span className="hidden sm:inline">{notifEnabled ? '알림 ON' : '알림 OFF'}</span>
+          </button>
+          <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-medium transition-colors"
           >
@@ -1144,7 +1191,7 @@ const AdminDashboard: React.FC = () => {
       {/* 회원 상세 모달 */}
       <AnimatePresence>
         {(selectedMemberDetail ?? detailLoading) && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-5">
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center px-0 sm:px-5">
             <motion.div
               className="absolute inset-0 bg-black/40"
               initial={{ opacity: 0 }}
@@ -1315,18 +1362,36 @@ const AdminDashboard: React.FC = () => {
 
                   <div className="space-y-3 mb-4">
                     <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
-                      <p className="text-[10px] font-bold text-slate-400">신고자</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-bold text-slate-400">신고자</p>
+                        <button
+                          type="button"
+                          onClick={() => void handleMemberClick(selectedReport.reporterId)}
+                          className="text-[10px] font-semibold text-blue-500 hover:text-blue-700 flex items-center gap-0.5 transition-colors"
+                        >
+                          상세 보기 <ChevronRight size={10} />
+                        </button>
+                      </div>
                       <p className="text-sm font-semibold text-slate-900">{selectedReport.reporterNickname}</p>
                       <p className="text-xs text-slate-400">ID: {selectedReport.reporterId}</p>
                     </div>
                     <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] font-bold text-slate-400">피신고자</p>
-                        {selectedReport.activeReportCount > 0 && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-600">
-                            활성 신고 {selectedReport.activeReportCount}건
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {selectedReport.activeReportCount > 0 && (
+                            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-600">
+                              활성 신고 {selectedReport.activeReportCount}건
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => void handleMemberClick(selectedReport.reportedMemberId)}
+                            className="text-[10px] font-semibold text-blue-500 hover:text-blue-700 flex items-center gap-0.5 transition-colors"
+                          >
+                            상세 보기 <ChevronRight size={10} />
+                          </button>
+                        </div>
                       </div>
                       <p className="text-sm font-semibold text-slate-900">{selectedReport.reportedMemberNickname}</p>
                       <p className="text-xs text-slate-400">ID: {selectedReport.reportedMemberId}</p>
