@@ -15,7 +15,6 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 14,
   background: 'rgba(255,255,255,.85)',
   backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-  border: '1px solid rgba(219,234,254,.9)',
   fontSize: 16,
   color: '#0f172a',
 };
@@ -121,8 +120,8 @@ const ForgotPasswordPage: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="email-id" className="block text-sm font-semibold text-slate-700 mb-2">학교 이메일</label>
-                <div className="flex items-center overflow-hidden" style={{ borderRadius: 14, border: '1px solid rgba(219,234,254,.9)' }}>
-                  <input id="email-id" type="text" placeholder="이메일 아이디" value={emailId} onChange={(e) => { sessionStorage.setItem('forgot_email', e.target.value); setEmailId(e.target.value); }} disabled={codeSent} style={{ ...inputStyle, flex: 1, minWidth: 0, borderRadius: 0, border: 'none' }} className="outline-none focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)] transition-all placeholder:text-slate-400 disabled:text-slate-400 disabled:opacity-70" onKeyDown={(e) => { if (e.key === 'Enter' && emailId && !codeSent) void handleSendCode(); }} />
+                <div className="flex items-center overflow-hidden border border-blue-100/90 focus-within:border-blue-400 transition-colors" style={{ borderRadius: 14 }}>
+                  <input id="email-id" type="text" placeholder="이메일 아이디" value={emailId} onChange={(e) => { sessionStorage.setItem('forgot_email', e.target.value); setEmailId(e.target.value); }} disabled={codeSent} style={{ ...inputStyle, flex: 1, minWidth: 0, borderRadius: 0, border: 'none' }} className="outline-none placeholder:text-slate-400 disabled:text-slate-400 disabled:opacity-70" onKeyDown={(e) => { if (e.key === 'Enter' && emailId && !codeSent) void handleSendCode(); }} />
                   <span className="shrink-0 text-sm text-slate-500 whitespace-nowrap" style={{ padding: '13px 14px', background: 'rgba(241,245,249,.9)', borderLeft: '1px solid rgba(219,234,254,.9)' }}>@sangmyung.kr</span>
                 </div>
               </div>
@@ -141,7 +140,7 @@ const ForgotPasswordPage: React.FC = () => {
                 <div className="space-y-3">
                   <p className="text-xs text-blue-600 font-medium">인증 메일이 발송되었습니다. 코드를 입력해주세요.</p>
                   <div className="flex items-center gap-2">
-                    <input type="text" placeholder="인증 코드 6자리" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && code) void handleVerifyCode(); }} style={{ ...inputStyle, flex: 1, minWidth: 0 }} className="outline-none focus:border-blue-500/50 focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)] transition-all placeholder:text-slate-400" autoFocus />
+                    <input type="text" placeholder="인증 코드 6자리" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && code) void handleVerifyCode(); }} style={{ ...inputStyle, flex: 1, minWidth: 0 }} className="outline-none border border-blue-100/90 focus:border-blue-400 transition-colors placeholder:text-slate-400" autoFocus />
                     <button type="button" onClick={() => void handleVerifyCode()} disabled={!code || isLoading} style={gradientButtonStyle} className="shrink-0 px-5 py-[13px] rounded-[14px] text-sm font-bold text-white disabled:opacity-50 transition-all">{isLoading ? '확인 중...' : '확인'}</button>
                   </div>
                   <button type="button" onClick={() => void handleSendCode()} disabled={isLoading} className="text-xs text-slate-400 hover:text-blue-500 hover:underline disabled:pointer-events-none transition-colors">인증 코드 재발송</button>
@@ -156,14 +155,14 @@ const ForgotPasswordPage: React.FC = () => {
             <form onSubmit={(e) => { e.preventDefault(); void handleResetPassword(); }} className="space-y-4">
               <div>
                 <label htmlFor="new-password" className="block text-sm font-semibold text-slate-700 mb-2">새 비밀번호</label>
-                <div className="flex items-center overflow-hidden" style={{ borderRadius: 14, border: '1px solid rgba(219,234,254,.9)', background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+                <div className="flex items-center overflow-hidden border border-blue-100/90 focus-within:border-blue-400 transition-colors" style={{ borderRadius: 14, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
                   <input id="new-password" type={showPassword ? 'text' : 'password'} placeholder="8자 이상 입력해주세요" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 16, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
                   <button type="button" onClick={() => setShowPassword((v) => !v)} className="px-3 text-slate-400 hover:text-slate-600 transition-colors" aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                 </div>
               </div>
               <div>
                 <label htmlFor="new-password-confirm" className="block text-sm font-semibold text-slate-700 mb-2">새 비밀번호 확인</label>
-                <div className="flex items-center overflow-hidden" style={{ borderRadius: 14, border: '1px solid rgba(219,234,254,.9)', background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+                <div className="flex items-center overflow-hidden border border-blue-100/90 focus-within:border-blue-400 transition-colors" style={{ borderRadius: 14, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
                   <input id="new-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} placeholder="비밀번호를 다시 입력해주세요" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 16, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
                   <button type="button" onClick={() => setShowPasswordConfirm((v) => !v)} className="px-3 text-slate-400 hover:text-slate-600 transition-colors" aria-label={showPasswordConfirm ? '비밀번호 숨기기' : '비밀번호 보기'}>{showPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                 </div>
