@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('refreshToken');
     localStorage.removeItem(AUTH_USER_KEY);
     clearFcmToken(); // 즉시 동기 삭제 (로컬 캐시)
-    unregisterFcmToken().catch(() => {}); // 비동기 서버 정리
+    unregisterFcmToken({ preservePreference: true }).catch(() => {}); // 비동기 서버 정리 (알림 설정은 보존)
   }, []);
 
   // 앱 마운트 및 탭 복귀 시 access token 만료 여부를 미리 확인하고 갱신

@@ -9,6 +9,7 @@ import { useDisplayMode } from '@/store/displayModeStore';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
 import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
+import { registerFcmToken } from '@/hooks/useFcmToken';
 import { apiClient, getApiErrorMessage } from '@/lib/axios';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS } from '@/constants/tags';
@@ -301,6 +302,7 @@ const SignupPage: React.FC = () => {
         localStorage.setItem('refreshToken', tokenRes.data.refreshToken);
         const profileRes = await getMyProfile();
         if (profileRes.data) setUser(profileRes.data);
+        await registerFcmToken().catch(() => {});
         sessionStorage.removeItem('signup_email'); toast('회원가입이 완료되었습니다! 환영합니다.', 'success'); navigate('/home');
       } catch { toast('회원가입이 완료되었습니다. 로그인해주세요.', 'success'); navigate('/login'); }
     } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setIsSubmitting(false); }

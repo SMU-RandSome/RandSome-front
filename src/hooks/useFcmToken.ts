@@ -58,7 +58,9 @@ export const registerFcmToken = async (): Promise<boolean> => {
 };
 
 /** 알림 허용 토글 OFF: Firebase 토큰 삭제 → 서버 삭제 → 캐시 제거 */
-export const unregisterFcmToken = async (): Promise<void> => {
+export const unregisterFcmToken = async (
+  options?: { preservePreference?: boolean },
+): Promise<void> => {
   const token = localStorage.getItem(FCM_TOKEN_KEY);
   const messaging = await getFirebaseMessaging();
   if (messaging) {
@@ -73,7 +75,9 @@ export const unregisterFcmToken = async (): Promise<void> => {
     });
   }
   localStorage.removeItem(FCM_TOKEN_KEY);
-  localStorage.removeItem(FCM_ENABLED_KEY);
+  if (!options?.preservePreference) {
+    localStorage.removeItem(FCM_ENABLED_KEY);
+  }
 };
 
 /** 로그아웃 시 호출 — 서버 API 없이 로컬 캐시만 제거 */
