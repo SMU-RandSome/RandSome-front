@@ -73,7 +73,6 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     if (!isOpen) return;
     calcRect();
 
-    // 터치 디바이스에서는 auto-focus 생략 — 키보드가 올라오면 scroll 이벤트가 발생해 드롭다운이 즉시 닫히는 버그 방지
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (searchInputRef.current && !isTouchDevice) searchInputRef.current.focus();
 
@@ -86,27 +85,41 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       setSearchQuery('');
     };
 
-    const close = (e: Event): void => {
+    let scrollRafId = 0;
+    const handleScroll = (e: Event): void => {
       if (dropdownRef.current?.contains(e.target as Node)) return;
-      setIsOpen(false);
-      setSearchQuery('');
+      cancelAnimationFrame(scrollRafId);
+      scrollRafId = requestAnimationFrame(() => {
+        const r = triggerRef.current?.getBoundingClientRect();
+        if (!r || r.bottom < 0 || r.top > window.innerHeight) {
+          setIsOpen(false);
+          setSearchQuery('');
+          return;
+        }
+        calcRect();
+      });
+    };
+
+    let resizeRafId = 0;
+    const handleResize = (): void => {
+      cancelAnimationFrame(resizeRafId);
+      resizeRafId = requestAnimationFrame(() => {
+        calcRect();
+      });
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside as EventListener, { passive: true });
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
 
-    // 모바일 키보드 등장 시 scroll 이벤트가 즉시 발생하므로, scroll 리스너를 지연 등록
-    const scrollTimer = setTimeout(() => {
-      window.addEventListener('scroll', close, true);
-    }, 300);
-
-    window.addEventListener('resize', close);
     return () => {
-      clearTimeout(scrollTimer);
+      cancelAnimationFrame(scrollRafId);
+      cancelAnimationFrame(resizeRafId);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside as EventListener);
-      window.removeEventListener('scroll', close, true);
-      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isOpen]);
 
