@@ -101,7 +101,7 @@ const LoginPage: React.FC = () => {
 
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">비밀번호</label>
-              <input id="password" type="password" placeholder="비밀번호를 입력해주세요" value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputStyle, width: '100%' }} className="outline-none focus:border-blue-500/50 focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)] transition-all placeholder:text-slate-400" />
+              <input id="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력해주세요" value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputStyle, width: '100%' }} className="outline-none focus:border-blue-500/50 focus:shadow-[0_0_0_3px_rgba(59,130,246,.12)] transition-all placeholder:text-slate-400" />
             </div>
 
             <div className="pt-2">

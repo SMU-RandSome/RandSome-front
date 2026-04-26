@@ -13,7 +13,7 @@ import { useAnnouncements } from '@/hooks/useAnnouncements';
 import { AnnouncementBanner } from '@/components/ui/AnnouncementBanner';
 
 const INFO_BADGES = [
-  { text: '19학번+', bg: 'rgba(99,102,241,.25)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,.4)' },
+  { text: '21학번+', bg: 'rgba(99,102,241,.25)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,.4)' },
   { text: '@sangmyung.kr', bg: 'rgba(59,130,246,.22)', color: '#93c5fd', borderColor: 'rgba(59,130,246,.4)' },
   { text: '무료', bg: 'rgba(34,197,94,.18)', color: '#86efac', borderColor: 'rgba(34,197,94,.3)' },
 ] as const;
@@ -85,8 +85,7 @@ const GuestMainPage: React.FC = () => {
             지금 만나요
           </h2>
           <p className="text-[12px] sm:text-[13px] text-white/50 leading-[1.7]">
-            복잡한 부스 없이, 온라인으로 간편하게.<br />
-            매일 22시, 오늘의 인연이 공개돼요.
+            복잡한 부스 없이, 온라인으로 간편하게.
           </p>
         </motion.section>
 
@@ -119,7 +118,7 @@ const GuestMainPage: React.FC = () => {
         >
           <p className="font-bold text-sm text-white mb-1.5">상명대 학생만 가입할 수 있어요</p>
           <p className="text-[12.5px] text-white/50 leading-[1.65]">
-            @sangmyung.kr 이메일로 인증하고, 19학번 이상이면 매칭에 참여할 수 있어요.
+            @sangmyung.kr 이메일로 인증하고, 21학번 이상이면 매칭에 참여할 수 있어요.
           </p>
           <div className="flex gap-1.5 mt-3 flex-wrap">
             {INFO_BADGES.map(({ text, bg, color, borderColor }) => (

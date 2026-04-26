@@ -6,6 +6,7 @@ import { FeedCard } from '@/components/ui/FeedCard';
 import { FeedSkeleton } from '@/components/ui/Skeleton';
 import { Orbs } from '@/components/ui/Orbs';
 import { CouponEventBanner } from '@/components/ui/CouponEventBanner';
+import { AnnouncementBanner } from '@/components/ui/AnnouncementBanner';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useFeed } from '@/hooks/useFeed';
@@ -86,6 +87,13 @@ const MemberMainPage: React.FC = () => {
           </div>
         }
       />
+
+      {/* 웹 환경 공지사항 — MobileHeader가 렌더링되지 않으므로 직접 표시 */}
+      {!isPWA && announcements.length > 0 && (
+        <div className="px-4 sm:px-5 pt-4 sm:pt-5">
+          <AnnouncementBanner announcements={announcements} />
+        </div>
+      )}
 
       {/* Dashboard */}
       <section className="relative px-4 sm:px-5 pt-4 sm:pt-5">

@@ -31,7 +31,16 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url ?? '/';
+  var raw = event.notification.data?.url ?? '/';
+  var url = '/';
+  try {
+    var parsed = new URL(raw, self.location.origin);
+    if (parsed.origin === self.location.origin) {
+      url = parsed.pathname + parsed.search + parsed.hash;
+    }
+  } catch (e) {
+    // malformed URL — fallback to root
+  }
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {

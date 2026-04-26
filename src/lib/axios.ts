@@ -4,7 +4,9 @@ import type { ApiResponse, TokenResponse } from '@/types';
 const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim();
 const API_BASE_URL = ENV_API_BASE_URL
   ? ENV_API_BASE_URL.replace(/\/+$/, '')
-  : 'http://localhost:8080';
+  : import.meta.env.DEV
+    ? 'http://localhost:8080'
+    : '';
 
 export const getApiErrorMessage = (err: unknown, fallback = '오류가 발생했습니다.'): string => {
   if (axios.isAxiosError(err)) {

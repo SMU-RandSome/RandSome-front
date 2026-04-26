@@ -40,7 +40,7 @@ const ForgotPasswordPage: React.FC = () => {
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>(1);
-  const [emailId, setEmailId] = useState(sessionStorage.getItem('forgot_email') ?? '');
+  const [emailId, setEmailId] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState('');
   const [codeVerified, setCodeVerified] = useState(false);
@@ -83,7 +83,6 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       const res = await updatePassword({ email, emailVerificationToken, newPassword });
       if (res.result === 'ERROR') { toast(res.error?.message ?? '오류가 발생했습니다.', 'error'); return; }
-      sessionStorage.removeItem('forgot_email');
       toast('비밀번호가 변경되었습니다. 다시 로그인해주세요.', 'success');
       navigate('/login', { replace: true });
     } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setIsLoading(false); }
@@ -121,7 +120,7 @@ const ForgotPasswordPage: React.FC = () => {
               <div>
                 <label htmlFor="email-id" className="block text-sm font-semibold text-slate-700 mb-2">학교 이메일</label>
                 <div className="flex items-center overflow-hidden border border-blue-100/90 focus-within:border-blue-400 transition-colors" style={{ borderRadius: 14 }}>
-                  <input id="email-id" type="text" placeholder="이메일 아이디" value={emailId} onChange={(e) => { sessionStorage.setItem('forgot_email', e.target.value); setEmailId(e.target.value); }} disabled={codeSent} style={{ ...inputStyle, flex: 1, minWidth: 0, borderRadius: 0, border: 'none' }} className="outline-none placeholder:text-slate-400 disabled:text-slate-400 disabled:opacity-70" onKeyDown={(e) => { if (e.key === 'Enter' && emailId && !codeSent) void handleSendCode(); }} />
+                  <input id="email-id" type="text" placeholder="이메일 아이디" value={emailId} onChange={(e) => setEmailId(e.target.value)} disabled={codeSent} style={{ ...inputStyle, flex: 1, minWidth: 0, borderRadius: 0, border: 'none' }} className="outline-none placeholder:text-slate-400 disabled:text-slate-400 disabled:opacity-70" onKeyDown={(e) => { if (e.key === 'Enter' && emailId && !codeSent) void handleSendCode(); }} />
                   <span className="shrink-0 text-sm text-slate-500 whitespace-nowrap" style={{ padding: '13px 14px', background: 'rgba(241,245,249,.9)', borderLeft: '1px solid rgba(219,234,254,.9)' }}>@sangmyung.kr</span>
                 </div>
               </div>
@@ -156,14 +155,14 @@ const ForgotPasswordPage: React.FC = () => {
               <div>
                 <label htmlFor="new-password" className="block text-sm font-semibold text-slate-700 mb-2">새 비밀번호</label>
                 <div className="flex items-center overflow-hidden border border-blue-100/90 focus-within:border-blue-400 transition-colors" style={{ borderRadius: 14, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-                  <input id="new-password" type={showPassword ? 'text' : 'password'} placeholder="8자 이상 입력해주세요" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 16, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
+                  <input id="new-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" placeholder="8자 이상 입력해주세요" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 16, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
                   <button type="button" onClick={() => setShowPassword((v) => !v)} className="px-3 text-slate-400 hover:text-slate-600 transition-colors" aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                 </div>
               </div>
               <div>
                 <label htmlFor="new-password-confirm" className="block text-sm font-semibold text-slate-700 mb-2">새 비밀번호 확인</label>
                 <div className="flex items-center overflow-hidden border border-blue-100/90 focus-within:border-blue-400 transition-colors" style={{ borderRadius: 14, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-                  <input id="new-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} placeholder="비밀번호를 다시 입력해주세요" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 16, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
+                  <input id="new-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} autoComplete="new-password" placeholder="비밀번호를 다시 입력해주세요" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} style={{ flex: 1, minWidth: 0, padding: '13px 16px', fontSize: 16, color: '#0f172a', background: 'transparent', border: 'none' }} className="outline-none placeholder:text-slate-400" />
                   <button type="button" onClick={() => setShowPasswordConfirm((v) => !v)} className="px-3 text-slate-400 hover:text-slate-600 transition-colors" aria-label={showPasswordConfirm ? '비밀번호 숨기기' : '비밀번호 보기'}>{showPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                 </div>
                 {newPasswordConfirm && newPassword !== newPasswordConfirm && <p className="text-xs text-red-500 mt-1.5">비밀번호가 일치하지 않습니다.</p>}

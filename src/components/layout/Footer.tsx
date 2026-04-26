@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Mail, Github, Users } from 'lucide-react';
+import { Heart, Mail, Users } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -38,7 +38,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="https://www.sangmyung.kr"
+                  href="https://www.smu.ac.kr"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors duration-150"
                 >
@@ -62,23 +62,13 @@ export const Footer: React.FC = () => {
                   randsome@sangmyung.kr
                 </a>
               </li>
-              <li>
-                <a
-                  href="https://github.com/kwakseobang"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors duration-150"
-                >
-                  <Github size={12} />
-                  GitHub
-                </a>
-              </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-8 pt-6 border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-[11px] text-slate-400">
-            © 2026 Randsome. 상명대학교 소프트웨어학과 학생회.
+            © 2026 Randsome. All rights reserved.
           </p>
           <p className="text-[11px] text-slate-400 flex items-center gap-1">
             Made with <Heart size={9} className="text-pink-400 mx-0.5" fill="currentColor" /> for 상명대학교 축제

@@ -11,6 +11,7 @@ import { login as loginApi } from '@/features/auth/api';
 import { getMyProfile } from '@/features/member/api';
 import { registerFcmToken } from '@/hooks/useFcmToken';
 import { apiClient, getApiErrorMessage } from '@/lib/axios';
+import { validateRealName, getRealNameErrorMessage, validateInstagramId, getInstagramIdErrorMessage } from '@/lib/validation';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS } from '@/constants/tags';
 import type { MemberCreateRequest, Gender, Mbti, Department, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
@@ -214,7 +215,7 @@ const SignupPage: React.FC = () => {
     department: '',
     intro: '',
     idealType: '',
-    emailUsername: sessionStorage.getItem('signup_email') ?? '',
+    emailUsername: '',
     instagramId: '',
     password: '',
     passwordConfirm: '',
@@ -264,7 +265,7 @@ const SignupPage: React.FC = () => {
 
   const passwordsMatch = formData.password === formData.passwordConfirm;
   const isStep1Valid = emailVerified && formData.password.length >= 8 && passwordsMatch && requiredTermsAgreed;
-  const isStep2Valid = !!formData.realName && !!formData.gender && !!formData.mbti && !!formData.department;
+  const isStep2Valid = validateRealName(formData.realName) && !!formData.gender && !!formData.mbti && !!formData.department && validateInstagramId(formData.instagramId);
   const isStep3Valid = !!formData.intro && !!formData.idealType && !!formData.personalityTag && !!formData.faceTypeTag && !!formData.datingStyleTag;
 
   const nextStep = (): void => {
@@ -303,7 +304,7 @@ const SignupPage: React.FC = () => {
         const profileRes = await getMyProfile();
         if (profileRes.data) setUser(profileRes.data);
         await registerFcmToken().catch(() => {});
-        sessionStorage.removeItem('signup_email'); toast('회원가입이 완료되었습니다! 환영합니다.', 'success'); navigate('/home');
+        toast('회원가입이 완료되었습니다! 환영합니다.', 'success'); navigate('/home');
       } catch { toast('회원가입이 완료되었습니다. 로그인해주세요.', 'success'); navigate('/login'); }
     } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setIsSubmitting(false); }
   };
@@ -345,7 +346,7 @@ const SignupPage: React.FC = () => {
                 <span style={labelStyle}>학교 이메일</span>
                 <div className="flex items-center gap-2">
                   <div className="flex flex-1 items-center overflow-hidden" style={{ borderRadius: 14, background: 'rgba(255,255,255,.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: emailVerified ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(219,234,254,.9)' }}>
-                    <input type="text" placeholder="이메일 아이디" value={formData.emailUsername} onChange={(e) => { sessionStorage.setItem('signup_email', e.target.value); setFormData({ ...formData, emailUsername: e.target.value }); }} disabled={emailVerified} className="flex-1 min-w-0 bg-transparent placeholder:text-slate-300 disabled:text-slate-400" style={{ padding: '13px 16px', fontSize: 16, color: '#1e293b', outline: 'none' }} />
+                    <input type="text" placeholder="이메일 아이디" value={formData.emailUsername} onChange={(e) => setFormData({ ...formData, emailUsername: e.target.value })} disabled={emailVerified} className="flex-1 min-w-0 bg-transparent placeholder:text-slate-300 disabled:text-slate-400" style={{ padding: '13px 16px', fontSize: 16, color: '#1e293b', outline: 'none' }} />
                     <span className="shrink-0 whitespace-nowrap text-xs font-bold text-slate-400 px-3" style={{ borderLeft: '1px solid rgba(219,234,254,.9)', background: 'rgba(248,250,255,.6)', padding: '13px 12px' }}>@sangmyung.kr</span>
                   </div>
                   <button type="button" onClick={handleSendEmail} disabled={emailVerified || !formData.emailUsername.trim()} className="shrink-0 text-sm font-bold text-white disabled:opacity-50 transition-all" style={{ ...gradientBtnBase, height: 48, padding: '0 16px', ...(emailVerified ? { background: 'linear-gradient(135deg, #22c55e, #16a34a)' } : {}) }}>
@@ -370,14 +371,14 @@ const SignupPage: React.FC = () => {
                 <div>
                   <label htmlFor="signup-password" style={labelStyle}>비밀번호</label>
                   <div className="relative">
-                    <input id="signup-password" type={showPassword ? 'text' : 'password'} placeholder="8자 이상 입력해주세요" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
+                    <input id="signup-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" placeholder="8자 이상 입력해주세요" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
                     <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                   </div>
                 </div>
                 <div>
                   <label htmlFor="signup-password-confirm" style={labelStyle}>비밀번호 확인</label>
                   <div className="relative">
-                    <input id="signup-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} placeholder="다시 한번 입력해주세요" value={formData.passwordConfirm} onChange={(e) => setFormData({ ...formData, passwordConfirm: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
+                    <input id="signup-password-confirm" type={showPasswordConfirm ? 'text' : 'password'} autoComplete="new-password" placeholder="다시 한번 입력해주세요" value={formData.passwordConfirm} onChange={(e) => setFormData({ ...formData, passwordConfirm: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
                     <button type="button" onClick={() => setShowPasswordConfirm((v) => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">{showPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}</button>
                   </div>
                 </div>
@@ -428,6 +429,9 @@ const SignupPage: React.FC = () => {
                 <div>
                   <span style={labelStyle}>실명</span>
                   <input type="text" placeholder="홍길동" value={formData.realName} onChange={(e) => setFormData({ ...formData, realName: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
+                  {formData.realName && !validateRealName(formData.realName) && (
+                    <p className="text-[11px] text-red-500 font-bold mt-1.5">{getRealNameErrorMessage(formData.realName)}</p>
+                  )}
                 </div>
                 <div>
                   <span style={labelStyle}>학과</span>
@@ -462,6 +466,9 @@ const SignupPage: React.FC = () => {
                 <div>
                   <span style={labelStyle}>인스타그램 ID</span>
                   <input type="text" placeholder="아이디만 입력해주세요 (예: randsome_official)" value={formData.instagramId} onChange={(e) => setFormData({ ...formData, instagramId: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
+                  {formData.instagramId && !validateInstagramId(formData.instagramId) && (
+                    <p className="text-[11px] text-red-500 font-bold mt-1.5">{getInstagramIdErrorMessage(formData.instagramId)}</p>
+                  )}
                 </div>
               </div>
             </div>
