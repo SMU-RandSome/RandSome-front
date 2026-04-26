@@ -10,6 +10,8 @@ const API_BASE_URL = ENV_API_BASE_URL
 
 export const getApiErrorMessage = (err: unknown, fallback = '오류가 발생했습니다.'): string => {
   if (axios.isAxiosError(err)) {
+    const withMsg = err as typeof err & { _userMessage?: string };
+    if (withMsg._userMessage) return withMsg._userMessage;
     return (err.response?.data as ApiResponse<unknown> | undefined)?.error?.message ?? fallback;
   }
   return fallback;
@@ -17,6 +19,7 @@ export const getApiErrorMessage = (err: unknown, fallback = '오류가 발생했
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10_000, // 서버 과부하 시 요청 무한 대기 방지 (10초)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -58,6 +61,15 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {
     if (!axios.isAxiosError(error)) return Promise.reject(error);
+
+    // 타임아웃: 서버 과부하 시 사용자에게 안내
+    if (error.code === 'ECONNABORTED') {
+      return Promise.reject(
+        Object.assign(error, {
+          _userMessage: '요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.',
+        }),
+      );
+    }
 
     const originalRequest = error.config;
     if (!originalRequest) return Promise.reject(error);

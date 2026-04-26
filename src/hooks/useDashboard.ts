@@ -13,7 +13,8 @@ export const useDashboard = (): { stats: DashboardResponse | null; isLoading: bo
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: fetchDashboard,
-    gcTime: 1000 * 60 * 30, // 30분
+    staleTime: 1000 * 60 * 5,  // 5분 — 관리자 대시보드는 실시간 불필요
+    gcTime: 1000 * 60 * 30,
   });
 
   return { stats: data ?? null, isLoading };

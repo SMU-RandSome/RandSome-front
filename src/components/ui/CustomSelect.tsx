@@ -62,6 +62,16 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     if (!isOpen) return;
     calcRect();
 
+    const handleClickOutside = (e: MouseEvent): void => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node) &&
+        !(e.target as Element).closest('[data-custom-select-dropdown]')
+      ) {
+        setIsOpen(false);
+      }
+    };
+
     const close = (): void => setIsOpen(false);
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', close, true);
@@ -72,16 +82,6 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       window.removeEventListener('resize', close);
     };
   }, [isOpen]);
-
-  const handleClickOutside = (e: MouseEvent): void => {
-    if (
-      containerRef.current &&
-      !containerRef.current.contains(e.target as Node) &&
-      !(e.target as Element).closest('[data-custom-select-dropdown]')
-    ) {
-      setIsOpen(false);
-    }
-  };
 
   const handleSelect = (optionValue: string): void => {
     onChange(optionValue);

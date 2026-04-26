@@ -37,6 +37,7 @@ const CouponEventPage: React.FC = () => {
     queryFn: () => getCouponEvent(eventId).then((res) => res.data),
     enabled: !isNaN(eventId),
     staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 
   const issueMutation = useIssueCoupon();
