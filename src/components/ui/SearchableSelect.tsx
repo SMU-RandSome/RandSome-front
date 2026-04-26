@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check, Search, X } from 'lucide-react';
 
 interface SelectOption {
@@ -19,15 +20,6 @@ interface SearchableSelectProps {
   id?: string;
 }
 
-interface DropdownRect {
-  top: number;
-  left: number;
-  width: number;
-  openUpward: boolean;
-}
-
-const DROPDOWN_MAX_HEIGHT = 300;
-
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   label,
   options,
@@ -41,11 +33,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [rect, setRect] = useState<DropdownRect | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
   const selectedOption = options.find((opt) => opt.value === value);
@@ -56,70 +44,19 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     return options.filter((option) => option.label.toLowerCase().includes(query));
   }, [options, searchQuery]);
 
-  const calcRect = (): void => {
-    if (!triggerRef.current) return;
-    const r = triggerRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - r.bottom;
-    const openUpward = spaceBelow < DROPDOWN_MAX_HEIGHT + 8 && r.top > spaceBelow;
-    setRect({
-      top: openUpward ? r.top - 8 : r.bottom + 8,
-      left: r.left,
-      width: r.width,
-      openUpward,
-    });
-  };
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
-    calcRect();
-
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (searchInputRef.current && !isTouchDevice) searchInputRef.current.focus();
-
-    const handleClickOutside = (e: MouseEvent | TouchEvent): void => {
-      if (
-        containerRef.current?.contains(e.target as Node) ||
-        dropdownRef.current?.contains(e.target as Node)
-      ) return;
-      setIsOpen(false);
-      setSearchQuery('');
-    };
-
-    let scrollRafId = 0;
-    const handleScroll = (e: Event): void => {
-      if (dropdownRef.current?.contains(e.target as Node)) return;
-      cancelAnimationFrame(scrollRafId);
-      scrollRafId = requestAnimationFrame(() => {
-        const r = triggerRef.current?.getBoundingClientRect();
-        if (!r || r.bottom < 0 || r.top > window.innerHeight) {
-          setIsOpen(false);
-          setSearchQuery('');
-          return;
-        }
-        calcRect();
-      });
-    };
-
-    let resizeRafId = 0;
-    const handleResize = (): void => {
-      cancelAnimationFrame(resizeRafId);
-      resizeRafId = requestAnimationFrame(() => {
-        calcRect();
-      });
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside as EventListener, { passive: true });
-    window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleResize);
-
+    document.body.style.overflow = 'hidden';
     return () => {
-      cancelAnimationFrame(scrollRafId);
-      cancelAnimationFrame(resizeRafId);
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside as EventListener);
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleResize);
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -129,81 +66,103 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     setSearchQuery('');
   };
 
+  const handleClose = (): void => {
+    setIsOpen(false);
+    setSearchQuery('');
+  };
+
   const handleClear = (): void => {
     onChange('');
   };
 
-  const dropdown = isOpen && rect
-    ? createPortal(
-        <div
-          ref={dropdownRef}
-          data-searchable-select-dropdown
-          style={{
-            position: 'fixed',
-            top: rect.openUpward ? undefined : rect.top,
-            bottom: rect.openUpward ? window.innerHeight - rect.top : undefined,
-            left: rect.left,
-            width: rect.width,
-            zIndex: 9999,
-            maxHeight: DROPDOWN_MAX_HEIGHT,
-          }}
-          className="bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in duration-200 flex flex-col"
-        >
-          <div className="shrink-0 bg-gradient-to-b from-white to-slate-50 border-b border-slate-200 p-3">
-            <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={searchPlaceholder}
-                onMouseDown={(e) => e.stopPropagation()}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all text-base shadow-sm"
-              />
+  const overlay = createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black z-[80]"
+            onClick={handleClose}
+          />
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            className="fixed bottom-0 left-0 right-0 z-[80] bg-white rounded-t-3xl flex flex-col"
+            style={{ maxHeight: '70vh' }}
+          >
+            <div className="pt-3 pb-2 flex justify-center shrink-0">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
             </div>
-          </div>
 
-          <div className="overflow-y-auto flex-1">
-            {filteredOptions.length === 0 ? (
-              <div className="px-4 py-8 text-center text-slate-400 text-sm" role="status" aria-live="polite">
-                검색 결과가 없습니다
+            <div className="px-5 pb-3 flex items-center justify-between shrink-0">
+              <h3 className="text-lg font-bold text-slate-900">
+                {label || placeholder}
+              </h3>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="px-5 pb-3 shrink-0">
+              <div className="relative">
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all bg-slate-50"
+                  style={{ fontSize: 16 }}
+                />
               </div>
-            ) : (
-              filteredOptions.map((option, index) => {
-                const isSelected = option.value === value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSelect(option.value)}
-                    className={`w-full px-4 py-3 text-left flex items-center justify-between transition-all duration-150 ${
-                      index !== filteredOptions.length - 1 ? 'border-b border-slate-100' : ''
-                    } ${
-                      isSelected
-                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 font-semibold'
-                        : 'text-slate-700 hover:bg-blue-50 hover:text-blue-600'
-                    } ${index === filteredOptions.length - 1 ? 'rounded-b-xl' : ''}`}
-                    role="option"
-                    aria-selected={isSelected}
-                  >
-                    <span>{option.label}</span>
-                    {isSelected && (
-                      <Check size={18} className="text-blue-600 animate-in zoom-in duration-200" />
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>,
-        document.body,
-      )
-    : null;
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-2" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
+              {filteredOptions.length === 0 ? (
+                <div className="px-4 py-8 text-center text-slate-400 text-sm" role="status" aria-live="polite">
+                  검색 결과가 없습니다
+                </div>
+              ) : (
+                filteredOptions.map((option) => {
+                  const isSelected = option.value === value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSelect(option.value)}
+                      className={`w-full px-4 py-3.5 text-left flex items-center justify-between rounded-xl transition-colors duration-150 ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 font-semibold'
+                          : 'text-slate-700 active:bg-slate-100'
+                      }`}
+                      role="option"
+                      aria-selected={isSelected}
+                    >
+                      <span>{option.label}</span>
+                      {isSelected && <Check size={18} className="text-blue-600" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
 
   return (
-    <div className={`w-full mb-4 ${className}`} ref={containerRef}>
+    <div className={`w-full mb-4 ${className}`}>
       {label && (
         <label htmlFor={selectId} className="block text-sm font-medium text-slate-700 mb-1.5">
           {label}
@@ -211,10 +170,9 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       )}
       <div className="relative">
         <button
-          ref={triggerRef}
           type="button"
           id={selectId}
-          onClick={() => setIsOpen((v) => !v)}
+          onClick={() => setIsOpen(true)}
           className={`w-full px-4 py-3 rounded-xl border bg-white text-left flex items-center justify-between shadow-sm hover:shadow-md ${
             error
               ? 'border-red-500 focus:ring-red-200'
@@ -246,7 +204,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           </div>
         </button>
       </div>
-      {dropdown}
+      {overlay}
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
