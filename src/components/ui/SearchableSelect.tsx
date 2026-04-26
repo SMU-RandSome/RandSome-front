@@ -33,6 +33,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sheetBottom, setSheetBottom] = useState(0);
+  const [sheetMaxHeight, setSheetMaxHeight] = useState(window.innerHeight * 0.7);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
@@ -55,8 +57,25 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     document.body.style.overflow = 'hidden';
+
+    const updateViewport = (): void => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setSheetBottom(keyboardHeight);
+      setSheetMaxHeight(vv.height * 0.9);
+    };
+
+    updateViewport();
+    window.visualViewport?.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('scroll', updateViewport);
+
     return () => {
       document.body.style.overflow = '';
+      window.visualViewport?.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('scroll', updateViewport);
+      setSheetBottom(0);
+      setSheetMaxHeight(window.innerHeight * 0.7);
     };
   }, [isOpen]);
 
@@ -91,8 +110,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="fixed bottom-0 left-0 right-0 z-[80] bg-white rounded-t-3xl flex flex-col"
-            style={{ maxHeight: '70vh' }}
+            className="fixed left-0 right-0 z-[80] bg-white rounded-t-3xl flex flex-col"
+            style={{
+              bottom: sheetBottom,
+              maxHeight: sheetMaxHeight,
+              transition: 'bottom 0.15s ease, max-height 0.15s ease',
+            }}
           >
             <div className="pt-3 pb-2 flex justify-center shrink-0">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
