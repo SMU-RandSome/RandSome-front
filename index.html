@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
+    <!-- Security -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data:; connect-src 'self' https://*.googleapis.com https://*.randsome.online; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
     <!-- SEO -->
     <title>Randsome — 상명대 축제 랜덤 매칭</title>
     <meta name="description" content="상명대학교 축제 기간 이성 랜덤 매칭 서비스. 무작위·이상형 기반 매칭으로 설레는 인연을 만나보세요." />
@@ -26,8 +30,9 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- Favicon & Apple Touch Icon -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" href="/logo-192.png" />
 
     <!-- Google Fonts 리소스 힌트 (CSS @import보다 먼저 DNS/TLS 선행 처리) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
