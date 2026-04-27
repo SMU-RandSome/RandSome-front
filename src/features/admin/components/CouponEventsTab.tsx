@@ -447,7 +447,7 @@ const CouponEventsTab: React.FC = () => {
                     {event.status !== 'ENDED' && (
                       <button
                         onClick={() => handleToggleStatus(event)}
-                        disabled={isToggling}
+                        disabled={isToggling || event.status === 'SOLD_OUT'}
                         className={`flex-1 h-9 rounded-xl text-xs font-semibold transition-colors ${
                           event.status === 'DRAFT'
                             ? 'bg-green-50 border border-green-200 text-green-700 hover:bg-green-100'
