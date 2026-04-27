@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import QrScanner from 'qr-scanner';
+import QrScannerWorkerPath from 'qr-scanner/qr-scanner-worker.min.js?url';
+QrScanner.WORKER_PATH = QrScannerWorkerPath;
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useToast } from '@/components/ui/Toast';
 import { verifyQrCode } from '@/features/admin/api';
