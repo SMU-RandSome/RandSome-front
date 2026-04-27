@@ -44,7 +44,7 @@ const CandidateRegistrationsTab = React.lazy(() => import('@/features/admin/comp
 type AdminTab = 'members' | 'candidates' | 'requests' | 'announcements' | 'coupon-events' | 'reports';
 type AdminReportFilter = 'ALL' | ReportStatusFilter;
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 20;
 
 const REPORT_REASON_LABELS: Record<ReportReason, string> = {
   INAPPROPRIATE_CONTENT: '부적절한 내용',
