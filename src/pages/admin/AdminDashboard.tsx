@@ -233,7 +233,7 @@ const AdminDashboard: React.FC = () => {
               )
             : res.data.content;
           setMembers(filtered);
-          setTotalPages(Math.ceil(res.data.totalElements / (res.data.size || ITEMS_PER_PAGE)));
+          setTotalPages(res.data.totalPages);
         }
       })
       .catch((err: unknown) => {
@@ -261,7 +261,7 @@ const AdminDashboard: React.FC = () => {
       .then((res) => {
         if (res.data) {
           setMatchingApplications(res.data.content);
-          setMatchingTotalPages(Math.ceil(res.data.totalElements / (res.data.size || ITEMS_PER_PAGE)));
+          setMatchingTotalPages(res.data.totalPages);
         }
       })
       .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
