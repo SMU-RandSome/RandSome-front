@@ -77,9 +77,10 @@ const Pagination: React.FC<{
   totalPages: number;
   onPageChange: (page: number) => void;
 }> = ({ currentPage, totalPages, onPageChange }) => {
+  const safeTotalPages = Math.max(1, totalPages || 1);
   const half = Math.floor(PAGE_WINDOW / 2);
-  const start = Math.max(1, Math.min(currentPage - half, totalPages - PAGE_WINDOW + 1));
-  const end = Math.min(totalPages, start + PAGE_WINDOW - 1);
+  const start = Math.max(1, Math.min(currentPage - half, safeTotalPages - PAGE_WINDOW + 1));
+  const end = Math.min(safeTotalPages, start + PAGE_WINDOW - 1);
   const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
   return (
@@ -116,19 +117,19 @@ const Pagination: React.FC<{
           {p}
         </button>
       ))}
-      {end < totalPages && (
+      {end < safeTotalPages && (
         <>
-          {end < totalPages - 1 && <span className="px-1 text-slate-400 text-sm">…</span>}
+          {end < safeTotalPages - 1 && <span className="px-1 text-slate-400 text-sm">…</span>}
           <button
-            onClick={() => onPageChange(totalPages)}
+            onClick={() => onPageChange(safeTotalPages)}
             className="w-8 h-8 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
           >
-            {totalPages}
+            {safeTotalPages}
           </button>
         </>
       )}
       <button
-        disabled={currentPage === totalPages}
+        disabled={currentPage === safeTotalPages}
         onClick={() => onPageChange(currentPage + 1)}
         className="p-2 rounded-lg border border-slate-200 disabled:opacity-30 text-slate-600 transition-colors hover:bg-slate-50"
         aria-label="다음 페이지"
@@ -231,7 +232,7 @@ const AdminDashboard: React.FC = () => {
               )
             : res.data.content;
           setMembers(filtered);
-          setTotalPages(res.data.totalPages);
+          setTotalPages(res.data.totalPages || Math.ceil(res.data.totalElements / ITEMS_PER_PAGE) || 1);
         }
       })
       .catch((err: unknown) => {
@@ -259,7 +260,7 @@ const AdminDashboard: React.FC = () => {
       .then((res) => {
         if (res.data) {
           setMatchingApplications(res.data.content);
-          setMatchingTotalPages(res.data.totalPages);
+          setMatchingTotalPages(res.data.totalPages || Math.ceil(res.data.totalElements / ITEMS_PER_PAGE) || 1);
         }
       })
       .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
