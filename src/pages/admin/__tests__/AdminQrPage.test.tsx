@@ -1,22 +1,22 @@
 import React from 'react';
-import { screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/utils';
 import AdminQrPage from '@/pages/admin/AdminQrPage';
 
 vi.mock('motion/react');
 
-// qr-scanner 모킹
+// html5-qrcode 모킹
 const mockStart = vi.fn();
 const mockStop = vi.fn();
-const mockDestroy = vi.fn();
-vi.mock('qr-scanner', () => {
+vi.mock('html5-qrcode', () => {
+  class MockHtml5Qrcode {
+    start = mockStart;
+    stop = mockStop;
+  }
   return {
-    default: class MockQrScanner {
-      start = mockStart;
-      stop = mockStop;
-      destroy = mockDestroy;
-    },
+    Html5Qrcode: MockHtml5Qrcode,
+    Html5QrcodeSupportedFormats: { QR_CODE: 0 },
   };
 });
 
@@ -33,22 +33,11 @@ vi.mock('react-router-dom', async (importOriginal) => {
 import { verifyQrCode } from '@/features/admin/api';
 const mockVerifyQrCode = vi.mocked(verifyQrCode);
 
-// startScanner()가 마운트 시 호출되어 비동기 상태 업데이트가 발생하므로,
-// 렌더링 후 flush해야 act() 경고를 방지할 수 있음
-const renderPage = async (): ReturnType<typeof renderWithProviders> => {
-  let result: ReturnType<typeof renderWithProviders>;
-  await act(async () => {
-    result = renderWithProviders(<AdminQrPage />);
-  });
-  return result!;
-};
-
 describe('AdminQrPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStart.mockResolvedValue(undefined);
     mockStop.mockResolvedValue(undefined);
-    mockDestroy.mockReturnValue(undefined);
     mockVerifyQrCode.mockResolvedValue({
       result: 'SUCCESS',
       data: null,
@@ -58,49 +47,49 @@ describe('AdminQrPage', () => {
 
   // ── 렌더링 ──────────────────────────────────────────────────
 
-  it('헤더에 QR 인증 제목이 렌더링됨', async () => {
-    await renderPage();
+  it('헤더에 QR 인증 제목이 렌더링됨', () => {
+    renderWithProviders(<AdminQrPage />);
     expect(screen.getByText('QR 인증')).toBeInTheDocument();
   });
 
-  it('뒤로가기 버튼이 렌더링됨', async () => {
-    await renderPage();
+  it('뒤로가기 버튼이 렌더링됨', () => {
+    renderWithProviders(<AdminQrPage />);
     expect(screen.getByLabelText('뒤로가기')).toBeInTheDocument();
   });
 
   it('뒤로가기 클릭 시 /admin으로 이동', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByLabelText('뒤로가기'));
     expect(mockNavigate).toHaveBeenCalledWith('/admin');
   });
 
-  it('티켓 종류 선택 버튼이 렌더링됨', async () => {
-    await renderPage();
+  it('티켓 종류 선택 버튼이 렌더링됨', () => {
+    renderWithProviders(<AdminQrPage />);
     expect(screen.getByRole('button', { name: /랜덤권/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /이상형권/ })).toBeInTheDocument();
   });
 
-  it('카메라 스캔 / 직접 입력 모드 토글이 렌더링됨', async () => {
-    await renderPage();
+  it('카메라 스캔 / 직접 입력 모드 토글이 렌더링됨', () => {
+    renderWithProviders(<AdminQrPage />);
     expect(screen.getByRole('button', { name: /카메라 스캔/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /직접 입력/ })).toBeInTheDocument();
   });
 
-  it('사용 방법 안내가 렌더링됨', async () => {
-    await renderPage();
+  it('사용 방법 안내가 렌더링됨', () => {
+    renderWithProviders(<AdminQrPage />);
     expect(screen.getByText('사용 방법')).toBeInTheDocument();
   });
 
   // ── 티켓 타입 선택 ──────────────────────────────────────────
 
-  it('기본 티켓 타입은 랜덤권', async () => {
-    await renderPage();
+  it('기본 티켓 타입은 랜덤권', () => {
+    renderWithProviders(<AdminQrPage />);
     const randomBtn = screen.getByRole('button', { name: /랜덤권/ });
     expect(randomBtn.className).toContain('bg-blue-50');
   });
 
   it('이상형권 클릭 시 선택 상태 변경', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /이상형권/ }));
     // 클릭 후 다시 쿼리해서 최신 className 확인
     const idealBtn = screen.getByRole('button', { name: /이상형권/ });
@@ -110,25 +99,25 @@ describe('AdminQrPage', () => {
   // ── 수동 입력 모드 ──────────────────────────────────────────
 
   it('직접 입력 모드로 전환하면 입력 필드가 표시됨', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     expect(screen.getByPlaceholderText('QR 토큰을 입력하세요')).toBeInTheDocument();
   });
 
   it('직접 입력 모드에서 인증 요청 버튼이 표시됨', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     expect(screen.getByRole('button', { name: '인증 요청' })).toBeInTheDocument();
   });
 
   it('토큰 미입력 시 인증 요청 버튼 비활성화', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     expect(screen.getByRole('button', { name: '인증 요청' })).toBeDisabled();
   });
 
   it('토큰 입력 시 인증 요청 버튼 활성화', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     fireEvent.change(screen.getByPlaceholderText('QR 토큰을 입력하세요'), {
       target: { value: 'test-token-123' },
@@ -139,7 +128,7 @@ describe('AdminQrPage', () => {
   // ── 확인 모달 ───────────────────────────────────────────────
 
   it('수동 입력 후 인증 요청 클릭 시 확인 모달 표시', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     fireEvent.change(screen.getByPlaceholderText('QR 토큰을 입력하세요'), {
       target: { value: 'test-token-123' },
@@ -151,7 +140,7 @@ describe('AdminQrPage', () => {
   });
 
   it('확인 모달에서 취소 클릭 시 모달 닫힘', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     fireEvent.change(screen.getByPlaceholderText('QR 토큰을 입력하세요'), {
       target: { value: 'test-token-123' },
@@ -163,7 +152,7 @@ describe('AdminQrPage', () => {
   });
 
   it('확인 모달에 선택한 티켓 종류가 표시됨', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     // 이상형권 선택
     await userEvent.click(screen.getByRole('button', { name: /이상형권/ }));
     // 수동 입력
@@ -181,7 +170,7 @@ describe('AdminQrPage', () => {
   // ── API 호출 ────────────────────────────────────────────────
 
   it('발급 버튼 클릭 시 verifyQrCode API 호출', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     fireEvent.change(screen.getByPlaceholderText('QR 토큰을 입력하세요'), {
       target: { value: 'test-token-123' },
@@ -198,7 +187,7 @@ describe('AdminQrPage', () => {
   });
 
   it('이상형권 선택 후 발급 시 ticketType이 IDEAL로 전달', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /이상형권/ }));
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     fireEvent.change(screen.getByPlaceholderText('QR 토큰을 입력하세요'), {
@@ -216,7 +205,7 @@ describe('AdminQrPage', () => {
   });
 
   it('발급 성공 후 확인 모달이 닫힘', async () => {
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     fireEvent.change(screen.getByPlaceholderText('QR 토큰을 입력하세요'), {
       target: { value: 'test-token' },
@@ -234,7 +223,7 @@ describe('AdminQrPage', () => {
       response: { data: { result: 'ERROR', data: null, error: { code: 'QR_001', message: '유효하지 않은 QR 코드입니다.', data: null } } },
     });
 
-    await renderPage();
+    renderWithProviders(<AdminQrPage />);
     await userEvent.click(screen.getByRole('button', { name: /직접 입력/ }));
     fireEvent.change(screen.getByPlaceholderText('QR 토큰을 입력하세요'), {
       target: { value: 'invalid-token' },
@@ -250,14 +239,14 @@ describe('AdminQrPage', () => {
 
   // ── 카메라 모드 ─────────────────────────────────────────────
 
-  it('카메라 모드가 기본 선택됨', async () => {
-    await renderPage();
+  it('카메라 모드가 기본 선택됨', () => {
+    renderWithProviders(<AdminQrPage />);
     const cameraBtn = screen.getByRole('button', { name: /카메라 스캔/ });
     expect(cameraBtn.className).toContain('bg-white');
   });
 
-  it('카메라 모드에서 안내 문구가 표시됨', async () => {
-    await renderPage();
+  it('카메라 모드에서 안내 문구가 표시됨', () => {
+    renderWithProviders(<AdminQrPage />);
     expect(screen.getByText('QR 코드를 카메라에 비춰주세요')).toBeInTheDocument();
   });
 });
