@@ -222,7 +222,7 @@ const CouponsPage: React.FC = () => {
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
                     <span className="flex items-center gap-1 text-[11px] text-slate-400">
                       <Clock size={11} />
-                      {formatExpiry(item.eventExpiresAt)} 만료
+                      {formatExpiry(item.expiredAt)} 만료
                     </span>
 
                     {item.status === 'AVAILABLE' && (

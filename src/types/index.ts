@@ -280,7 +280,7 @@ export interface CouponItem {
   eventName: string;
   status: CouponStatus;
   ticketType: TicketType;
-  eventExpiresAt: string;
+  expiredAt: string;
   rewardTicketAmount: number;
 }
 
