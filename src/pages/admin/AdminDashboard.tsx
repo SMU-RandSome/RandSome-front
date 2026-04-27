@@ -77,8 +77,6 @@ const Pagination: React.FC<{
   totalPages: number;
   onPageChange: (page: number) => void;
 }> = ({ currentPage, totalPages, onPageChange }) => {
-  if (totalPages <= 1) return null;
-
   const half = Math.floor(PAGE_WINDOW / 2);
   const start = Math.max(1, Math.min(currentPage - half, totalPages - PAGE_WINDOW + 1));
   const end = Math.min(totalPages, start + PAGE_WINDOW - 1);
@@ -202,7 +200,7 @@ const AdminDashboard: React.FC = () => {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
 
   // 신고 관리
-  const [reportFilter, setReportFilter] = useState<AdminReportFilter>('ALL');
+  const [reportFilter, setReportFilter] = useState<AdminReportFilter>('PENDING');
   const [reports, setReports] = useState<AdminReportListItem[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState<AdminReportDetailResponse | null>(null);
@@ -847,7 +845,6 @@ const AdminDashboard: React.FC = () => {
 
   const renderReports = (): React.ReactNode => {
     const STATUS_FILTERS: { value: AdminReportFilter; label: string }[] = [
-      { value: 'ALL', label: '전체' },
       { value: 'PENDING', label: '대기 중' },
       { value: 'IN_REVIEW', label: '검토 중' },
       { value: 'COMPLETED', label: '처리 완료' },
