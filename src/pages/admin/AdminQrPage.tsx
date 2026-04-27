@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import QrScanner from 'qr-scanner';
-import QrScannerWorkerPath from 'qr-scanner/qr-scanner-worker.min.js?url';
-QrScanner.WORKER_PATH = QrScannerWorkerPath;
+// BarcodeDetector(네이티브)는 iOS PWA 라이브 스트림 환경에서 인식 실패 케이스가 있으므로
+// ZXing worker를 강제 사용한다.
+(QrScanner as unknown as { _disableBarcodeDetector: boolean })._disableBarcodeDetector = true;
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useToast } from '@/components/ui/Toast';
 import { verifyQrCode } from '@/features/admin/api';
@@ -67,6 +68,13 @@ const AdminQrPage: React.FC = () => {
           highlightScanRegion: true,
           highlightCodeOutline: true,
           maxScansPerSecond: 10,
+          // 기본 2/3 영역 대신 전체 프레임을 스캔해 인식률 향상
+          calculateScanRegion: (video) => ({
+            x: 0,
+            y: 0,
+            width: video.videoWidth || 1280,
+            height: video.videoHeight || 720,
+          }),
         },
       );
     }
