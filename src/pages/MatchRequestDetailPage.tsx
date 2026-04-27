@@ -379,7 +379,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ target, onClose, onSuccess })
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = (): void => {
-    if (!reason) return;
+    if (!reason || !description.trim()) return;
     setIsSubmitting(true);
     createReport({ matchingResultId: target.id, reason, description })
       .then(() => {
@@ -432,7 +432,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ target, onClose, onSuccess })
               </button>
             ))}
           </div>
-          <p className="text-xs font-bold text-slate-500 mb-2">상세 설명 (선택)</p>
+          <p className="text-xs font-bold text-slate-500 mb-2">상세 설명 (필수)</p>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -450,7 +450,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ target, onClose, onSuccess })
             </button>
             <button
               onClick={handleSubmit}
-              disabled={reason === null || isSubmitting}
+              disabled={reason === null || !description.trim() || isSubmitting}
               className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 shadow-md shadow-rose-200/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? '처리중...' : '신고 제출'}
