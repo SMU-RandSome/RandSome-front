@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { getMyProfile, getMemberStats, updateMyProfile, updatePassword } from '@/features/member/api';
+import { getMyProfile, getMemberStats, updateMyProfile, updatePassword, withdrawMember } from '@/features/member/api';
 import { withdrawCandidate, cancelCandidateRegistration } from '@/features/candidate/api';
 import { getTicketBalance } from '@/features/ticket/api';
 import { getApiErrorMessage } from '@/lib/axios';
@@ -128,6 +128,7 @@ const MyPage: React.FC = () => {
       Notification.permission === 'granted' &&
       localStorage.getItem(FCM_ENABLED_KEY) === 'true',
   );
+  const [showMemberWithdraw, setShowMemberWithdraw] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
   const [ticketBalance, setTicketBalance] = useState<TicketBalanceResponse | null>(null);
   const [stats, setStats] = useState<MemberStatsResponse | null>(null);
@@ -676,6 +677,12 @@ const MyPage: React.FC = () => {
         </div>
 
         <p className="text-center text-slate-400 text-[11px] mt-5">Randsome v2.0 · SMU Festival 2026 Archive</p>
+        <button
+          onClick={() => setShowMemberWithdraw(true)}
+          className="block mx-auto mt-2 text-[11px] text-slate-400 underline underline-offset-2 hover:text-slate-500 transition-colors"
+        >
+          회원 탈퇴
+        </button>
       </div>
 
       </div>
@@ -789,6 +796,19 @@ const MyPage: React.FC = () => {
           <PasswordChangeSheet
             userEmail={user?.email ?? ''}
             onClose={() => setShowPasswordChange(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMemberWithdraw && (
+          <MemberWithdrawSheet
+            onClose={() => setShowMemberWithdraw(false)}
+            onSuccess={() => {
+              logout();
+              navigate('/');
+              toast('회원 탈퇴가 완료되었습니다.', 'success');
+            }}
           />
         )}
       </AnimatePresence>
@@ -1207,6 +1227,150 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
               >
                 {isLoading ? '변경 중...' : '비밀번호 변경하기'}
               </Button>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </>
+  );
+};
+
+const MemberWithdrawSheet: React.FC<{ onClose: () => void; onSuccess: () => void }> = ({
+  onClose,
+  onSuccess,
+}) => {
+  const { toast } = useToast();
+  const [step, setStep] = useState<'warning' | 'confirm'>('warning');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [withdrawalReason, setWithdrawalReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleWithdraw = async (): Promise<void> => {
+    if (!password) {
+      toast('비밀번호를 입력해주세요.', 'error');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await withdrawMember({
+        password,
+        withdrawalReason: withdrawalReason.trim() || undefined,
+      });
+      onSuccess();
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black z-[60]"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-2xl w-[calc(100%-2rem)] max-w-[400px] max-h-[80vh] flex flex-col"
+      >
+        <div className="px-6 pt-5 pb-4 shrink-0">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-slate-900">회원 탈퇴</h3>
+            <button onClick={onClose} className="p-2 -mr-2 text-slate-400 hover:text-slate-600" aria-label="닫기">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-y-auto px-6 pb-6 space-y-4">
+          {step === 'warning' && (
+            <>
+              <div className="flex items-center gap-2 rounded-2xl px-4 py-3" style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.15)' }}>
+                <AlertCircle size={14} className="text-red-400 shrink-0" />
+                <p className="text-xs font-medium text-red-500">탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.</p>
+              </div>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <span>매칭 이력, 티켓, 쿠폰 등 모든 활동 기록이 삭제됩니다.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <span>후보 등록 정보가 삭제되어 매칭에서 제외됩니다.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <span>동일 이메일로 재가입은 가능하지만 이전 데이터는 복구되지 않습니다.</span>
+                </li>
+              </ul>
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => setStep('confirm')}
+                  className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 active:opacity-80 shadow-md shadow-rose-200/40 transition-all"
+                >
+                  계속하기
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 'confirm' && (
+            <>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">비밀번호 확인</label>
+                <div className="flex items-center border-2 border-slate-200 rounded-2xl overflow-hidden focus-within:border-red-400 transition-colors">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="현재 비밀번호를 입력해주세요"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoFocus
+                    className="flex-1 min-w-0 px-4 py-3 text-sm outline-none bg-white"
+                  />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="px-3 text-slate-400" aria-label="비밀번호 보기">
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">탈퇴 사유 <span className="text-slate-400 font-normal">(선택)</span></label>
+                <textarea
+                  value={withdrawalReason}
+                  onChange={(e) => setWithdrawalReason(e.target.value)}
+                  placeholder="서비스 개선을 위해 사유를 알려주세요"
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 text-sm text-slate-800 outline-none resize-none placeholder:text-slate-300 focus:border-slate-300 transition-colors"
+                />
+              </div>
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  onClick={() => setStep('warning')}
+                  className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-all"
+                >
+                  돌아가기
+                </button>
+                <button
+                  onClick={() => void handleWithdraw()}
+                  disabled={!password || isSubmitting}
+                  className="flex-1 py-3.5 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 active:opacity-80 shadow-md shadow-rose-200/40 transition-all disabled:opacity-60"
+                >
+                  {isSubmitting ? '처리 중...' : '탈퇴하기'}
+                </button>
+              </div>
             </>
           )}
         </div>
