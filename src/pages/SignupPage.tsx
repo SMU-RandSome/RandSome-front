@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Orbs } from '@/components/ui/Orbs';
@@ -186,13 +186,22 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
 };
 
+const SIGNUP_STORAGE_KEY = 'signup_form_state';
+
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const { setUser } = useAuth();
   const { isPWA } = useDisplayMode();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<SignupStep>(1);
+  const [saved] = useState(() => {
+    try {
+      const s = sessionStorage.getItem(SIGNUP_STORAGE_KEY);
+      return s ? JSON.parse(s) : null;
+    } catch { return null; }
+  });
+
+  const [step, setStep] = useState<SignupStep>(saved?.step ?? 1);
   const [formData, setFormData] = useState<{
     realName: string;
     gender: string;
@@ -209,30 +218,37 @@ const SignupPage: React.FC = () => {
     datingStyleTag: DatingStyleTag | '';
     terms: { service: boolean; privacy: boolean; thirdParty: boolean; disclaimer: boolean; profilePublic: boolean };
   }>({
-    realName: '',
-    gender: '',
-    mbti: '',
-    department: '',
-    intro: '',
-    idealType: '',
-    emailUsername: '',
-    instagramId: '',
+    realName: saved?.formData?.realName ?? '',
+    gender: saved?.formData?.gender ?? '',
+    mbti: saved?.formData?.mbti ?? '',
+    department: saved?.formData?.department ?? '',
+    intro: saved?.formData?.intro ?? '',
+    idealType: saved?.formData?.idealType ?? '',
+    emailUsername: saved?.formData?.emailUsername ?? '',
+    instagramId: saved?.formData?.instagramId ?? '',
     password: '',
     passwordConfirm: '',
-    personalityTag: '',
-    faceTypeTag: '',
-    datingStyleTag: '',
-    terms: { service: false, privacy: false, thirdParty: false, disclaimer: false, profilePublic: false },
+    personalityTag: saved?.formData?.personalityTag ?? '',
+    faceTypeTag: saved?.formData?.faceTypeTag ?? '',
+    datingStyleTag: saved?.formData?.datingStyleTag ?? '',
+    terms: saved?.formData?.terms ?? { service: false, privacy: false, thirdParty: false, disclaimer: false, profilePublic: false },
   });
 
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [emailVerificationToken, setEmailVerificationToken] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
+  const [emailSent, setEmailSent] = useState(saved?.emailSent ?? false);
+  const [emailVerified, setEmailVerified] = useState(saved?.emailVerified ?? false);
+  const [emailVerificationToken, setEmailVerificationToken] = useState(saved?.emailVerificationToken ?? '');
+  const [verificationCode, setVerificationCode] = useState(saved?.verificationCode ?? '');
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [openTermKey, setOpenTermKey] = useState<TermsKey | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const { password: _pw, passwordConfirm: _pwc, ...safeFormData } = formData;
+    sessionStorage.setItem(SIGNUP_STORAGE_KEY, JSON.stringify({
+      step, formData: safeFormData, emailSent, emailVerified, emailVerificationToken, verificationCode,
+    }));
+  }, [step, formData, emailSent, emailVerified, emailVerificationToken, verificationCode]);
 
   const handleSendEmail = async (): Promise<void> => {
     if (!formData.emailUsername.trim()) { toast('이메일 아이디를 입력해주세요.', 'error'); return; }
@@ -296,6 +312,7 @@ const SignupPage: React.FC = () => {
         datingStyleTag: formData.datingStyleTag || undefined, agreedToTerms: requiredTermsAgreed,
       };
       await apiClient.post('/v1/members/sign-up', body);
+      sessionStorage.removeItem(SIGNUP_STORAGE_KEY);
       try {
         const tokenRes = await loginApi({ email: body.email, password: body.password });
         if (!tokenRes.data) { toast('회원가입이 완료되었습니다. 로그인해주세요.', 'success'); navigate('/login'); return; }
@@ -353,7 +370,7 @@ const SignupPage: React.FC = () => {
                     {emailVerified ? <Check size={20} /> : emailSent ? '재전송' : '인증'}
                   </button>
                 </div>
-                <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">🏫 학교 웹메일 바로가기 <ExternalLink size={12} /></a>
+                <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">🏫 학교 웹메일 바로가기 <ExternalLink size={12} /></a>
                 {emailVerified ? (
                   <p className="text-xs text-green-600 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> 인증이 완료되었습니다.</p>
                 ) : emailSent && (

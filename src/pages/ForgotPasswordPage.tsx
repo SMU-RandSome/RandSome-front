@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useToast } from '@/components/ui/Toast';
@@ -35,21 +35,36 @@ const sheenStyle: React.CSSProperties = {
   animation: 'sheen 2.8s ease-in-out infinite',
 };
 
+const FORGOT_PW_STORAGE_KEY = 'forgot_password_form_state';
+
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<Step>(1);
-  const [emailId, setEmailId] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
-  const [code, setCode] = useState('');
-  const [codeVerified, setCodeVerified] = useState(false);
-  const [emailVerificationToken, setEmailVerificationToken] = useState('');
+  const [saved] = useState(() => {
+    try {
+      const s = sessionStorage.getItem(FORGOT_PW_STORAGE_KEY);
+      return s ? JSON.parse(s) : null;
+    } catch { return null; }
+  });
+
+  const [step, setStep] = useState<Step>(saved?.step ?? 1);
+  const [emailId, setEmailId] = useState(saved?.emailId ?? '');
+  const [codeSent, setCodeSent] = useState(saved?.codeSent ?? false);
+  const [code, setCode] = useState(saved?.code ?? '');
+  const [codeVerified, setCodeVerified] = useState(saved?.codeVerified ?? false);
+  const [emailVerificationToken, setEmailVerificationToken] = useState(saved?.emailVerificationToken ?? '');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    sessionStorage.setItem(FORGOT_PW_STORAGE_KEY, JSON.stringify({
+      step, emailId, codeSent, code, codeVerified, emailVerificationToken,
+    }));
+  }, [step, emailId, codeSent, code, codeVerified, emailVerificationToken]);
 
   const email = `${emailId}@sangmyung.kr`;
 
@@ -83,6 +98,7 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       const res = await updatePassword({ email, emailVerificationToken, newPassword });
       if (res.result === 'ERROR') { toast(res.error?.message ?? '오류가 발생했습니다.', 'error'); return; }
+      sessionStorage.removeItem(FORGOT_PW_STORAGE_KEY);
       toast('비밀번호가 변경되었습니다. 다시 로그인해주세요.', 'success');
       navigate('/login', { replace: true });
     } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setIsLoading(false); }
@@ -124,7 +140,7 @@ const ForgotPasswordPage: React.FC = () => {
                   <span className="shrink-0 text-sm text-slate-500 whitespace-nowrap" style={{ padding: '13px 14px', background: 'rgba(241,245,249,.9)', borderLeft: '1px solid rgba(219,234,254,.9)' }}>@sangmyung.kr</span>
                 </div>
               </div>
-              <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">학교 웹메일 바로가기 <ExternalLink size={12} /></a>
+              <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">학교 웹메일 바로가기 <ExternalLink size={12} /></a>
 
               {!codeSent && (
                 <div className="pt-1">
