@@ -16,18 +16,23 @@ const VALID_INSTAGRAM_ID = /^[a-zA-Z0-9._]{1,30}$/;
 const PERSONALITY_TAG_LABELS: Record<string, string> = {
   ACTIVE: '활발한', QUIET: '조용한', AFFECTIONATE: '다정한', INDEPENDENT: '독립적인',
   FUNNY: '유머있는', SERIOUS: '진지한', OPTIMISTIC: '긍정적인', CAREFUL: '신중한',
+  EMOTIONAL: '감성적인', RATIONAL: '이성적인', CONSIDERATE: '배려심 깊은',
+  TETO: '테토', EGEN: '에겐',
 };
 
 const FACE_TYPE_TAG_LABELS: Record<string, string> = {
   PUPPY: '강아지상', CAT: '고양이상', BEAR: '곰상', FOX: '여우상',
   RABBIT: '토끼상', PURE: '청순한', CHIC: '시크한', WARM: '훈훈한',
+  DINOSAUR: '공룡상', HAMSTER: '햄스터상', WOLF: '늑대상', CUTE: '귀여운',
+  STRONG: '강한', PRINCE: '왕자님상', DUBU: '두부상', JOKER: '조커상', SNAKE: '뱀상',
 };
 
 const DATING_STYLE_TAG_LABELS: Record<string, string> = {
   FREQUENT_CONTACT: '자주 연락', MODERATE_CONTACT: '적당한 연락',
   PLANNED_DATE: '계획형 데이트', SPONTANEOUS_DATE: '즉흥형 데이트',
-  SKINSHIP_LOVER: '스킨십 많은', RESPECTFUL_SPACE: '각자 시간 존중',
-  EXPRESSIVE: '감정 표현 잘함', GROW_TOGETHER: '함께 성장',
+  RESPECTFUL_SPACE: '각자 시간 존중', EXPRESSIVE: '감정 표현 잘함', GROW_TOGETHER: '함께 성장',
+  HOME_DATE: '집 데이트 선호', OUTDOOR_DATE: '야외 데이트 선호', DEEP_TALK: '깊은 대화 선호',
+  FRIEND_LIKE: '친구같은 연애', ROMANTIC: '로맨틱한 연애', SLOW_STARTER: '천천히 알아가기',
 };
 
 const REPORT_REASON_LABELS: Record<ReportReason, string> = {

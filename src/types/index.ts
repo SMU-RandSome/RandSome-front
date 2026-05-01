@@ -6,11 +6,11 @@ export type UserRole = 'ROLE_MEMBER' | 'ROLE_SUSPEND_MEMBER' | 'ROLE_CANDIDATE' 
 
 // --- 태그 (v2) ---
 
-export type PersonalityTag = 'ACTIVE' | 'QUIET' | 'AFFECTIONATE' | 'INDEPENDENT' | 'FUNNY' | 'SERIOUS' | 'OPTIMISTIC' | 'CAREFUL';
+export type PersonalityTag = 'ACTIVE' | 'QUIET' | 'AFFECTIONATE' | 'INDEPENDENT' | 'FUNNY' | 'SERIOUS' | 'OPTIMISTIC' | 'CAREFUL' | 'EMOTIONAL' | 'RATIONAL' | 'CONSIDERATE' | 'TETO' | 'EGEN';
 
-export type FaceTypeTag = 'PUPPY' | 'CAT' | 'BEAR' | 'FOX' | 'RABBIT' | 'PURE' | 'CHIC' | 'WARM';
+export type FaceTypeTag = 'PUPPY' | 'CAT' | 'BEAR' | 'FOX' | 'RABBIT' | 'PURE' | 'CHIC' | 'WARM' | 'DINOSAUR' | 'HAMSTER' | 'WOLF' | 'CUTE' | 'STRONG' | 'PRINCE' | 'DUBU' | 'JOKER' | 'SNAKE';
 
-export type DatingStyleTag = 'FREQUENT_CONTACT' | 'MODERATE_CONTACT' | 'PLANNED_DATE' | 'SPONTANEOUS_DATE' | 'SKINSHIP_LOVER' | 'RESPECTFUL_SPACE' | 'EXPRESSIVE' | 'GROW_TOGETHER';
+export type DatingStyleTag = 'FREQUENT_CONTACT' | 'MODERATE_CONTACT' | 'PLANNED_DATE' | 'SPONTANEOUS_DATE' | 'RESPECTFUL_SPACE' | 'EXPRESSIVE' | 'GROW_TOGETHER' | 'HOME_DATE' | 'OUTDOOR_DATE' | 'DEEP_TALK' | 'FRIEND_LIKE' | 'ROMANTIC' | 'SLOW_STARTER';
 
 export type Mbti =
   | 'ISTJ' | 'ISFJ' | 'INFJ' | 'INTJ'
@@ -166,6 +166,13 @@ export interface PasswordUpdateRequest {
   newPassword: string;
 }
 
+// --- 회원 탈퇴 ---
+
+export interface WithdrawMemberRequest {
+  password: string;
+  withdrawalReason?: string;
+}
+
 // --- 디바이스 ---
 
 export interface DeviceTokenSyncRequest {
@@ -207,9 +214,10 @@ export type MatchingApplicationStatus = 'PENDING' | 'SUCCESS' | 'PARTIAL_MATCH' 
 export interface MatchingApplicationRequest {
   matchingType: MatchingType;
   applicationCount: number;
-  preferredPersonalityTag?: PersonalityTag;
-  preferredFaceTypeTag?: FaceTypeTag;
-  preferredDatingStyleTag?: DatingStyleTag;
+  preferredPersonalityTags?: PersonalityTag[];
+  preferredFaceTypeTags?: FaceTypeTag[];
+  preferredDatingStyleTags?: DatingStyleTag[];
+  preferredMbtis?: Mbti[];
 }
 
 export interface MatchingApplicationResponse {
