@@ -59,6 +59,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
     const cleanup = (): void => {
       indicator.style.transition = '';
       content.style.transition = '';
+      content.style.willChange = '';
       content.removeEventListener('transitionend', cleanup);
     };
     content.addEventListener('transitionend', cleanup, { once: true });
@@ -136,7 +137,10 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
         return;
       }
 
-      isPullingRef.current = true;
+      if (!isPullingRef.current) {
+        isPullingRef.current = true;
+        if (contentRef.current) contentRef.current.style.willChange = 'transform';
+      }
       e.preventDefault();
       const distance = Math.min(deltaY * 0.5, MAX_PULL);
       pullDistanceRef.current = distance;
@@ -198,7 +202,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
           className={isRefreshing ? 'text-indigo-500 animate-spin' : 'text-slate-400'}
         />
       </div>
-      <div ref={contentRef} style={{ willChange: 'transform' }}>
+      <div ref={contentRef}>
         {children}
       </div>
     </div>
