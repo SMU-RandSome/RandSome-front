@@ -13,6 +13,7 @@ import type {
   CouponEventUpdateRequest,
   AdminCouponEventPreviewItem,
   CouponEventDetailItem,
+  CouponIssuedMemberItem,
   AdminReportListItem,
   AdminReportDetailResponse,
   ReportStatusFilter,
@@ -124,6 +125,14 @@ export const activateAdminCouponEvent = (eventId: number): Promise<ApiResponse<n
 export const deactivateAdminCouponEvent = (eventId: number): Promise<ApiResponse<null>> =>
   apiClient
     .post<ApiResponse<null>>(`/v1/admin/coupon-events/${eventId}/deactivate`)
+    .then((r) => r.data);
+
+export const getAdminCouponEventIssuedMembers = (
+  couponEventId: number,
+  params?: { lastId?: number; size?: number },
+): Promise<ApiResponse<CursorSlice<CouponIssuedMemberItem>>> =>
+  apiClient
+    .get<ApiResponse<CursorSlice<CouponIssuedMemberItem>>>(`/v1/admin/coupon-events/${couponEventId}/issued-members`, { params })
     .then((r) => r.data);
 
 // --- 신고 관리 ---

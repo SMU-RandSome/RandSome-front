@@ -6,7 +6,9 @@ import { Orbs } from '@/components/ui/Orbs';
 import { Stars } from '@/components/ui/Stars';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useDashboard } from '@/hooks/useDashboard';
-import { Heart, Sparkles } from 'lucide-react';
+import { Heart, Sparkles, MessageCircle, Clock } from 'lucide-react';
+
+const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
 
 import { motion } from 'motion/react';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
@@ -147,32 +149,63 @@ const GuestMainPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.26 }}
         >
-          <button
-            onClick={() => navigate('/signup')}
-            className="w-full py-[15px] rounded-[18px] text-white text-[15px] font-bold flex items-center justify-center gap-2 relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, #2563eb, #6366f1)',
-              boxShadow: '0 8px 32px rgba(59,130,246,.38)',
-            }}
-          >
+          {SERVICE_OPEN ? (
+            <>
+              <button
+                onClick={() => navigate('/signup')}
+                className="w-full py-[15px] rounded-[18px] text-white text-[15px] font-bold flex items-center justify-center gap-2 relative overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, #2563eb, #6366f1)',
+                  boxShadow: '0 8px 32px rgba(59,130,246,.38)',
+                }}
+              >
+                <div
+                  className="absolute top-0 bottom-0 w-[40%]"
+                  style={{
+                    left: '-60%',
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent)',
+                    animation: 'sheen 2.8s ease-in-out infinite',
+                  }}
+                />
+                <Heart size={18} fill="currentColor" />
+                지금 시작하기
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full mt-3 py-3 rounded-2xl border border-white/15 bg-transparent text-white/60 text-sm font-medium"
+              >
+                이미 계정이 있어요 · 로그인
+              </button>
+            </>
+          ) : (
             <div
-              className="absolute top-0 bottom-0 w-[40%]"
-              style={{
-                left: '-60%',
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent)',
-                animation: 'sheen 2.8s ease-in-out infinite',
-              }}
-            />
-            <Heart size={18} fill="currentColor" />
-            지금 시작하기
-          </button>
-          <button
-            onClick={() => navigate('/login')}
-            className="w-full mt-3 py-3 rounded-2xl border border-white/15 bg-transparent text-white/60 text-sm font-medium"
-          >
-            이미 계정이 있어요 · 로그인
-          </button>
-          <p className="text-center text-[11px] text-white/25 mt-2.5">
+              className="w-full py-[15px] rounded-[18px] flex items-center justify-center gap-2 border border-white/15"
+              style={{ background: 'rgba(255,255,255,.06)' }}
+            >
+              <Clock size={16} className="text-white/40" />
+              <span className="text-white/50 text-[15px] font-bold">서비스 준비 중이에요</span>
+            </div>
+          )}
+          <div className="flex items-center justify-center gap-5 mt-2">
+            <button
+              type="button"
+              onClick={() => navigate('/guide')}
+              className="py-2 text-white/35 text-xs font-medium underline underline-offset-2 decoration-white/20"
+            >
+              서비스 이용 가이드
+            </button>
+            <span className="w-px h-3 bg-white/20" />
+            <a
+              href="https://open.kakao.com/o/sRE2cosi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 py-2 text-white/35 text-xs font-medium underline underline-offset-2 decoration-white/20"
+            >
+              <MessageCircle size={11} />
+              카카오톡 문의
+            </a>
+          </div>
+          <p className="text-center text-[11px] text-white/25 mt-1.5">
             가입 시 이용약관 및 개인정보 처리방침에 동의하게 돼요
           </p>
         </motion.div>

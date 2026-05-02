@@ -24,6 +24,7 @@ const QrPage = React.lazy(() => import('@/pages/QrPage'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/AdminDashboard'));
 const AdminQrPage = React.lazy(() => import('@/pages/admin/AdminQrPage'));
 const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
+const GuidePage = React.lazy(() => import('@/pages/GuidePage'));
 
 const PageLoader: React.FC = () => (
   <div className="min-h-screen mesh-surface flex justify-center items-start">
@@ -57,10 +58,14 @@ const AppShell: React.FC = () => {
   );
 };
 
+/** 서비스 오픈 여부 — Vercel Production 환경변수 VITE_SERVICE_OPEN=false 로 제어 */
+const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
+
 /** 루트('/') 진입 시 인증 상태에 따라 리다이렉트 */
 const RootRoute: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated || !user) return <GuestMainPage />;
+  if (!SERVICE_OPEN) return <GuestMainPage />;
   if (user.role === 'ROLE_ADMIN') return <Navigate to="/admin" replace />;
   return <Navigate to="/home" replace />;
 };
@@ -68,6 +73,7 @@ const RootRoute: React.FC = () => {
 /** 인증된 회원만 접근 가능한 라우트 */
 const ProtectedRoute: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
+  if (!SERVICE_OPEN) return <Navigate to="/" replace />;
   if (!isAuthenticated || !user) return <Navigate to="/" replace />;
   if (user.role === 'ROLE_ADMIN') return <Navigate to="/admin" replace />;
   return <Outlet />;
@@ -76,6 +82,7 @@ const ProtectedRoute: React.FC = () => {
 /** 관리자만 접근 가능한 라우트 */
 const AdminRoute: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
+  if (!SERVICE_OPEN) return <Navigate to="/" replace />;
   if (!isAuthenticated || !user) return <Navigate to="/" replace />;
   if (user.role !== 'ROLE_ADMIN') return <Navigate to="/home" replace />;
   return <Outlet />;
@@ -87,10 +94,11 @@ export const router = createBrowserRouter([
     children: [
       // 공개 라우트
       { path: '/', element: <RootRoute /> },
-      { path: '/login', element: <LoginPage /> },
-      { path: '/signup', element: <SignupPage /> },
-      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/login', element: SERVICE_OPEN ? <LoginPage /> : <Navigate to="/" replace /> },
+      { path: '/signup', element: SERVICE_OPEN ? <SignupPage /> : <Navigate to="/" replace /> },
+      { path: '/forgot-password', element: SERVICE_OPEN ? <ForgotPasswordPage /> : <Navigate to="/" replace /> },
       { path: '/about', element: <AboutPage /> },
+      { path: '/guide', element: <GuidePage /> },
 
       // 회원 전용 라우트
       {

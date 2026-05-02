@@ -118,7 +118,7 @@ const MatchRequestDetailPage: React.FC = () => {
 
   return (
     <MobileLayout className="!bg-transparent" outerClassName="bg-guest-dark">
-      <div className="flex flex-col bg-guest-dark relative min-h-screen" style={{ minHeight: '100dvh' }}>
+      <div className="flex flex-col bg-guest-dark relative min-h-screen">
         {/* Orbs/Stars 장식: flex 레이아웃에 영향 없이 독립적으로 overflow-hidden 처리 */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <Orbs dark />

@@ -145,7 +145,7 @@ const TERMS_ITEMS: TermsItem[] = [
           <p className="font-semibold text-slate-800 mb-1">공개 항목</p>
           <ul className="space-y-1 list-none">
             <li>• 닉네임</li>
-            <li>• 인스타그램 ID (선택 입력)</li>
+            <li>• 인스타그램 ID (필수 입력)</li>
             <li>• 자기소개</li>
             <li>• MBTI</li>
           </ul>
@@ -306,7 +306,7 @@ const SignupPage: React.FC = () => {
       const body: MemberCreateRequest = {
         emailVerificationToken, email: `${formData.emailUsername}@sangmyung.kr`, password: formData.password,
         legalName: formData.realName, gender: formData.gender as Gender, mbti: formData.mbti as Mbti,
-        department: formData.department as Department, instagramId: formData.instagramId || undefined,
+        department: formData.department as Department, instagramId: formData.instagramId,
         selfIntroduction: formData.intro || undefined, idealDescription: formData.idealType || undefined,
         personalityTag: formData.personalityTag || undefined, faceTypeTag: formData.faceTypeTag || undefined,
         datingStyleTag: formData.datingStyleTag || undefined, agreedToTerms: requiredTermsAgreed,
@@ -481,7 +481,7 @@ const SignupPage: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <span style={labelStyle}>인스타그램 ID</span>
+                  <span style={labelStyle}>인스타그램 ID <span className="text-red-400">*</span></span>
                   <input type="text" placeholder="아이디만 입력해주세요 (예: randsome_official)" value={formData.instagramId} onChange={(e) => setFormData({ ...formData, instagramId: e.target.value })} className="placeholder:text-slate-300" style={glassInputStyle} />
                   {formData.instagramId && !validateInstagramId(formData.instagramId) && (
                     <p className="text-[11px] text-red-500 font-bold mt-1.5">{getInstagramIdErrorMessage(formData.instagramId)}</p>
