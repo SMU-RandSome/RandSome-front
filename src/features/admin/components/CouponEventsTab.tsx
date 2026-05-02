@@ -217,6 +217,7 @@ const CouponEventsTab: React.FC = () => {
   const [detailItem, setDetailItem] = useState<CouponEventDetailItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  const [issuedMembersOpen, setIssuedMembersOpen] = useState(false);
   const [issuedMembersEventId, setIssuedMembersEventId] = useState<number | null>(null);
   const [issuedMembersEventName, setIssuedMembersEventName] = useState('');
   const [issuedMembers, setIssuedMembers] = useState<CouponIssuedMemberItem[]>([]);
@@ -224,8 +225,11 @@ const CouponEventsTab: React.FC = () => {
   const [issuedMembersHasNext, setIssuedMembersHasNext] = useState(false);
   const [issuedMembersNextCursor, setIssuedMembersNextCursor] = useState<number | null>(null);
   const [issuedMembersLoadingMore, setIssuedMembersLoadingMore] = useState(false);
+  const issuedMembersReqRef = useRef(0);
 
   const openIssuedMembers = (event: AdminCouponEventPreviewItem): void => {
+    const reqId = ++issuedMembersReqRef.current;
+    setIssuedMembersOpen(true);
     setIssuedMembersEventId(event.id);
     setIssuedMembersEventName(event.name);
     setIssuedMembers([]);
@@ -234,14 +238,21 @@ const CouponEventsTab: React.FC = () => {
     setIssuedMembersLoading(true);
     getAdminCouponEventIssuedMembers(event.id)
       .then((res) => {
+        if (reqId !== issuedMembersReqRef.current) return;
         if (res.data) {
           setIssuedMembers(res.data.items);
           setIssuedMembersHasNext(res.data.hasNext);
           setIssuedMembersNextCursor(res.data.nextCursor);
         }
       })
-      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
-      .finally(() => setIssuedMembersLoading(false));
+      .catch((err: unknown) => {
+        if (reqId !== issuedMembersReqRef.current) return;
+        toast(getApiErrorMessage(err), 'error');
+      })
+      .finally(() => {
+        if (reqId !== issuedMembersReqRef.current) return;
+        setIssuedMembersLoading(false);
+      });
   };
 
   const loadMoreIssuedMembers = (): void => {
@@ -261,6 +272,8 @@ const CouponEventsTab: React.FC = () => {
   };
 
   const closeIssuedMembers = (): void => {
+    issuedMembersReqRef.current++; // 진행 중인 요청 무효화
+    setIssuedMembersOpen(false);
     setIssuedMembersEventId(null);
     setIssuedMembers([]);
     setIssuedMembersEventName('');
@@ -812,7 +825,7 @@ const CouponEventsTab: React.FC = () => {
 
       {/* 발급 회원 목록 모달 */}
       <AnimatePresence>
-        {(issuedMembersLoading || issuedMembersEventId !== null) && (
+        {issuedMembersOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
             <motion.div
               className="absolute inset-0 bg-black/40"

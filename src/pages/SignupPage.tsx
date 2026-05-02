@@ -145,7 +145,7 @@ const TERMS_ITEMS: TermsItem[] = [
           <p className="font-semibold text-slate-800 mb-1">공개 항목</p>
           <ul className="space-y-1 list-none">
             <li>• 닉네임</li>
-            <li>• 인스타그램 ID (선택 입력)</li>
+            <li>• 인스타그램 ID (필수 입력)</li>
             <li>• 자기소개</li>
             <li>• MBTI</li>
           </ul>
