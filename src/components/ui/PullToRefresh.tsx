@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'motion/react';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { RefreshCw } from 'lucide-react';
 
 const PULL_THRESHOLD = 64;
 const MAX_PULL = 100;
+const INDICATOR_HEIGHT = 48;
 
 /** 터치 대상이 fixed overlay(모달/바텀시트) 내부인지 확인 */
 const isInsideFixedOverlay = (target: EventTarget | null, container: HTMLElement | null): boolean => {
@@ -28,19 +28,60 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
   const { isStandalone } = useDisplayMode();
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  const iconRef = useRef<SVGSVGElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef<number | null>(null);
   const pullDistanceRef = useRef(0);
-  const [pullDistance, setPullDistance] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const isRefreshingRef = useRef(false);
   const isPullingRef = useRef(false);
+  const isRefreshingRef = useRef(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const onRefreshRef = useRef(onRefresh);
 
   useEffect(() => { onRefreshRef.current = onRefresh; }, [onRefresh]);
 
+  /** transition 붙이고 원위치로 복귀 */
+  const animateReset = useCallback((): void => {
+    const indicator = indicatorRef.current;
+    const content = contentRef.current;
+    const icon = iconRef.current;
+    if (!indicator || !content || !icon) return;
+
+    const transition = 'transform 0.2s ease, opacity 0.2s ease';
+    indicator.style.transition = transition;
+    content.style.transition = 'transform 0.2s ease';
+
+    indicator.style.transform = `translateY(-${INDICATOR_HEIGHT}px)`;
+    indicator.style.opacity = '0';
+    content.style.transform = 'translateY(0)';
+    icon.style.transform = 'rotate(0deg)';
+
+    const cleanup = (): void => {
+      indicator.style.transition = '';
+      content.style.transition = '';
+      content.removeEventListener('transitionend', cleanup);
+    };
+    content.addEventListener('transitionend', cleanup, { once: true });
+  }, []);
+
   const handleRefresh = useCallback(async (): Promise<void> => {
     setIsRefreshing(true);
     isRefreshingRef.current = true;
+
+    // 새로고침 중 인디케이터 위치 고정
+    const indicator = indicatorRef.current;
+    const content = contentRef.current;
+    const icon = iconRef.current;
+    if (indicator && content && icon) {
+      const transition = 'transform 0.2s ease, opacity 0.2s ease';
+      indicator.style.transition = transition;
+      content.style.transition = 'transform 0.2s ease';
+      indicator.style.transform = 'translateY(0)';
+      indicator.style.opacity = '1';
+      content.style.transform = `translateY(${INDICATOR_HEIGHT}px)`;
+      icon.style.transform = '';
+    }
+
     try {
       if (onRefreshRef.current) {
         await onRefreshRef.current();
@@ -52,9 +93,9 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
       setIsRefreshing(false);
       isRefreshingRef.current = false;
       pullDistanceRef.current = 0;
-      setPullDistance(0);
+      animateReset();
     }
-  }, [queryClient]);
+  }, [queryClient, animateReset]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -72,7 +113,6 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
       if (window.scrollY > 0) {
         startYRef.current = null;
         pullDistanceRef.current = 0;
-        setPullDistance(0);
         isPullingRef.current = false;
         return;
       }
@@ -81,8 +121,17 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
       if (deltaY <= 0) {
         if (isPullingRef.current) {
           pullDistanceRef.current = 0;
-          setPullDistance(0);
           isPullingRef.current = false;
+          // DOM 직접 리셋
+          const indicator = indicatorRef.current;
+          const content = contentRef.current;
+          const icon = iconRef.current;
+          if (indicator && content && icon) {
+            indicator.style.transform = `translateY(-${INDICATOR_HEIGHT}px)`;
+            indicator.style.opacity = '0';
+            content.style.transform = 'translateY(0)';
+            icon.style.transform = 'rotate(0deg)';
+          }
         }
         return;
       }
@@ -91,7 +140,21 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
       e.preventDefault();
       const distance = Math.min(deltaY * 0.5, MAX_PULL);
       pullDistanceRef.current = distance;
-      setPullDistance(distance);
+      const progress = Math.min(distance / PULL_THRESHOLD, 1);
+
+      // DOM 직접 조작 — React 리렌더 없음
+      const indicator = indicatorRef.current;
+      const content = contentRef.current;
+      const icon = iconRef.current;
+      if (indicator && content && icon) {
+        indicator.style.transition = '';
+        content.style.transition = '';
+        content.style.transform = `translateY(${distance}px)`;
+        indicator.style.transform = `translateY(${distance - INDICATOR_HEIGHT}px)`;
+        indicator.style.opacity = String(progress);
+        icon.style.transform = `rotate(${progress * 270}deg)`;
+        icon.style.color = distance >= PULL_THRESHOLD ? 'var(--color-indigo-500)' : 'var(--color-slate-400)';
+      }
     };
 
     const onTouchEnd = (): void => {
@@ -103,7 +166,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
         handleRefresh();
       } else {
         pullDistanceRef.current = 0;
-        setPullDistance(0);
+        animateReset();
       }
     };
 
@@ -116,42 +179,28 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
       container.removeEventListener('touchmove', onTouchMove);
       container.removeEventListener('touchend', onTouchEnd);
     };
-  }, [isStandalone, handleRefresh]);
+  }, [isStandalone, handleRefresh, animateReset]);
 
   if (!isStandalone) {
     return <>{children}</>;
   }
 
-  const progress = Math.min(pullDistance / PULL_THRESHOLD, 1);
-  const showIndicator = pullDistance > 0 || isRefreshing;
-
   return (
     <div ref={containerRef} className="relative">
-      <AnimatePresence>
-        {showIndicator && (
-          <motion.div
-            className="flex items-center justify-center pointer-events-none"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{
-              height: isRefreshing ? 48 : pullDistance,
-              opacity: isRefreshing ? 1 : progress,
-            }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <motion.div
-              animate={{ rotate: isRefreshing ? 360 : progress * 270 }}
-              transition={isRefreshing ? { repeat: Infinity, duration: 0.8, ease: 'linear' } : { duration: 0 }}
-            >
-              <RefreshCw
-                size={20}
-                className={pullDistance >= PULL_THRESHOLD || isRefreshing ? 'text-indigo-500' : 'text-slate-400'}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      {children}
+      <div
+        ref={indicatorRef}
+        className="absolute top-0 inset-x-0 flex items-center justify-center pointer-events-none"
+        style={{ height: INDICATOR_HEIGHT, transform: `translateY(-${INDICATOR_HEIGHT}px)`, opacity: 0, willChange: 'transform, opacity' }}
+      >
+        <RefreshCw
+          ref={iconRef}
+          size={20}
+          className={isRefreshing ? 'text-indigo-500 animate-spin' : 'text-slate-400'}
+        />
+      </div>
+      <div ref={contentRef} style={{ willChange: 'transform' }}>
+        {children}
+      </div>
     </div>
   );
 };
