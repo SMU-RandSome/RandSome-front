@@ -17,6 +17,8 @@ import {
   Gift,
   Ticket,
   CheckCircle2,
+  Smartphone,
+  ChevronRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -399,6 +401,29 @@ const GuidePage: React.FC = () => {
         </div>
       </motion.div>
 
+      {/* PWA 설치 안내 */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.42 }}
+        className="mb-5"
+      >
+        <button
+          type="button"
+          onClick={() => navigate('/pwa-guide')}
+          className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl border border-slate-200/60 shadow-sm text-left"
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
+            <Smartphone size={20} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-800 text-sm">앱으로 설치하기</p>
+            <p className="text-xs text-slate-500 mt-0.5">iOS · Android 설치 방법 보기</p>
+          </div>
+          <ChevronRight size={16} className="text-slate-400 shrink-0" />
+        </button>
+      </motion.div>
+
       {/* CTA */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -426,7 +451,10 @@ const GuidePage: React.FC = () => {
 
   return (
     <MobileLayout className="bg-[#F8FAFF]">
-      <div className={isPWA ? 'px-5 pt-5' : 'mx-auto max-w-2xl px-5 py-5'}>
+      <div
+        className={isPWA ? 'px-5' : 'mx-auto max-w-2xl px-5 py-5'}
+        style={isPWA ? { paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' } : undefined}
+      >
         {content}
       </div>
     </MobileLayout>

@@ -7,6 +7,7 @@ import { useDisplayMode } from '@/store/displayModeStore';
 const GuestMainPage = React.lazy(() => import('@/pages/GuestMainPage'));
 const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
 const GuidePage = React.lazy(() => import('@/pages/GuidePage'));
+const PwaGuidePage = React.lazy(() => import('@/pages/PwaGuidePage'));
 
 const PageLoader: React.FC = () => (
   <div className="min-h-screen mesh-surface flex justify-center items-start">
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
       { path: '/', element: <GuestMainPage /> },
       { path: '/about', element: <AboutPage /> },
       { path: '/guide', element: <GuidePage /> },
+      { path: '/pwa-guide', element: <PwaGuidePage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

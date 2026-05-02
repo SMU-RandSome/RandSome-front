@@ -290,7 +290,10 @@ const AboutPage: React.FC = () => {
 
   return (
     <MobileLayout className="bg-[#F8FAFF]">
-      <div className={isPWA ? 'px-5 pt-5' : 'mx-auto max-w-2xl px-5 py-5'}>
+      <div
+        className={isPWA ? 'px-5' : 'mx-auto max-w-2xl px-5 py-5'}
+        style={isPWA ? { paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' } : undefined}
+      >
         {content}
       </div>
     </MobileLayout>
