@@ -48,6 +48,7 @@ export const Footer: React.FC = () => {
               <li>
                 <a
                   href="https://www.smu.ac.kr"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors duration-150"
                 >

@@ -1174,6 +1174,7 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
               </p>
               <a
                 href="https://cloud.smu.ac.kr/t/smu.ac.kr"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
               >
