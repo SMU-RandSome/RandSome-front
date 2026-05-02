@@ -63,7 +63,8 @@ const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
 
 /** 루트('/') 진입 시 인증 상태에 따라 리다이렉트 */
 const RootRoute: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isInitializing } = useAuth();
+  if (isInitializing) return <PageLoader />;
   if (!isAuthenticated || !user) return <GuestMainPage />;
   if (!SERVICE_OPEN) return <GuestMainPage />;
   if (user.role === 'ROLE_ADMIN') return <Navigate to="/admin" replace />;
@@ -72,7 +73,8 @@ const RootRoute: React.FC = () => {
 
 /** 인증된 회원만 접근 가능한 라우트 */
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isInitializing } = useAuth();
+  if (isInitializing) return <PageLoader />;
   if (!SERVICE_OPEN) return <Navigate to="/" replace />;
   if (!isAuthenticated || !user) return <Navigate to="/" replace />;
   if (user.role === 'ROLE_ADMIN') return <Navigate to="/admin" replace />;
@@ -81,7 +83,8 @@ const ProtectedRoute: React.FC = () => {
 
 /** 관리자만 접근 가능한 라우트 */
 const AdminRoute: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isInitializing } = useAuth();
+  if (isInitializing) return <PageLoader />;
   if (!SERVICE_OPEN) return <Navigate to="/" replace />;
   if (!isAuthenticated || !user) return <Navigate to="/" replace />;
   if (user.role !== 'ROLE_ADMIN') return <Navigate to="/home" replace />;

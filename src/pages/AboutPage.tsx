@@ -276,16 +276,6 @@ const AboutPage: React.FC = () => {
         </div>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.3 }}
-        className="mt-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-100/80 px-4 py-3.5"
-      >
-        <p className="text-[11px] font-semibold text-slate-500">서비스 관리자</p>
-        <p className="text-sm font-bold text-slate-800 mt-0.5">소프트웨어학과 학생회</p>
-      </motion.div>
-
       {/* 푸터 */}
       <motion.p
         className="text-center text-xs text-slate-400 mt-10"

@@ -11,8 +11,6 @@ import { Heart, Sparkles, MessageCircle, Clock } from 'lucide-react';
 const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
 
 import { motion } from 'motion/react';
-import { useAnnouncements } from '@/hooks/useAnnouncements';
-import { AnnouncementBanner } from '@/components/ui/AnnouncementBanner';
 
 const INFO_BADGES = [
   { text: '21학번+', bg: 'rgba(99,102,241,.25)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,.4)' },
@@ -24,7 +22,6 @@ const GuestMainPage: React.FC = () => {
   const navigate = useNavigate();
   const { isPWA, isStandalone } = useDisplayMode();
   const { stats } = useDashboard();
-  const { announcements } = useAnnouncements();
 
   useEffect(() => {
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -134,13 +131,6 @@ const GuestMainPage: React.FC = () => {
             ))}
           </div>
         </motion.div>
-
-        {/* 공지사항 */}
-        {announcements.length > 0 && (
-          <div className="px-5 mb-4">
-            <AnnouncementBanner announcements={announcements} />
-          </div>
-        )}
 
         {/* CTA buttons */}
         <motion.div

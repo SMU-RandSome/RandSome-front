@@ -288,7 +288,7 @@ const GuidePage: React.FC = () => {
                 <span className="text-base leading-none mt-0.5">🏫</span>
                 <div>
                   <p className="text-xs font-bold text-slate-800">같은 학과끼리는 매칭되지 않아요</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">자율전공학부는 예외로 다른 학과와 매칭될 수 있어요</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">자율전공학부는 예외로 같은 학부 내에서 매칭될 수 있어요</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
