@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDisplayMode } from '@/store/displayModeStore';
@@ -7,80 +7,118 @@ import { RefreshCw } from 'lucide-react';
 const PULL_THRESHOLD = 64;
 const MAX_PULL = 100;
 
+/** 터치 대상이 fixed overlay(모달/바텀시트) 내부인지 확인 */
+const isInsideFixedOverlay = (target: EventTarget | null, container: HTMLElement | null): boolean => {
+  let el = target as HTMLElement | null;
+  while (el && el !== document.body) {
+    if (el === container) return false;
+    const position = window.getComputedStyle(el).position;
+    if (position === 'fixed') return true;
+    el = el.parentElement;
+  }
+  return false;
+};
+
 interface PullToRefreshProps {
   children: React.ReactNode;
   onRefresh?: () => Promise<void>;
 }
 
 export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefresh }) => {
-  const { isPWA } = useDisplayMode();
+  const { isStandalone } = useDisplayMode();
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef<number | null>(null);
+  const pullDistanceRef = useRef(0);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const isRefreshingRef = useRef(false);
   const isPullingRef = useRef(false);
+  const onRefreshRef = useRef(onRefresh);
+
+  useEffect(() => { onRefreshRef.current = onRefresh; }, [onRefresh]);
 
   const handleRefresh = useCallback(async (): Promise<void> => {
     setIsRefreshing(true);
+    isRefreshingRef.current = true;
     try {
-      if (onRefresh) {
-        await onRefresh();
+      if (onRefreshRef.current) {
+        await onRefreshRef.current();
       } else {
         await queryClient.invalidateQueries();
         await queryClient.refetchQueries({ type: 'active' });
       }
     } finally {
       setIsRefreshing(false);
+      isRefreshingRef.current = false;
+      pullDistanceRef.current = 0;
       setPullDistance(0);
     }
-  }, [onRefresh, queryClient]);
+  }, [queryClient]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent): void => {
-    if (isRefreshing) return;
+  useEffect(() => {
     const container = containerRef.current;
-    if (!container || container.scrollTop > 0) return;
-    startYRef.current = e.touches[0].clientY;
-  }, [isRefreshing]);
+    if (!container || !isStandalone) return;
 
-  const handleTouchMove = useCallback((e: React.TouchEvent): void => {
-    if (isRefreshing || startYRef.current === null) return;
-    const container = containerRef.current;
-    if (!container || container.scrollTop > 0) {
-      startYRef.current = null;
-      setPullDistance(0);
-      isPullingRef.current = false;
-      return;
-    }
+    const onTouchStart = (e: TouchEvent): void => {
+      if (isRefreshingRef.current) return;
+      if (window.scrollY > 0) return;
+      if (isInsideFixedOverlay(e.target, container)) return;
+      startYRef.current = e.touches[0].clientY;
+    };
 
-    const deltaY = e.touches[0].clientY - startYRef.current;
-    if (deltaY <= 0) {
-      if (isPullingRef.current) {
+    const onTouchMove = (e: TouchEvent): void => {
+      if (isRefreshingRef.current || startYRef.current === null) return;
+      if (window.scrollY > 0) {
+        startYRef.current = null;
+        pullDistanceRef.current = 0;
         setPullDistance(0);
         isPullingRef.current = false;
+        return;
       }
-      return;
-    }
 
-    isPullingRef.current = true;
-    e.preventDefault();
-    const distance = Math.min(deltaY * 0.5, MAX_PULL);
-    setPullDistance(distance);
-  }, [isRefreshing]);
+      const deltaY = e.touches[0].clientY - startYRef.current;
+      if (deltaY <= 0) {
+        if (isPullingRef.current) {
+          pullDistanceRef.current = 0;
+          setPullDistance(0);
+          isPullingRef.current = false;
+        }
+        return;
+      }
 
-  const handleTouchEnd = useCallback((): void => {
-    if (isRefreshing) return;
-    startYRef.current = null;
-    isPullingRef.current = false;
+      isPullingRef.current = true;
+      e.preventDefault();
+      const distance = Math.min(deltaY * 0.5, MAX_PULL);
+      pullDistanceRef.current = distance;
+      setPullDistance(distance);
+    };
 
-    if (pullDistance >= PULL_THRESHOLD) {
-      handleRefresh();
-    } else {
-      setPullDistance(0);
-    }
-  }, [isRefreshing, pullDistance, handleRefresh]);
+    const onTouchEnd = (): void => {
+      if (isRefreshingRef.current) return;
+      startYRef.current = null;
+      isPullingRef.current = false;
 
-  if (!isPWA) {
+      if (pullDistanceRef.current >= PULL_THRESHOLD) {
+        handleRefresh();
+      } else {
+        pullDistanceRef.current = 0;
+        setPullDistance(0);
+      }
+    };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isStandalone, handleRefresh]);
+
+  if (!isStandalone) {
     return <>{children}</>;
   }
 
@@ -88,13 +126,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
   const showIndicator = pullDistance > 0 || isRefreshing;
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-full overflow-y-auto"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div ref={containerRef} className="relative">
       <AnimatePresence>
         {showIndicator && (
           <motion.div

@@ -4,6 +4,7 @@ import { useAuth } from '@/store/authStore';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { WebShell } from '@/components/layout/WebShell';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { PullToRefresh } from '@/components/ui/PullToRefresh';
 
 // 라우트 단위 코드 스플리팅
 const GuestMainPage = React.lazy(() => import('@/pages/GuestMainPage'));
@@ -42,9 +43,11 @@ const AppShell: React.FC = () => {
   if (isPWA) {
     return (
       <ErrorBoundary>
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
+        <PullToRefresh>
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </PullToRefresh>
       </ErrorBoundary>
     );
   }
