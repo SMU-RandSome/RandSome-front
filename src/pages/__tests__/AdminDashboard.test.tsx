@@ -152,11 +152,10 @@ describe('AdminDashboard', () => {
       await waitFor(() => expect(mockGetAdminReports).toHaveBeenCalledTimes(1));
     });
 
-    it('상태 필터 칩 4개(전체·대기 중·검토 중·처리 완료)가 렌더링됨', async () => {
+    it('상태 필터 칩 3개(대기 중·검토 중·처리 완료)가 렌더링됨', async () => {
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
-      await waitFor(() => expect(screen.getByText('전체')).toBeInTheDocument());
-      expect(screen.getByText('대기 중')).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByText('대기 중')).toBeInTheDocument());
       expect(screen.getByText('검토 중')).toBeInTheDocument();
       expect(screen.getByText('처리 완료')).toBeInTheDocument();
     });
@@ -253,19 +252,17 @@ describe('AdminDashboard', () => {
       );
     });
 
-    it('"전체" 필터 클릭 시 statusFilter 파라미터 없이 재조회', async () => {
+    it('"검토 중" 필터 클릭 시 statusFilter 파라미터로 재조회', async () => {
       renderWithProviders(<AdminDashboard />);
       switchToReportsTab();
-      await waitFor(() => expect(screen.getByText('대기 중')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('검토 중')).toBeInTheDocument());
 
-      // PENDING으로 변경 후 다시 전체로
-      fireEvent.click(screen.getByText('대기 중'));
+      fireEvent.click(screen.getByText('검토 중'));
       await waitFor(() => expect(mockGetAdminReports).toHaveBeenCalledTimes(2));
 
-      fireEvent.click(screen.getByText('전체'));
-      await waitFor(() => expect(mockGetAdminReports).toHaveBeenCalledTimes(3));
-
-      expect(mockGetAdminReports.mock.calls[2][0]).toBeUndefined();
+      expect(mockGetAdminReports).toHaveBeenLastCalledWith(
+        expect.objectContaining({ statusFilter: 'IN_REVIEW' }),
+      );
     });
   });
 

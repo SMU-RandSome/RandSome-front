@@ -186,7 +186,7 @@ const MyPage: React.FC = () => {
         // 네트워크 오류 등 — authStore 캐시 사용
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [setUser]);
 
   const handleLogout = (): void => {
     logout();

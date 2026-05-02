@@ -244,7 +244,7 @@ const SignupPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const { password: _pw, passwordConfirm: _pwc, ...safeFormData } = formData;
+    const { password: _, passwordConfirm: __, ...safeFormData } = formData; // eslint-disable-line @typescript-eslint/no-unused-vars
     sessionStorage.setItem(SIGNUP_STORAGE_KEY, JSON.stringify({
       step, formData: safeFormData, emailSent, emailVerified, emailVerificationToken, verificationCode,
     }));

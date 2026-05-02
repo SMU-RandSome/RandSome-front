@@ -47,24 +47,22 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
     const icon = iconRef.current;
     if (!indicator || !content || !icon) return;
 
-    const transition = 'transform 0.2s ease, opacity 0.2s ease';
-    indicator.style.transition = transition;
-    content.style.transition = 'transform 0.2s ease';
+    const transition = 'top 0.2s ease';
+    indicator.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+    content.style.transition = transition;
 
     indicator.style.transform = `translateY(-${INDICATOR_HEIGHT}px)`;
     indicator.style.opacity = '0';
-    content.style.transform = 'translateY(0)';
+    content.style.top = '0px';
     icon.style.transform = 'rotate(0deg)';
 
     const cleanup = (): void => {
       clearTimeout(fallbackTimer);
       indicator.style.transition = '';
       content.style.transition = '';
-      content.style.transform = '';
-      content.style.willChange = '';
+      content.style.top = '';
       content.removeEventListener('transitionend', cleanup);
     };
-    // transitionend가 발생하지 않을 수 있으므로 fallback
     const fallbackTimer = setTimeout(cleanup, 300);
     content.addEventListener('transitionend', cleanup, { once: true });
   }, []);
@@ -78,12 +76,11 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
     const content = contentRef.current;
     const icon = iconRef.current;
     if (indicator && content && icon) {
-      const transition = 'transform 0.2s ease, opacity 0.2s ease';
-      indicator.style.transition = transition;
-      content.style.transition = 'transform 0.2s ease';
+      indicator.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+      content.style.transition = 'top 0.2s ease';
       indicator.style.transform = 'translateY(0)';
       indicator.style.opacity = '1';
-      content.style.transform = `translateY(${INDICATOR_HEIGHT}px)`;
+      content.style.top = `${INDICATOR_HEIGHT}px`;
       icon.style.transform = '';
     }
 
@@ -134,8 +131,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
           if (indicator && content && icon) {
             indicator.style.transform = `translateY(-${INDICATOR_HEIGHT}px)`;
             indicator.style.opacity = '0';
-            content.style.transform = '';
-            content.style.willChange = '';
+            content.style.top = '';
             icon.style.transform = 'rotate(0deg)';
           }
         }
@@ -144,7 +140,6 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
 
       if (!isPullingRef.current) {
         isPullingRef.current = true;
-        if (contentRef.current) contentRef.current.style.willChange = 'transform';
       }
       e.preventDefault();
       const distance = Math.min(deltaY * 0.5, MAX_PULL);
@@ -158,7 +153,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
       if (indicator && content && icon) {
         indicator.style.transition = '';
         content.style.transition = '';
-        content.style.transform = `translateY(${distance}px)`;
+        content.style.top = `${distance}px`;
         indicator.style.transform = `translateY(${distance - INDICATOR_HEIGHT}px)`;
         indicator.style.opacity = String(progress);
         icon.style.transform = `rotate(${progress * 270}deg)`;
@@ -173,9 +168,11 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
 
       if (pullDistanceRef.current >= PULL_THRESHOLD) {
         handleRefresh();
-      } else {
+      } else if (pullDistanceRef.current > 0) {
         pullDistanceRef.current = 0;
         animateReset();
+      } else {
+        pullDistanceRef.current = 0;
       }
     };
 
@@ -207,7 +204,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
           className={isRefreshing ? 'text-indigo-500 animate-spin' : 'text-slate-400'}
         />
       </div>
-      <div ref={contentRef}>
+      <div ref={contentRef} style={{ position: 'relative' }}>
         {children}
       </div>
     </div>

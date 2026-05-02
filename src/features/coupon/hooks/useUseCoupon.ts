@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCoupon } from '../api';
+import { useCoupon as apiUseCoupon } from '../api';
 import { getApiErrorMessage } from '@/lib/axios';
 import { useToast } from '@/components/ui/Toast';
 
@@ -8,7 +8,7 @@ export const useUseCouponMutation = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (couponId: number) => useCoupon(couponId),
+    mutationFn: (couponId: number) => apiUseCoupon(couponId),
     onSuccess: () => {
       toast('쿠폰이 사용되었습니다! 티켓이 지급됩니다 🎟️', 'success');
     },

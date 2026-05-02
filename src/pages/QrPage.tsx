@@ -69,7 +69,7 @@ const QrPage: React.FC = () => {
       clearTimer();
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isUrgent = countdown <= 10;
   const mm = String(Math.floor(countdown / 60)).padStart(2, '0');

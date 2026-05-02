@@ -81,7 +81,7 @@ export const CouponEventBanner: React.FC<CouponEventBannerProps> = ({ events }) 
         onDragStart={() => { isDragging.current = true; }}
         onDragEnd={(_, info) => {
           if (Math.abs(info.offset.x) > SWIPE_THRESHOLD) {
-            info.offset.x < 0 ? goNext() : goPrev();
+            if (info.offset.x < 0) { goNext(); } else { goPrev(); }
           }
           setTimeout(() => { isDragging.current = false; }, 0);
         }}

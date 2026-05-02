@@ -34,6 +34,7 @@ const mockVerifyCode = vi.mocked(verifyEmailCode);
 describe('SignupPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     mockSendCode.mockResolvedValue({ result: 'SUCCESS', data: null, error: null });
     mockVerifyCode.mockResolvedValue({
       result: 'SUCCESS',
