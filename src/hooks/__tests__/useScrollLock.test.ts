@@ -4,64 +4,66 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 describe('useScrollLock', () => {
   beforeEach(() => {
     document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.body.style.touchAction = '';
     document.body.style.overscrollBehavior = '';
     document.documentElement.style.overflow = '';
   });
 
-  it('마운트 시 body를 fixed로 잠근다', () => {
+  it('마운트 시 body와 html에 overflow:hidden을 설정한다', () => {
     const { unmount } = renderHook(() => useScrollLock());
 
     expect(document.body.style.overflow).toBe('hidden');
-    expect(document.body.style.position).toBe('fixed');
-    expect(document.body.style.width).toBe('100%');
     expect(document.documentElement.style.overflow).toBe('hidden');
+
+    unmount();
+  });
+
+  it('body에 position:fixed를 사용하지 않는다', () => {
+    const { unmount } = renderHook(() => useScrollLock());
+
+    expect(document.body.style.position).not.toBe('fixed');
+
+    unmount();
+  });
+
+  it('overscroll-behavior를 none으로 설정한다', () => {
+    const { unmount } = renderHook(() => useScrollLock());
+
+    expect(document.body.style.overscrollBehavior).toBe('none');
 
     unmount();
   });
 
   it('언마운트 시 원래 스타일을 복원한다', () => {
     document.body.style.overflow = 'auto';
-    document.body.style.position = 'relative';
+    document.documentElement.style.overflow = 'visible';
 
     const { unmount } = renderHook(() => useScrollLock());
     unmount();
 
     expect(document.body.style.overflow).toBe('auto');
-    expect(document.body.style.position).toBe('relative');
+    expect(document.documentElement.style.overflow).toBe('visible');
   });
 
-  it('스크롤 위치를 보존한다', () => {
-    Object.defineProperty(window, 'scrollY', { value: 200, writable: true, configurable: true });
-    const scrollToMock = vi.fn();
-    window.scrollTo = scrollToMock as unknown as typeof window.scrollTo;
+  it('touchmove 이벤트 리스너를 등록하고 해제한다', () => {
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
 
     const { unmount } = renderHook(() => useScrollLock());
 
-    expect(document.body.style.top).toBe('-200px');
+    expect(addSpy).toHaveBeenCalledWith('touchmove', expect.any(Function), { passive: false });
 
     unmount();
 
-    expect(scrollToMock).toHaveBeenCalledWith(0, 200);
-  });
+    expect(removeSpy).toHaveBeenCalledWith('touchmove', expect.any(Function));
 
-  it('touch-action과 overscroll-behavior를 설정한다', () => {
-    const { unmount } = renderHook(() => useScrollLock());
-
-    expect(document.body.style.touchAction).toBe('none');
-    expect(document.body.style.overscrollBehavior).toBe('none');
-
-    unmount();
+    addSpy.mockRestore();
+    removeSpy.mockRestore();
   });
 
   it('active=false이면 스크롤 잠금을 하지 않는다', () => {
     renderHook(() => useScrollLock(false));
 
     expect(document.body.style.overflow).toBe('');
-    expect(document.body.style.position).toBe('');
   });
 
   it('active가 true로 바뀌면 스크롤을 잠근다', () => {
@@ -75,6 +77,5 @@ describe('useScrollLock', () => {
     rerender({ active: true });
 
     expect(document.body.style.overflow).toBe('hidden');
-    expect(document.body.style.position).toBe('fixed');
   });
 });
