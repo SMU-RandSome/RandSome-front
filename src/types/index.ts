@@ -116,7 +116,7 @@ export interface MemberProfile {
   mbti: Mbti;
   department?: Department;
   role: UserRole;
-  instagramId?: string;
+  instagramId: string;
   selfIntroduction?: string;
   idealDescription?: string;
   personalityTag?: PersonalityTag;
@@ -130,7 +130,7 @@ export interface MemberProfileUpdateRequest {
   legalName: string;
   mbti: Mbti;
   department: Department;
-  instagramId?: string;
+  instagramId: string;
   selfIntroduction?: string;
   idealDescription?: string;
   personalityTag: PersonalityTag;
@@ -146,7 +146,7 @@ export interface MemberCreateRequest {
   gender: Gender;
   mbti: Mbti;
   department: Department;
-  instagramId?: string;
+  instagramId: string;
   selfIntroduction?: string;
   idealDescription?: string;
   personalityTag?: PersonalityTag;
@@ -244,7 +244,7 @@ export interface MatchingResultDetailItem {
   nickname: string;
   gender: Gender;
   mbti: Mbti;
-  instagramId?: string;
+  instagramId: string;
   selfIntroduction?: string;
   idealDescription?: string;
   personalityTag: PersonalityTag;
@@ -360,6 +360,14 @@ export interface CouponEventUpdateRequest {
   startsAt: string;
   expiresAt: string;
   couponExpiresAt: string;
+}
+
+export interface CouponIssuedMemberItem {
+  memberId: number;
+  nickname: string;
+  legalName: string;
+  couponStatus: CouponStatus;
+  issuedAt: string;
 }
 
 // --- 회원 통계 (v2) ---
@@ -485,7 +493,7 @@ export interface AdminMemberDetail {
   gender: Gender;
   mbti: Mbti;
   role: UserRole;
-  instagramId?: string;
+  instagramId: string;
   selfIntroduction?: string;
   idealDescription?: string;
 }

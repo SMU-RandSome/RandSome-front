@@ -24,6 +24,7 @@ const QrPage = React.lazy(() => import('@/pages/QrPage'));
 const AdminDashboard = React.lazy(() => import('@/pages/admin/AdminDashboard'));
 const AdminQrPage = React.lazy(() => import('@/pages/admin/AdminQrPage'));
 const AboutPage = React.lazy(() => import('@/pages/AboutPage'));
+const GuidePage = React.lazy(() => import('@/pages/GuidePage'));
 
 const PageLoader: React.FC = () => (
   <div className="min-h-screen mesh-surface flex justify-center items-start">
@@ -91,6 +92,7 @@ export const router = createBrowserRouter([
       { path: '/signup', element: <SignupPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
       { path: '/about', element: <AboutPage /> },
+      { path: '/guide', element: <GuidePage /> },
 
       // 회원 전용 라우트
       {

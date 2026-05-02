@@ -9,7 +9,6 @@ interface HumanDeveloper {
   type: 'human';
   name: string;
   role: string | string[];
-  major: string;
   highlight: string;
   accent: 'emerald' | 'rose' | 'sky';
 }
@@ -38,9 +37,8 @@ const DEVELOPERS: Developer[] = [
   },
   {
     type: 'human',
-    name: 'Taepung Kwak',
+    name: 'Taepung',
     role: ['Team Lead', 'Product Manager', 'Backend Developer'],
-    major: '소프트웨어학과 22학번',
     highlight: '프로젝트 기획 및 팀 리딩',
     accent: 'emerald',
   },
@@ -48,7 +46,6 @@ const DEVELOPERS: Developer[] = [
     type: 'human',
     name: 'Daniel Shin',
     role: 'Infrastructure Developer',
-    major: '소프트웨어학과 22학번',
     highlight: '운영 환경 구성 및 배포 안정화',
     accent: 'rose',
   },
@@ -56,7 +53,6 @@ const DEVELOPERS: Developer[] = [
     type: 'human',
     name: 'Mcdonald Oh',
     role: 'QA',
-    major: '소프트웨어학과 22학번',
     highlight: '서비스 품질 검증 및 테스트',
     accent: 'sky',
   },
@@ -71,12 +67,12 @@ const TECH_STACK = [
   {
     label: 'Backend',
     color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-    items: ['Spring Boot 3.5', 'Java 21', 'MySQL', 'Redis'],
+    items: ['Spring Boot 3.5', 'Java 21', 'MySQL'],
   },
   {
     label: 'Infra',
     color: 'text-rose-600 bg-rose-50 border-rose-100',
-    items: ['AWS ECS Fargate', 'Firebase FCM', 'Nginx'],
+    items: ['AWS ECS Fargate', 'ElastiCache', 'Firebase FCM'],
   },
 ];
 
@@ -157,9 +153,6 @@ const HumanCard: React.FC<{ dev: HumanDeveloper; index: number }> = ({ dev, inde
                 </span>
               ))}
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-white/70 border border-slate-200/70 text-[11px] text-slate-500">
-              {dev.major}
-            </span>
           </div>
           <p className="text-[11px] text-slate-600 font-medium">{dev.highlight}</p>
         </div>

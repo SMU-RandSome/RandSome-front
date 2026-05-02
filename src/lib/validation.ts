@@ -68,9 +68,9 @@ export const getRealNameErrorMessage = (name: string): string | null => {
  */
 export const validateInstagramId = (id: string): boolean => {
   if (!id.trim()) {
-    return true; // 선택 항목이므로 빈 값 허용
+    return false; // 필수 항목
   }
-  
+
   const instagramIdPattern = /^[a-zA-Z0-9._]{1,30}$/;
   return instagramIdPattern.test(id);
 };
@@ -80,7 +80,7 @@ export const validateInstagramId = (id: string): boolean => {
  */
 export const getInstagramIdErrorMessage = (id: string): string | null => {
   if (!id.trim()) {
-    return null; // 선택 항목
+    return '인스타그램 ID를 입력해주세요';
   }
   
   if (id.length > 30) {

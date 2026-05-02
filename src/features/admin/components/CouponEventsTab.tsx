@@ -9,10 +9,11 @@ import {
   deactivateAdminCouponEvent,
   getAdminCouponEvents,
   getAdminCouponEvent,
+  getAdminCouponEventIssuedMembers,
 } from '@/features/admin/api';
 import { getApiErrorMessage } from '@/lib/axios';
-import type { AdminCouponEventPreviewItem, CouponEventDetailItem, CouponEventType, TicketType } from '@/types';
-import { Plus, Pencil, Trash2, X, Zap, KeyRound, Calendar, Eye } from 'lucide-react';
+import type { AdminCouponEventPreviewItem, CouponEventDetailItem, CouponEventType, CouponIssuedMemberItem, TicketType } from '@/types';
+import { Plus, Pencil, Trash2, X, Zap, KeyRound, Calendar, Eye, Users } from 'lucide-react';
 
 const STATUS_CONFIG = {
   DRAFT: { label: '준비중', bg: 'bg-slate-100', text: 'text-slate-600' },
@@ -215,6 +216,55 @@ const CouponEventsTab: React.FC = () => {
 
   const [detailItem, setDetailItem] = useState<CouponEventDetailItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  const [issuedMembersEventId, setIssuedMembersEventId] = useState<number | null>(null);
+  const [issuedMembersEventName, setIssuedMembersEventName] = useState('');
+  const [issuedMembers, setIssuedMembers] = useState<CouponIssuedMemberItem[]>([]);
+  const [issuedMembersLoading, setIssuedMembersLoading] = useState(false);
+  const [issuedMembersHasNext, setIssuedMembersHasNext] = useState(false);
+  const [issuedMembersNextCursor, setIssuedMembersNextCursor] = useState<number | null>(null);
+  const [issuedMembersLoadingMore, setIssuedMembersLoadingMore] = useState(false);
+
+  const openIssuedMembers = (event: AdminCouponEventPreviewItem): void => {
+    setIssuedMembersEventId(event.id);
+    setIssuedMembersEventName(event.name);
+    setIssuedMembers([]);
+    setIssuedMembersHasNext(false);
+    setIssuedMembersNextCursor(null);
+    setIssuedMembersLoading(true);
+    getAdminCouponEventIssuedMembers(event.id)
+      .then((res) => {
+        if (res.data) {
+          setIssuedMembers(res.data.items);
+          setIssuedMembersHasNext(res.data.hasNext);
+          setIssuedMembersNextCursor(res.data.nextCursor);
+        }
+      })
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
+      .finally(() => setIssuedMembersLoading(false));
+  };
+
+  const loadMoreIssuedMembers = (): void => {
+    if (!issuedMembersHasNext || issuedMembersNextCursor === null || issuedMembersEventId === null) return;
+    setIssuedMembersLoadingMore(true);
+    getAdminCouponEventIssuedMembers(issuedMembersEventId, { lastId: issuedMembersNextCursor })
+      .then((res) => {
+        const d = res.data;
+        if (d) {
+          setIssuedMembers((prev) => [...prev, ...d.items]);
+          setIssuedMembersHasNext(d.hasNext);
+          setIssuedMembersNextCursor(d.nextCursor);
+        }
+      })
+      .catch((err: unknown) => toast(getApiErrorMessage(err), 'error'))
+      .finally(() => setIssuedMembersLoadingMore(false));
+  };
+
+  const closeIssuedMembers = (): void => {
+    setIssuedMembersEventId(null);
+    setIssuedMembers([]);
+    setIssuedMembersEventName('');
+  };
 
   const openDetail = (event: AdminCouponEventPreviewItem): void => {
     setDetailItem(null);
@@ -461,6 +511,13 @@ const CouponEventsTab: React.FC = () => {
                           : '종료하기'}
                       </button>
                     )}
+                    <button
+                      onClick={() => openIssuedMembers(event)}
+                      className="h-9 px-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                      aria-label="발급 회원"
+                    >
+                      <Users size={14} />
+                    </button>
                     <button
                       onClick={() => openDetail(event)}
                       className="h-9 px-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
@@ -746,6 +803,92 @@ const CouponEventsTab: React.FC = () => {
                       <span className="font-semibold text-slate-900">{formatDateShort(detailItem.expiresAt)}</span>
                     </div>
                   </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 발급 회원 목록 모달 */}
+      <AnimatePresence>
+        {(issuedMembersLoading || issuedMembersEventId !== null) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-5">
+            <motion.div
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeIssuedMembers}
+            />
+            <motion.div
+              className="relative w-full max-w-[390px] bg-white rounded-3xl p-6 max-h-[85vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">발급 회원 목록</h3>
+                  {issuedMembersEventName && (
+                    <p className="text-xs text-slate-400 mt-0.5">{issuedMembersEventName}</p>
+                  )}
+                </div>
+                <button
+                  onClick={closeIssuedMembers}
+                  className="p-1 text-slate-400 hover:text-slate-700 transition-colors"
+                  aria-label="닫기"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {issuedMembersLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => <div key={i} className="h-14 bg-slate-50 rounded-xl animate-pulse" />)}
+                </div>
+              ) : issuedMembers.length === 0 ? (
+                <p className="text-center text-sm text-slate-400 py-10">발급된 회원이 없습니다.</p>
+              ) : (
+                <div className="space-y-2">
+                  {issuedMembers.map((member) => {
+                    const statusConfig: Record<string, { label: string; color: string }> = {
+                      AVAILABLE: { label: '사용 가능', color: 'bg-green-100 text-green-700' },
+                      USED: { label: '사용 완료', color: 'bg-slate-100 text-slate-500' },
+                      EXPIRED: { label: '만료', color: 'bg-red-50 text-red-500' },
+                    };
+                    const st = statusConfig[member.couponStatus] ?? { label: member.couponStatus, color: 'bg-slate-100 text-slate-500' };
+                    return (
+                      <div
+                        key={member.memberId}
+                        className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{member.legalName}</p>
+                            <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${st.color}`}>
+                              {st.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-0.5">{member.nickname}</p>
+                        </div>
+                        <p className="text-[11px] text-slate-400 shrink-0 ml-3">
+                          {formatDateShort(member.issuedAt)}
+                        </p>
+                      </div>
+                    );
+                  })}
+
+                  {issuedMembersHasNext && (
+                    <button
+                      onClick={loadMoreIssuedMembers}
+                      disabled={issuedMembersLoadingMore}
+                      className="w-full h-10 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                    >
+                      {issuedMembersLoadingMore ? '불러오는 중...' : '더 보기'}
+                    </button>
+                  )}
                 </div>
               )}
             </motion.div>
