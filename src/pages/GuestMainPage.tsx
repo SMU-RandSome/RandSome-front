@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Logo } from '@/components/ui/Logo';
 import { Orbs } from '@/components/ui/Orbs';
@@ -13,7 +14,14 @@ const INFO_BADGES = [
   { text: '무료', bg: 'rgba(34,197,94,.18)', color: '#86efac', borderColor: 'rgba(34,197,94,.3)' },
 ] as const;
 
+const STATS = [
+  { label: '매칭 후보', value: '-', unit: '명', cls: 'gt' },
+  { label: '오늘의 매칭', value: '-', unit: '건', cls: 'gt' },
+  { label: '전체 매칭', value: '-', unit: '건', cls: 'wt' },
+] as const;
+
 const GuestMainPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isPWA, isStandalone } = useDisplayMode();
 
   useEffect(() => {
@@ -34,7 +42,7 @@ const GuestMainPage: React.FC = () => {
         <Stars />
 
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col relative z-10">
-          {/* Header — PWA 전용 */}
+          {/* Header — PWA 전용 (웹은 WebShell이 담당) */}
           {isPWA && (
             <header className="relative z-10 px-5 pb-0 flex items-center gap-2.5"
               style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
@@ -58,7 +66,7 @@ const GuestMainPage: React.FC = () => {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600/22 border border-blue-600/45 rounded-full mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400" style={{ boxShadow: '0 0 7px #60a5fa' }} />
               <span className="text-[10.5px] font-bold text-blue-300 tracking-wide">
-                2026 SMU FESTIVAL · COMING SOON
+                2026 SMU FESTIVAL · ARCHIVE
               </span>
             </div>
 
@@ -74,13 +82,32 @@ const GuestMainPage: React.FC = () => {
             </p>
           </motion.section>
 
+          {/* Stats */}
+          <motion.div
+            className="mx-4 sm:mx-5 mb-4 sm:mb-5 py-3.5 sm:py-4 flex rounded-[22px] border border-white/10"
+            style={{ background: 'rgba(255,255,255,.06)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+          >
+            {STATS.map(({ label, value, unit, cls }, i) => (
+              <div key={label} className="flex-1 text-center px-2" style={{ borderRight: i < 2 ? '1px solid rgba(255,255,255,.1)' : 'none' }}>
+                <p className="font-display text-[22px] sm:text-[26px] leading-none">
+                  <span className={cls}>{value}</span>
+                  <span className="text-[10px] font-normal text-white/35 ml-0.5">{unit}</span>
+                </p>
+                <p className="text-[10px] sm:text-[10.5px] text-white/40 mt-1 font-medium">{label}</p>
+              </div>
+            ))}
+          </motion.div>
+
           {/* Info card */}
           <motion.div
             className="mx-4 sm:mx-5 mb-4 sm:mb-5 p-[16px_18px] sm:p-[18px_20px] rounded-[20px] border border-white/10"
             style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
+            transition={{ duration: 0.7, delay: 0.18 }}
           >
             <p className="font-bold text-sm text-white mb-1.5">상명대 학생만 가입할 수 있어요</p>
             <p className="text-[12.5px] text-white/50 leading-[1.65]">
@@ -104,7 +131,7 @@ const GuestMainPage: React.FC = () => {
             className={`px-4 sm:px-5 ${isPWA ? 'pb-28 sm:pb-32' : 'pb-6 sm:pb-8'}`}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.18 }}
+            transition={{ duration: 0.7, delay: 0.26 }}
           >
             <div
               className="w-full py-[15px] rounded-[18px] flex items-center justify-center gap-2 border border-white/15"
@@ -113,7 +140,15 @@ const GuestMainPage: React.FC = () => {
               <Clock size={16} className="text-white/40" />
               <span className="text-white/50 text-[15px] font-bold">서비스 준비 중이에요</span>
             </div>
-            <div className="flex items-center justify-center mt-4">
+            <div className="flex items-center justify-center gap-5 mt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/guide')}
+                className="py-2 text-white/35 text-xs font-medium underline underline-offset-2 decoration-white/20"
+              >
+                서비스 이용 가이드
+              </button>
+              <span className="w-px h-3 bg-white/20" />
               <a
                 href="https://open.kakao.com/o/sRE2cosi"
                 target="_blank"
@@ -124,6 +159,9 @@ const GuestMainPage: React.FC = () => {
                 카카오톡 문의
               </a>
             </div>
+            <p className="text-center text-[11px] text-white/25 mt-1.5">
+              가입 시 이용약관 및 개인정보 처리방침에 동의하게 돼요
+            </p>
           </motion.div>
         </div>
 
