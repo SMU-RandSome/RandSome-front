@@ -10,10 +10,10 @@ import { useAuth } from '@/store/authStore';
 import { useTicketBalance } from '@/hooks/useTicketBalance';
 import { useApplyMatching } from '@/features/matching/hooks/useApplyMatching';
 import { useRegisterCandidate } from '@/features/candidate/hooks/useRegisterCandidate';
-import { PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS, MBTI_OPTIONS } from '@/constants/tags';
+import { PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS, MBTI_OPTIONS, PERSONALITY_TAG_LABELS, FACE_TYPE_TAG_LABELS, DATING_STYLE_TAG_LABELS } from '@/constants/tags';
 import type { PersonalityTag, FaceTypeTag, DatingStyleTag, Mbti, MatchingApplicationResponse } from '@/types';
 import { MobileHeader } from '@/components/layout/MobileHeader';
-import { Heart, Ticket, AlertTriangle, Minus, Plus, XCircle } from 'lucide-react';
+import { Heart, Ticket, AlertTriangle, Minus, Plus, XCircle, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 type MatchView = 'main' | 'register' | 'result' | 'loading';
@@ -41,6 +41,7 @@ const MatchPage: React.FC = () => {
   const [faceTypeTags, setFaceTypeTags] = useState<FaceTypeTag[]>([]);
   const [datingStyleTags, setDatingStyleTags] = useState<DatingStyleTag[]>([]);
   const [preferredMbtis, setPreferredMbtis] = useState<Mbti[]>([]);
+  const [openSection, setOpenSection] = useState<'personality' | 'face' | 'dating' | 'mbti' | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmMode, setConfirmMode] = useState<'register' | 'match' | null>(null);
   const { balance: ticketBalance } = useTicketBalance();
@@ -54,7 +55,7 @@ const MatchPage: React.FC = () => {
 
   const reset = useCallback((): void => {
     setView('main'); setActiveTab('ideal'); setCount(1);
-    setPersonalityTags([]); setFaceTypeTags([]); setDatingStyleTags([]); setPreferredMbtis([]); setMatchResult(null);
+    setPersonalityTags([]); setFaceTypeTags([]); setDatingStyleTags([]); setPreferredMbtis([]); setOpenSection(null); setMatchResult(null);
   }, []);
 
   const submitting = applyMutation.isPending || registerMutation.isPending;
@@ -215,56 +216,127 @@ const MatchPage: React.FC = () => {
     setter(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   };
 
-  /* ── Ideal Content ── */
+  /* ── Ideal Content (Accordion) ── */
+  const toggleSection = (section: 'personality' | 'face' | 'dating' | 'mbti'): void => {
+    setOpenSection((prev) => prev === section ? null : section);
+  };
+
+  const getSummary = (tags: string[], labels: Record<string, string>): string => {
+    if (tags.length === 0) return '';
+    const mapped = tags.map((t) => labels[t] ?? t);
+    if (mapped.length <= 2) return mapped.join(', ');
+    return `${mapped[0]}, ${mapped[1]} 외 ${mapped.length - 2}개`;
+  };
+
   const renderIdealContent = (): React.ReactNode => (
-    <div className="space-y-5 pt-2">
+    <div className="space-y-2.5 pt-2">
       <p className="text-xs text-slate-400 text-center">원하는 조건을 자유롭게 복수 선택하세요</p>
 
-      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.55)', border: '1px solid rgba(219,234,254,.7)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <p style={labelCss}>성격</p>
-          {personalityTags.length > 0 && <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">{personalityTags.length}개 선택</span>}
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,.55)', border: '1px solid rgba(219,234,254,.7)' }}>
+        {/* 성격 */}
+        <div>
+          <button type="button" onClick={() => toggleSection('personality')} className="w-full flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <p style={labelCss}>성격</p>
+              {personalityTags.length > 0 && <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">{personalityTags.length}개</span>}
+            </div>
+            <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${openSection === 'personality' ? 'rotate-180' : ''}`} />
+          </button>
+          {openSection !== 'personality' && personalityTags.length > 0 && (
+            <p className="px-4 pb-3 -mt-1 text-[11px] text-blue-500 font-medium truncate">{getSummary(personalityTags, PERSONALITY_TAG_LABELS)}</p>
+          )}
+          <AnimatePresence initial={false}>
+            {openSection === 'personality' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                <div className="flex flex-wrap gap-1.5 px-4 pb-4">
+                  {PERSONALITY_TAGS.map(({ value, label }) => (
+                    <button key={value} onClick={() => toggleTag(personalityTags, value, setPersonalityTags)} className="px-3 py-[7px] rounded-full text-[11px] font-semibold transition-all duration-200" style={personalityTags.includes(value) ? TAG_SELECTED_PERSONALITY : TAG_UNSELECTED}>{label}</button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {PERSONALITY_TAGS.map(({ value, label }) => (
-            <button key={value} onClick={() => toggleTag(personalityTags, value, setPersonalityTags)} className="px-3 py-[7px] rounded-full text-[11px] font-semibold transition-all duration-200" style={personalityTags.includes(value) ? TAG_SELECTED_PERSONALITY : TAG_UNSELECTED}>{label}</button>
-          ))}
-        </div>
-      </div>
 
-      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.55)', border: '1px solid rgba(219,234,254,.7)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <p style={labelCss}>외모 스타일</p>
-          {faceTypeTags.length > 0 && <span className="text-[10px] font-bold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full">{faceTypeTags.length}개 선택</span>}
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {FACE_TYPE_TAGS.map(({ value, label }) => (
-            <button key={value} onClick={() => toggleTag(faceTypeTags, value, setFaceTypeTags)} className="px-3 py-[7px] rounded-full text-[11px] font-semibold transition-all duration-200" style={faceTypeTags.includes(value) ? TAG_SELECTED_FACE : TAG_UNSELECTED}>{label}</button>
-          ))}
-        </div>
-      </div>
+        <div className="h-px mx-4" style={{ background: 'rgba(219,234,254,.7)' }} />
 
-      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.55)', border: '1px solid rgba(219,234,254,.7)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <p style={labelCss}>연애 스타일</p>
-          {datingStyleTags.length > 0 && <span className="text-[10px] font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full">{datingStyleTags.length}개 선택</span>}
+        {/* 외모 스타일 */}
+        <div>
+          <button type="button" onClick={() => toggleSection('face')} className="w-full flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <p style={labelCss}>외모 스타일</p>
+              {faceTypeTags.length > 0 && <span className="text-[10px] font-bold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full">{faceTypeTags.length}개</span>}
+            </div>
+            <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${openSection === 'face' ? 'rotate-180' : ''}`} />
+          </button>
+          {openSection !== 'face' && faceTypeTags.length > 0 && (
+            <p className="px-4 pb-3 -mt-1 text-[11px] text-pink-500 font-medium truncate">{getSummary(faceTypeTags, FACE_TYPE_TAG_LABELS)}</p>
+          )}
+          <AnimatePresence initial={false}>
+            {openSection === 'face' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                <div className="flex flex-wrap gap-1.5 px-4 pb-4">
+                  {FACE_TYPE_TAGS.map(({ value, label }) => (
+                    <button key={value} onClick={() => toggleTag(faceTypeTags, value, setFaceTypeTags)} className="px-3 py-[7px] rounded-full text-[11px] font-semibold transition-all duration-200" style={faceTypeTags.includes(value) ? TAG_SELECTED_FACE : TAG_UNSELECTED}>{label}</button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {DATING_STYLE_TAGS.map(({ value, label }) => (
-            <button key={value} onClick={() => toggleTag(datingStyleTags, value, setDatingStyleTags)} className="px-3 py-[7px] rounded-full text-[11px] font-semibold transition-all duration-200" style={datingStyleTags.includes(value) ? TAG_SELECTED_DATING : TAG_UNSELECTED}>{label}</button>
-          ))}
-        </div>
-      </div>
 
-      <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.55)', border: '1px solid rgba(219,234,254,.7)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <p style={labelCss}>MBTI</p>
-          {preferredMbtis.length > 0 && <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">{preferredMbtis.length}개 선택</span>}
+        <div className="h-px mx-4" style={{ background: 'rgba(219,234,254,.7)' }} />
+
+        {/* 연애 스타일 */}
+        <div>
+          <button type="button" onClick={() => toggleSection('dating')} className="w-full flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <p style={labelCss}>연애 스타일</p>
+              {datingStyleTags.length > 0 && <span className="text-[10px] font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full">{datingStyleTags.length}개</span>}
+            </div>
+            <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${openSection === 'dating' ? 'rotate-180' : ''}`} />
+          </button>
+          {openSection !== 'dating' && datingStyleTags.length > 0 && (
+            <p className="px-4 pb-3 -mt-1 text-[11px] text-purple-500 font-medium truncate">{getSummary(datingStyleTags, DATING_STYLE_TAG_LABELS)}</p>
+          )}
+          <AnimatePresence initial={false}>
+            {openSection === 'dating' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                <div className="flex flex-wrap gap-1.5 px-4 pb-4">
+                  {DATING_STYLE_TAGS.map(({ value, label }) => (
+                    <button key={value} onClick={() => toggleTag(datingStyleTags, value, setDatingStyleTags)} className="px-3 py-[7px] rounded-full text-[11px] font-semibold transition-all duration-200" style={datingStyleTags.includes(value) ? TAG_SELECTED_DATING : TAG_UNSELECTED}>{label}</button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        <div className="grid grid-cols-4 gap-1.5">
-          {MBTI_OPTIONS.map(({ value, label }) => (
-            <button key={value} onClick={() => toggleTag(preferredMbtis, value, setPreferredMbtis)} className="py-[7px] rounded-xl text-[11px] font-bold transition-all duration-200 text-center" style={preferredMbtis.includes(value) ? TAG_SELECTED_MBTI : TAG_UNSELECTED}>{label}</button>
-          ))}
+
+        <div className="h-px mx-4" style={{ background: 'rgba(219,234,254,.7)' }} />
+
+        {/* MBTI */}
+        <div>
+          <button type="button" onClick={() => toggleSection('mbti')} className="w-full flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <p style={labelCss}>MBTI</p>
+              {preferredMbtis.length > 0 && <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">{preferredMbtis.length}개</span>}
+            </div>
+            <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${openSection === 'mbti' ? 'rotate-180' : ''}`} />
+          </button>
+          {openSection !== 'mbti' && preferredMbtis.length > 0 && (
+            <p className="px-4 pb-3 -mt-1 text-[11px] text-amber-500 font-medium truncate">{preferredMbtis.join(', ')}</p>
+          )}
+          <AnimatePresence initial={false}>
+            {openSection === 'mbti' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                <div className="grid grid-cols-4 gap-1.5 px-4 pb-4">
+                  {MBTI_OPTIONS.map(({ value, label }) => (
+                    <button key={value} onClick={() => toggleTag(preferredMbtis, value, setPreferredMbtis)} className="py-[7px] rounded-xl text-[11px] font-bold transition-all duration-200 text-center" style={preferredMbtis.includes(value) ? TAG_SELECTED_MBTI : TAG_UNSELECTED}>{label}</button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
