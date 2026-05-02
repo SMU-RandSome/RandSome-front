@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/ui/Button';
 import { Heart } from 'lucide-react';
 
 export const WebShell: React.FC = () => {
@@ -23,8 +24,8 @@ export const WebShell: React.FC = () => {
             </span>
           </button>
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 text-sm font-medium text-slate-500 cursor-default">로그인</span>
-            <span className="px-3 py-1.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg cursor-default">회원가입</span>
+            <Button variant="ghost" size="sm" disabled>로그인</Button>
+            <Button size="sm" disabled>회원가입</Button>
           </div>
         </div>
       </header>
