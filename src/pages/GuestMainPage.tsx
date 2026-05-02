@@ -1,16 +1,21 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Logo } from '@/components/ui/Logo';
 import { Orbs } from '@/components/ui/Orbs';
 import { Stars } from '@/components/ui/Stars';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { useDashboard } from '@/hooks/useDashboard';
 import { Heart, Sparkles, MessageCircle, Clock } from 'lucide-react';
 
 const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
 
 import { motion } from 'motion/react';
+
+const STATS = [
+  { label: '매칭 후보', value: '-', unit: '명', cls: 'gt' },
+  { label: '오늘의 매칭', value: '-', unit: '건', cls: 'gt' },
+  { label: '전체 매칭', value: '-', unit: '건', cls: 'wt' },
+] as const;
 
 const INFO_BADGES = [
   { text: '21학번+', bg: 'rgba(99,102,241,.25)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,.4)' },
@@ -20,7 +25,6 @@ const INFO_BADGES = [
 const GuestMainPage: React.FC = () => {
   const navigate = useNavigate();
   const { isPWA, isStandalone } = useDisplayMode();
-  const { stats } = useDashboard();
 
   useEffect(() => {
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -32,12 +36,6 @@ const GuestMainPage: React.FC = () => {
       document.documentElement.style.background = '';
     };
   }, []);
-
-  const statsConfig = useMemo(() => [
-    { label: '매칭 후보', value: stats?.candidateCount?.toLocaleString() ?? '-', unit: '명', cls: 'gt' },
-    { label: '오늘의 매칭', value: stats?.todayMatchingCount?.toLocaleString() ?? '-', unit: '건', cls: 'gt' },
-    { label: '전체 매칭', value: stats?.totalMatchingCount?.toLocaleString() ?? '-', unit: '건', cls: 'wt' },
-  ], [stats]);
 
   // 두 레이아웃 모두 동일한 다크 테마 사용
   return (
@@ -95,7 +93,7 @@ const GuestMainPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
         >
-          {statsConfig.map(({ label, value, unit, cls }, i) => (
+          {STATS.map(({ label, value, unit, cls }, i) => (
             <div key={label} className="flex-1 text-center px-2" style={{ borderRight: i < 2 ? '1px solid rgba(255,255,255,.1)' : 'none' }}>
               <p className="font-display text-[22px] sm:text-[26px] leading-none">
                 <span className={cls}>{value}</span>
