@@ -166,11 +166,14 @@ const GuestMainPage: React.FC = () => {
             </>
           ) : (
             <div
-              className="w-full py-[15px] rounded-[18px] flex items-center justify-center gap-2 border border-white/15"
+              className="w-full py-[15px] rounded-[18px] flex flex-col items-center justify-center gap-1 border border-white/15"
               style={{ background: 'rgba(255,255,255,.06)' }}
             >
-              <Clock size={16} className="text-white/40" />
-              <span className="text-white/50 text-[15px] font-bold">서비스 이용 중이에요</span>
+              <div className="flex items-center gap-2">
+                <Clock size={16} className="text-white/40" />
+                <span className="text-white/50 text-[15px] font-bold">서비스 준비 중이에요</span>
+              </div>
+              <span className="text-white/30 text-[11px]">5월 6일 오픈 예정</span>
             </div>
           )}
           <div className="flex items-center justify-center gap-5 mt-2">
