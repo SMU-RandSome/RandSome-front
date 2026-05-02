@@ -7,7 +7,7 @@ import { Stars } from '@/components/ui/Stars';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { Heart, Sparkles, MessageCircle, Clock } from 'lucide-react';
 
-const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
+const SERVICE_OPEN = false;
 
 import { motion } from 'motion/react';
 
