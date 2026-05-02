@@ -6,7 +6,7 @@ import { Orbs } from '@/components/ui/Orbs';
 import { Stars } from '@/components/ui/Stars';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useDashboard } from '@/hooks/useDashboard';
-import { Heart, Sparkles } from 'lucide-react';
+import { Heart, Sparkles, MessageCircle } from 'lucide-react';
 
 import { motion } from 'motion/react';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
@@ -172,7 +172,26 @@ const GuestMainPage: React.FC = () => {
           >
             이미 계정이 있어요 · 로그인
           </button>
-          <p className="text-center text-[11px] text-white/25 mt-2.5">
+          <div className="flex items-center justify-center gap-5 mt-2">
+            <button
+              type="button"
+              onClick={() => navigate('/guide')}
+              className="py-2 text-white/35 text-xs font-medium underline underline-offset-2 decoration-white/20"
+            >
+              서비스 이용 가이드
+            </button>
+            <span className="w-px h-3 bg-white/20" />
+            <a
+              href="https://open.kakao.com/o/sRE2cosi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 py-2 text-white/35 text-xs font-medium underline underline-offset-2 decoration-white/20"
+            >
+              <MessageCircle size={11} />
+              카카오톡 문의
+            </a>
+          </div>
+          <p className="text-center text-[11px] text-white/25 mt-1.5">
             가입 시 이용약관 및 개인정보 처리방침에 동의하게 돼요
           </p>
         </motion.div>

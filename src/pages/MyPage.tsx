@@ -23,7 +23,7 @@ import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS, PERSONALITY_TAG_LABELS, FACE_TYPE_TAG_LABELS, DATING_STYLE_TAG_LABELS } from '@/constants/tags';
 import type { Department, MemberProfile, MemberStatsResponse, Mbti, TicketBalanceResponse, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
 import { MobileHeader } from '@/components/layout/MobileHeader';
-import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, Ticket, QrCode, History, Settings, Shield, Lock } from 'lucide-react';
+import { LogOut, Edit2, ChevronRight, UserCheck, UserX, Clock, AlertCircle, User, AtSign, Smile, Heart, X, Eye, EyeOff, ExternalLink, CheckCircle2, Bell, BellOff, Ticket, QrCode, History, Settings, Shield, Lock, BookOpen, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // 태그 상수는 src/constants/tags.ts 에서 import됩니다.
@@ -275,7 +275,7 @@ const MyPage: React.FC = () => {
       return;
     }
 
-    if (editForm.instagramId && !validateInstagramId(editForm.instagramId)) {
+    if (!validateInstagramId(editForm.instagramId)) {
       const instagramError = getInstagramIdErrorMessage(editForm.instagramId);
       toast(instagramError ?? '올바른 인스타그램 ID를 입력해주세요.', 'error');
       return;
@@ -292,7 +292,7 @@ const MyPage: React.FC = () => {
         legalName: editForm.legalName,
         mbti: editForm.mbti,
         department: editForm.department as Department,
-        instagramId: editForm.instagramId || undefined,
+        instagramId: editForm.instagramId,
         selfIntroduction: editForm.selfIntroduction || undefined,
         idealDescription: editForm.idealDescription || undefined,
         personalityTag: editForm.personalityTag,
@@ -651,6 +651,34 @@ const MyPage: React.FC = () => {
             </button>
           )}
 
+          {/* 이용 가이드 */}
+          <button
+            onClick={() => navigate('/guide')}
+            className="w-full p-[15px_18px] flex items-center gap-3 hover:bg-slate-50/80 transition-colors"
+            style={{ borderBottom: '1px solid rgba(226,232,240,.6)' }}
+          >
+            <div className="w-[33px] h-[33px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,.1)' }}>
+              <BookOpen size={16} className="text-green-600" />
+            </div>
+            <span className="flex-1 text-left text-sm font-medium text-slate-700">이용 가이드</span>
+            <ChevronRight size={14} className="text-slate-400" />
+          </button>
+
+          {/* 카카오톡 문의 */}
+          <a
+            href="https://open.kakao.com/o/sRE2cosi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full p-[15px_18px] flex items-center gap-3 hover:bg-slate-50/80 transition-colors"
+            style={{ borderBottom: '1px solid rgba(226,232,240,.6)', display: 'flex' }}
+          >
+            <div className="w-[33px] h-[33px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: 'rgba(234,179,8,.1)' }}>
+              <MessageCircle size={16} className="text-yellow-600" />
+            </div>
+            <span className="flex-1 text-left text-sm font-medium text-slate-700">카카오톡 문의</span>
+            <ExternalLink size={14} className="text-slate-400" />
+          </a>
+
           {/* 이용약관 */}
           <button
             onClick={openTerms}
@@ -897,7 +925,7 @@ const EditProfileSheet: React.FC<EditProfileSheetProps> = ({ editForm, setEditFo
 
         {/* 인스타그램 */}
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">인스타그램</label>
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">인스타그램 <span className="text-red-400 normal-case">*</span></label>
           <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
             <AtSign size={15} className="text-slate-300 shrink-0" />
             <input

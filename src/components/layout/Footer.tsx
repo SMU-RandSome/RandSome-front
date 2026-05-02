@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Mail, Users } from 'lucide-react';
+import { BookOpen, Heart, MessageCircle, Users } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -29,6 +29,15 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li>
                 <Link
+                  to="/guide"
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors duration-150"
+                >
+                  <BookOpen size={12} />
+                  이용 가이드
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/about"
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors duration-150"
                 >
@@ -55,11 +64,13 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li>
                 <a
-                  href="mailto:randsome@sangmyung.kr"
+                  href="https://open.kakao.com/o/sRE2cosi"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors duration-150"
                 >
-                  <Mail size={12} />
-                  randsome@sangmyung.kr
+                  <MessageCircle size={12} />
+                  카카오톡 오픈채팅
                 </a>
               </li>
             </ul>
