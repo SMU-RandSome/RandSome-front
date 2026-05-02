@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { ArrowLeft, Globe, Smartphone } from 'lucide-react';
+import { ArrowLeft, Globe, Smartphone, Bell } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface Step {
@@ -35,6 +35,12 @@ const IOS_STEPS: Step[] = [
     title: '추가 → 완료!',
     desc: '우측 상단 추가를 누르면 앱처럼 설치 완료',
   },
+  {
+    title: '앱 실행 후 알림 허용',
+    desc: '홈 화면에서 Randsome을 열고 알림 허용을 눌러요. 매칭 결과를 빠르게 받아볼 수 있어요.',
+    badge: '알림 허용',
+    badgeIcon: 'bell',
+  },
 ];
 
 const ANDROID_STEPS: Step[] = [
@@ -60,6 +66,12 @@ const ANDROID_STEPS: Step[] = [
     title: '설치 → 완료!',
     desc: '설치를 탭하면 앱처럼 설치 완료',
   },
+  {
+    title: '앱 실행 후 알림 허용',
+    desc: '홈 화면에서 Randsome을 열고 알림 허용을 눌러요. 매칭 결과를 빠르게 받아볼 수 있어요.',
+    badge: '알림 허용',
+    badgeIcon: 'bell',
+  },
 ];
 
 const BadgeIcon: React.FC<{ type?: string }> = ({ type }) => {
@@ -67,6 +79,7 @@ const BadgeIcon: React.FC<{ type?: string }> = ({ type }) => {
   if (type === 'share') return <span className="text-[11px] text-slate-500 shrink-0">□↑</span>;
   if (type === 'grid') return <span className="text-[11px] text-slate-500 shrink-0">⊞</span>;
   if (type === 'menu') return <span className="text-[11px] text-slate-500 shrink-0">⋮</span>;
+  if (type === 'bell') return <Bell size={12} className="text-slate-500 shrink-0" />;
   return null;
 };
 
