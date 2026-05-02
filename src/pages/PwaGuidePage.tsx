@@ -37,7 +37,7 @@ const IOS_STEPS: Step[] = [
   },
   {
     title: '앱 실행 후 알림 허용',
-    desc: '홈 화면에서 Randsome을 열고 알림 허용을 눌러요. 매칭 결과를 빠르게 받아볼 수 있어요.',
+    desc: '홈 화면에서 Randsome을 열고 알림 허용을 눌러요. Randsome 소식을 빠르게 접할 수 있어요.',
     badge: '알림 허용',
     badgeIcon: 'bell',
   },
@@ -68,7 +68,7 @@ const ANDROID_STEPS: Step[] = [
   },
   {
     title: '앱 실행 후 알림 허용',
-    desc: '홈 화면에서 Randsome을 열고 알림 허용을 눌러요. 매칭 결과를 빠르게 받아볼 수 있어요.',
+    desc: '홈 화면에서 Randsome을 열고 알림 허용을 눌러요. Randsome 소식을 빠르게 접할 수 있어요.',
     badge: '알림 허용',
     badgeIcon: 'bell',
   },
