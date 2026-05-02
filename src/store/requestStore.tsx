@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 
 type RequestType = 'register' | 'match_random' | 'match_ideal';
 
@@ -151,7 +151,7 @@ const DUMMY_REQUESTS: MatchRequest[] = [
 export const RequestProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [requests, setRequests] = useState<MatchRequest[]>(DUMMY_REQUESTS);
 
-  const addRequest = (newData: Omit<MatchRequest, 'id' | 'createdAt' | 'status'>): void => {
+  const addRequest = useCallback((newData: Omit<MatchRequest, 'id' | 'createdAt' | 'status'>): void => {
     const newRequest: MatchRequest = {
       ...newData,
       id: Date.now(),
@@ -169,10 +169,12 @@ export const RequestProvider: React.FC<{ children: ReactNode }> = ({ children })
         .replace(',', ''),
     };
     setRequests((prev) => [newRequest, ...prev]);
-  };
+  }, []);
+
+  const value = useMemo(() => ({ requests, addRequest }), [requests, addRequest]);
 
   return (
-    <RequestContext.Provider value={{ requests, addRequest }}>
+    <RequestContext.Provider value={value}>
       {children}
     </RequestContext.Provider>
   );

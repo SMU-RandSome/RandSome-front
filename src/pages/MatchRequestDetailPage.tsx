@@ -406,6 +406,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ target, onClose, onSuccess })
         animate={{ opacity: 0.5 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black z-[60]"
+        style={{ touchAction: 'none' }}
         onClick={() => !isSubmitting && onClose()}
       />
       <motion.div

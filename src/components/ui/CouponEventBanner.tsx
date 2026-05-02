@@ -86,7 +86,7 @@ export const CouponEventBanner: React.FC<CouponEventBannerProps> = ({ events }) 
           setTimeout(() => { isDragging.current = false; }, 0);
         }}
       >
-        <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.button
             key={event.id}
             type="button"

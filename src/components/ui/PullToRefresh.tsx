@@ -56,7 +56,10 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
     content.style.top = '0px';
     icon.style.transform = 'rotate(0deg)';
 
+    let cleaned = false;
     const cleanup = (): void => {
+      if (cleaned) return;
+      cleaned = true;
       clearTimeout(fallbackTimer);
       indicator.style.transition = '';
       content.style.transition = '';

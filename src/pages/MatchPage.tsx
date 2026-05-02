@@ -429,7 +429,7 @@ const MatchPage: React.FC = () => {
     <AnimatePresence>
       {showConfirm && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black z-[60]" onClick={() => setShowConfirm(false)} />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black z-[60]" style={{ touchAction: 'none' }} onClick={() => setShowConfirm(false)} />
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] rounded-3xl w-[calc(100%-2rem)] max-w-[380px] p-6" style={{ background: 'rgba(255,255,255,.95)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(59,130,246,.1)' }}>
             <h3 className="text-xl font-bold text-slate-900 mb-2">{confirmMode === 'register' ? '후보 등록 신청' : '매칭 신청'}</h3>
             <p className="text-sm text-slate-600 mb-2">{confirmMode === 'register' ? '후보로 등록하시겠어요?' : `${count}명의 ${activeTab === 'random' ? '무작위' : '이상형'} 매칭을 신청하시겠어요?`}</p>

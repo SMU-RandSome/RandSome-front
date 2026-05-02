@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Check, Search, X } from 'lucide-react';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 interface SelectOption {
   value: string;
@@ -38,6 +39,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
+  useScrollLock(isOpen);
+
   const selectedOption = options.find((opt) => opt.value === value);
 
   const filteredOptions = useMemo(() => {
@@ -54,30 +57,45 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     return () => clearTimeout(timer);
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    document.body.style.overflow = 'hidden';
+  const rafRef = useRef<number | null>(null);
 
-    const updateViewport = (): void => {
+  const updateViewport = useCallback((): void => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
       const vv = window.visualViewport;
       if (!vv) return;
       const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       setSheetBottom(keyboardHeight);
       setSheetMaxHeight(vv.height * 0.9);
-    };
+    });
+  }, []);
 
-    updateViewport();
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // 즉시 한 번 동기적으로 계산
+    const vv = window.visualViewport;
+    if (vv) {
+      const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setSheetBottom(keyboardHeight);
+      setSheetMaxHeight(vv.height * 0.9);
+    }
+
     window.visualViewport?.addEventListener('resize', updateViewport);
     window.visualViewport?.addEventListener('scroll', updateViewport);
 
     return () => {
-      document.body.style.overflow = '';
       window.visualViewport?.removeEventListener('resize', updateViewport);
       window.visualViewport?.removeEventListener('scroll', updateViewport);
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       setSheetBottom(0);
       setSheetMaxHeight(window.innerHeight * 0.7);
     };
-  }, [isOpen]);
+  }, [isOpen, updateViewport]);
 
   const handleSelect = (optionValue: string): void => {
     onChange(optionValue);
@@ -103,6 +121,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             animate={{ opacity: 0.5 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black z-[80]"
+            style={{ touchAction: 'none' }}
             onClick={handleClose}
           />
           <motion.div

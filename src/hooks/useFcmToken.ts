@@ -20,9 +20,12 @@ export const useFcmToken = (isAuthenticated: boolean): void => {
     if (Notification.permission !== 'granted') return;
     if (localStorage.getItem(FCM_ENABLED_KEY) !== 'true') return;
 
+    let cancelled = false;
     registerFcmToken().catch((err) => {
+      if (cancelled) return;
       if (import.meta.env.DEV) console.error('FCM 토큰 자동 등록 실패:', err);
     });
+    return () => { cancelled = true; };
   }, [isAuthenticated]);
 };
 

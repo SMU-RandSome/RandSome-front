@@ -155,6 +155,7 @@ const RequestsPage: React.FC = () => {
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-black z-[60]"
+                style={{ touchAction: 'none' }}
                 onClick={() => setWithdrawTarget(null)}
               />
               <motion.div
