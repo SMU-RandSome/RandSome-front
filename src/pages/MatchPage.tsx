@@ -323,7 +323,7 @@ const MatchPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative z-10 flex-1 overflow-y-auto px-3.5 sm:px-4 pb-56 sm:pb-60">
+        <div className={`relative z-10 flex-1 overflow-y-auto px-3.5 sm:px-4 ${isPWA ? 'pb-80' : 'pb-56 sm:pb-60'}`}>
           <AnimatePresence mode="wait">
             <motion.div key={activeTab} initial={{ opacity: 0, x: activeTab === 'ideal' ? -10 : 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: activeTab === 'ideal' ? 10 : -10 }} transition={{ duration: 0.2 }}>
               {activeTab === 'ideal' ? renderIdealContent() : renderRandomContent()}
