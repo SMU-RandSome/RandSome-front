@@ -35,7 +35,7 @@ const SIGNUP_STEPS = [
     color: 'text-emerald-500 bg-emerald-50 border-emerald-100',
     badge: 'bg-emerald-100 text-emerald-700',
     title: '프로필 설정',
-    desc: '이름, 학과, 성별, MBTI, 인스타그램 ID(선택)를 입력해요.',
+    desc: '이름, 학과, 성별, MBTI, 인스타그램 ID(필수)를 입력해요.',
   },
   {
     num: '03',
