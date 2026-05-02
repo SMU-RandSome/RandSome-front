@@ -57,11 +57,15 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
     icon.style.transform = 'rotate(0deg)';
 
     const cleanup = (): void => {
+      clearTimeout(fallbackTimer);
       indicator.style.transition = '';
       content.style.transition = '';
+      content.style.transform = '';
       content.style.willChange = '';
       content.removeEventListener('transitionend', cleanup);
     };
+    // transitionend가 발생하지 않을 수 있으므로 fallback
+    const fallbackTimer = setTimeout(cleanup, 300);
     content.addEventListener('transitionend', cleanup, { once: true });
   }, []);
 
@@ -130,7 +134,8 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children, onRefres
           if (indicator && content && icon) {
             indicator.style.transform = `translateY(-${INDICATOR_HEIGHT}px)`;
             indicator.style.opacity = '0';
-            content.style.transform = 'translateY(0)';
+            content.style.transform = '';
+            content.style.willChange = '';
             icon.style.transform = 'rotate(0deg)';
           }
         }
