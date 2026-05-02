@@ -50,7 +50,7 @@ const SIGNUP_STEPS = [
 const EARN_METHODS = [
   { icon: Gift, label: '회원가입 보상', desc: '가입 시 자동 지급', color: 'text-violet-500', bg: 'bg-violet-50 border-violet-100' },
   { icon: Calendar, label: '매일 출석 체크', desc: '랜덤권 1장/일', color: 'text-blue-500', bg: 'bg-blue-50 border-blue-100' },
-  { icon: QrCode, label: '축제 부스 QR', desc: '랜덤권 1장/스캔', color: 'text-emerald-500', bg: 'bg-emerald-50 border-emerald-100' },
+  { icon: QrCode, label: '축제 부스 QR', desc: '랜덤권 2장 or 이상형권 1장', color: 'text-emerald-500', bg: 'bg-emerald-50 border-emerald-100' },
   { icon: Ticket, label: '쿠폰 이벤트', desc: '이벤트별 상이', color: 'text-orange-500', bg: 'bg-orange-50 border-orange-100' },
 ] as const;
 
@@ -143,8 +143,7 @@ const GuidePage: React.FC = () => {
           </div>
           <div className="space-y-2 pt-3 border-t border-slate-100">
             {[
-              '상명대학교 학생 (21학번 이상)',
-              '21학번 이상 (2021년 이후 입학)',
+              '상명대학교 학생 (21학번 이상, 2021년 이후 입학)',
               '@sangmyung.kr 학교 이메일 보유',
             ].map((item) => (
               <div key={item} className="flex items-center gap-2">
