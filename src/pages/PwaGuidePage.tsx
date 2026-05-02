@@ -2,44 +2,73 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useDisplayMode } from '@/store/displayModeStore';
-import { ArrowLeft, Share, MoreVertical, Plus, Download } from 'lucide-react';
+import { ArrowLeft, Globe, Smartphone } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const IOS_STEPS = [
+interface Step {
+  title: string;
+  desc: string;
+  badge?: string;
+  badgeIcon?: string;
+}
+
+const IOS_STEPS: Step[] = [
   {
-    icon: Share,
+    title: 'Safari로 사이트 접속 후 오른쪽 하단에 · · · 클릭',
+    desc: 'Chrome이 아닌 Safari 브라우저를 이용해 주세요',
+    badge: 'www.randsome.online',
+    badgeIcon: 'globe',
+  },
+  {
     title: '하단 공유 버튼 탭',
-    desc: 'Safari 하단 가운데의 □↑ 아이콘을 탭해요.',
+    desc: '화면 하단 가운데 □↑ 공유 버튼을 눌러요',
+    badge: '공유 버튼 (하단 중앙)',
+    badgeIcon: 'share',
   },
   {
-    icon: Plus,
-    title: '홈 화면에 추가 선택',
-    desc: '스크롤을 내려 "홈 화면에 추가"를 탭해요.',
+    title: '더보기 클릭 후 "홈 화면에 추가" 선택',
+    desc: '스크롤을 내려 홈 화면에 추가를 탭해요',
+    badge: '홈 화면에 추가',
+    badgeIcon: 'grid',
   },
   {
-    icon: Download,
-    title: '추가 버튼 탭',
-    desc: '우측 상단 "추가"를 탭하면 설치 완료예요.',
+    title: '추가 → 완료!',
+    desc: '우측 상단 추가를 누르면 앱처럼 설치 완료',
   },
 ];
 
-const ANDROID_STEPS = [
+const ANDROID_STEPS: Step[] = [
   {
-    icon: MoreVertical,
-    title: '우측 상단 메뉴 탭',
-    desc: 'Chrome 우측 상단의 ⋮ 아이콘을 탭해요.',
+    title: 'Chrome으로 사이트 접속',
+    desc: 'Chrome 브라우저로 접속해 주세요',
+    badge: 'www.randsome.online',
+    badgeIcon: 'globe',
   },
   {
-    icon: Download,
-    title: '앱 설치 선택',
-    desc: '"앱 설치" 또는 "홈 화면에 추가"를 탭해요.',
+    title: '오른쪽 상단 ⋮ 메뉴 탭',
+    desc: '브라우저 우측 상단 ⋮ 아이콘을 탭해요',
+    badge: '⋮ 메뉴 (우측 상단)',
+    badgeIcon: 'menu',
   },
   {
-    icon: Plus,
-    title: '설치 버튼 탭',
-    desc: '"설치"를 탭하면 홈 화면에 추가돼요.',
+    title: '"앱 설치" 선택',
+    desc: '"앱 설치" 또는 "홈 화면에 추가"를 탭해요',
+    badge: '앱 설치',
+    badgeIcon: 'grid',
+  },
+  {
+    title: '설치 → 완료!',
+    desc: '설치를 탭하면 앱처럼 설치 완료',
   },
 ];
+
+const BadgeIcon: React.FC<{ type?: string }> = ({ type }) => {
+  if (type === 'globe') return <Globe size={12} className="text-slate-500 shrink-0" />;
+  if (type === 'share') return <span className="text-[11px] text-slate-500 shrink-0">□↑</span>;
+  if (type === 'grid') return <span className="text-[11px] text-slate-500 shrink-0">⊞</span>;
+  if (type === 'menu') return <span className="text-[11px] text-slate-500 shrink-0">⋮</span>;
+  return null;
+};
 
 const PwaGuidePage: React.FC = () => {
   const navigate = useNavigate();
@@ -47,48 +76,38 @@ const PwaGuidePage: React.FC = () => {
   const [tab, setTab] = useState<'ios' | 'android'>('ios');
 
   const steps = tab === 'ios' ? IOS_STEPS : ANDROID_STEPS;
+  const isIos = tab === 'ios';
 
   return (
-    <MobileLayout className="bg-[#F8FAFF]">
+    <MobileLayout className="bg-white">
       <div
         className={isPWA ? 'px-5' : 'mx-auto max-w-2xl px-5 py-5'}
         style={isPWA ? { paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' } : undefined}
       >
-        <div className="pb-10">
-          {/* 헤더 */}
+        <div className="pb-12">
+          {/* 뒤로가기 */}
           <motion.div
-            className="flex items-center gap-3 mb-8"
-            initial={{ opacity: 0, y: 16 }}
+            className="mb-6"
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.35 }}
           >
             <button
               type="button"
               onClick={() => navigate(-1)}
               aria-label="뒤로 가기"
-              className="w-9 h-9 rounded-xl bg-white/70 border border-slate-200/60 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-white transition-all"
+              className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-all"
             >
               <ArrowLeft size={18} />
             </button>
-            <h1 className="font-display text-2xl text-slate-900">앱 설치 방법</h1>
           </motion.div>
-
-          {/* 설명 */}
-          <motion.p
-            className="text-sm text-slate-500 leading-relaxed mb-6"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 }}
-          >
-            Randsome을 홈 화면에 추가하면 앱처럼 빠르게 실행할 수 있어요.
-          </motion.p>
 
           {/* 탭 */}
           <motion.div
-            className="flex gap-2 mb-6 bg-slate-100/80 rounded-xl p-1"
+            className="flex gap-2 mb-8 bg-slate-100 rounded-xl p-1"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
+            transition={{ duration: 0.35, delay: 0.05 }}
           >
             {(['ios', 'android'] as const).map((t) => (
               <button
@@ -96,54 +115,69 @@ const PwaGuidePage: React.FC = () => {
                 type="button"
                 onClick={() => setTab(t)}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  tab === t
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-400'
+                  tab === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'
                 }`}
               >
-                {t === 'ios' ? 'iPhone (Safari)' : 'Android (Chrome)'}
+                {t === 'ios' ? 'iPhone (iOS)' : 'Android'}
               </button>
             ))}
           </motion.div>
 
-          {/* 스텝 */}
-          <div className="space-y-3">
-            {steps.map(({ icon: Icon, title, desc }, i) => (
+          {/* 플랫폼 뱃지 + 타이틀 */}
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="mb-8"
+          >
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 border border-slate-200 rounded-full text-[12px] text-slate-500 font-medium mb-3">
+              <Smartphone size={12} />
+              {isIos ? 'iPhone (iOS)' : 'Android'}
+            </span>
+            <h1 className="text-[32px] font-black text-slate-900 leading-tight">
+              {isIos ? '아이폰 설치 방법' : '안드로이드 설치 방법'}
+            </h1>
+          </motion.div>
+
+          {/* 스텝 타임라인 */}
+          <motion.div
+            key={`steps-${tab}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {steps.map(({ title, desc, badge, badgeIcon }, i) => (
               <motion.div
                 key={title}
-                className="flex items-start gap-4 bg-white rounded-2xl border border-slate-100 p-4 shadow-sm"
-                initial={{ opacity: 0, y: 12 }}
+                className="flex gap-4"
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.15 + i * 0.07 }}
+                transition={{ duration: 0.35, delay: i * 0.07 }}
               >
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
-                  <Icon size={18} className="text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-full">
-                      {i + 1}단계
-                    </span>
-                    <p className="font-bold text-slate-800 text-sm">{title}</p>
+                {/* 왼쪽 라인 + 번호 */}
+                <div className="flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+                    <span className="text-white text-[13px] font-black">{i + 1}</span>
                   </div>
-                  <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+                  {i < steps.length - 1 && (
+                    <div className="w-0.5 flex-1 bg-indigo-200 my-1 min-h-[24px]" />
+                  )}
+                </div>
+
+                {/* 콘텐츠 */}
+                <div className={`flex-1 min-w-0 ${i < steps.length - 1 ? 'pb-7' : ''}`}>
+                  <p className="font-bold text-slate-900 text-[15px] leading-snug mb-1">{title}</p>
+                  <p className="text-[13px] text-slate-500 leading-relaxed mb-2">{desc}</p>
+                  {badge && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[12px] text-slate-600 font-medium">
+                      <BadgeIcon type={badgeIcon} />
+                      {badge}
+                    </span>
+                  )}
                 </div>
               </motion.div>
             ))}
-          </div>
-
-          {/* 안내 */}
-          <motion.div
-            className="mt-6 px-4 py-3 bg-amber-50 border border-amber-100 rounded-2xl"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.38 }}
-          >
-            <p className="text-xs text-amber-700 leading-relaxed">
-              {tab === 'ios'
-                ? 'iPhone에서는 반드시 Safari 브라우저로 접속해야 설치할 수 있어요.'
-                : 'Android에서는 Chrome 브라우저로 접속해야 설치할 수 있어요.'}
-            </p>
           </motion.div>
         </div>
       </div>
