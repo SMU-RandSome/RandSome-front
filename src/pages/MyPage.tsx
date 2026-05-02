@@ -18,7 +18,7 @@ import {
   getInstagramIdErrorMessage,
 } from '@/lib/validation';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
-import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/useFcmToken';
+import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY, type FcmRegisterResult } from '@/hooks/useFcmToken';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS, PERSONALITY_TAG_LABELS, FACE_TYPE_TAG_LABELS, DATING_STYLE_TAG_LABELS } from '@/constants/tags';
 import type { Department, MemberProfile, MemberStatsResponse, Mbti, TicketBalanceResponse, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
@@ -244,10 +244,16 @@ const MyPage: React.FC = () => {
         toast('알림을 껐습니다.', 'info');
       } else {
         // 토글 ON: 권한 요청 → 토큰 발급 → 서버 동기화
-        const success = await registerFcmToken();
-        if (success) {
+        const result: FcmRegisterResult = await registerFcmToken();
+        if (result === 'success') {
           setNotifEnabled(true);
           toast('알림을 켰습니다.', 'success');
+        } else if (result === 'unsupported') {
+          toast('이 기기에서는 푸시 알림을 지원하지 않습니다.', 'error');
+        } else if (result === 'denied') {
+          toast('알림 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.', 'error');
+        } else {
+          toast('알림 설정에 실패했습니다. 다시 시도해주세요.', 'error');
         }
       }
     } catch {

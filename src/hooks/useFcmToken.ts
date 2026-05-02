@@ -6,6 +6,8 @@ export const FCM_TOKEN_KEY = 'fcmToken';
 export const FCM_ENABLED_KEY = 'fcmEnabled';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
 
+export type FcmRegisterResult = 'success' | 'unsupported' | 'denied' | 'failed';
+
 // 동시에 여러 syncDeviceToken 호출이 발생하지 않도록 in-flight 가드
 let syncInFlight = false;
 
@@ -25,36 +27,40 @@ export const useFcmToken = (isAuthenticated: boolean): void => {
 };
 
 /** 알림 허용 토글 ON: 권한 요청 → 토큰 발급 → 서버 동기화 */
-export const registerFcmToken = async (): Promise<boolean> => {
-  if (!VAPID_KEY || typeof Notification === 'undefined') return false;
+export const registerFcmToken = async (): Promise<FcmRegisterResult> => {
+  if (!VAPID_KEY || typeof Notification === 'undefined') return 'unsupported';
 
   const messaging = await getFirebaseMessaging();
-  if (!messaging) return false;
+  if (!messaging) return 'unsupported';
 
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return false;
+  // 구형 Chrome은 콜백 방식만 지원하므로 양쪽 모두 처리
+  const permission = await new Promise<NotificationPermission>((resolve) => {
+    const result = Notification.requestPermission(resolve);
+    if (result) result.then(resolve);
+  });
+  if (permission !== 'granted') return 'denied';
 
   const { getToken } = await import('firebase/messaging');
   const token = await getToken(messaging, { vapidKey: VAPID_KEY });
-  if (!token) return false;
+  if (!token) return 'failed';
 
   const cached = localStorage.getItem(FCM_TOKEN_KEY);
   if (cached !== token) {
-    if (syncInFlight) return false;
+    if (syncInFlight) return 'failed';
     syncInFlight = true;
     try {
       await syncDeviceToken({ deviceToken: token });
       localStorage.setItem(FCM_TOKEN_KEY, token);
     } catch (err) {
       if (import.meta.env.DEV) console.error('FCM 토큰 서버 동기화 실패:', err);
-      return false;
+      return 'failed';
     } finally {
       syncInFlight = false;
     }
   }
   localStorage.setItem(FCM_ENABLED_KEY, 'true');
 
-  return true;
+  return 'success';
 };
 
 /** 알림 허용 토글 OFF: Firebase 토큰 삭제 → 서버 삭제 → 캐시 제거 */

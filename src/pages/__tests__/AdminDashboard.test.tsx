@@ -24,8 +24,10 @@ vi.mock('@/features/announcement/api', () => ({
 }));
 
 vi.mock('@/hooks/useFcmToken', () => ({
+  registerFcmToken: vi.fn().mockResolvedValue('success'),
   unregisterFcmToken: vi.fn().mockResolvedValue(undefined),
   clearFcmToken: vi.fn(),
+  FCM_ENABLED_KEY: 'fcmEnabled',
 }));
 
 const mockNavigate = vi.fn();

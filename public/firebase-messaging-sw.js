@@ -13,13 +13,16 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  // 앱이 포그라운드(visible)면 onMessage �핸들러가 Toast로 처리하므로 시스템 알림 생략
+  // notification 필드가 있으면 Firebase SDK가 자동으로 알림을 표시하므로 중복 방지
+  if (payload.notification) return;
+
+  // data-only 메시지만 수동으로 알림 표시
   self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
     const isVisible = clientList.some((c) => c.visibilityState === 'visible');
     if (isVisible) return;
 
-    const title = payload.notification?.title ?? 'Randsome';
-    const body = payload.notification?.body ?? '';
+    const title = payload.data?.title ?? 'Randsome';
+    const body = payload.data?.body ?? '';
     self.registration.showNotification(title, {
       body,
       icon: '/vite.svg',
