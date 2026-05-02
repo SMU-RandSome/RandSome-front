@@ -170,7 +170,7 @@ const GuestMainPage: React.FC = () => {
               style={{ background: 'rgba(255,255,255,.06)' }}
             >
               <Clock size={16} className="text-white/40" />
-              <span className="text-white/50 text-[15px] font-bold">서비스 준비 중이에요</span>
+              <span className="text-white/50 text-[15px] font-bold">서비스 이용 중이에요</span>
             </div>
           )}
           <div className="flex items-center justify-center gap-5 mt-2">
