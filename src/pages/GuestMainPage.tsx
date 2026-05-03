@@ -7,8 +7,7 @@ import { Stars } from '@/components/ui/Stars';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useDashboard } from '@/hooks/useDashboard';
 import { Heart, Sparkles, MessageCircle, Clock } from 'lucide-react';
-
-const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
+import { isServiceOpen } from '@/constants/serviceSchedule';
 
 import { motion } from 'motion/react';
 
@@ -138,7 +137,7 @@ const GuestMainPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.26 }}
         >
-          {SERVICE_OPEN ? (
+          {isServiceOpen() ? (
             <>
               <button
                 onClick={() => navigate('/signup')}

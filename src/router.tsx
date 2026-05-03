@@ -5,6 +5,7 @@ import { useDisplayMode } from '@/store/displayModeStore';
 import { WebShell } from '@/components/layout/WebShell';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PullToRefresh } from '@/components/ui/PullToRefresh';
+import { isServiceOpen } from '@/constants/serviceSchedule';
 
 // 라우트 단위 코드 스플리팅
 const GuestMainPage = React.lazy(() => import('@/pages/GuestMainPage'));
@@ -62,15 +63,18 @@ const AppShell: React.FC = () => {
   );
 };
 
-/** 서비스 오픈 여부 — Vercel Production 환경변수 VITE_SERVICE_OPEN=false 로 제어 */
-const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
+/** 서비스 오픈 전 공개 라우트(login/signup 등)를 차단하는 게이트 */
+const ServiceGate: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  if (!isServiceOpen()) return <Navigate to="/" replace />;
+  return children;
+};
 
 /** 루트('/') 진입 시 인증 상태에 따라 리다이렉트 */
 const RootRoute: React.FC = () => {
   const { isAuthenticated, user, isInitializing } = useAuth();
   if (isInitializing) return <PageLoader />;
   if (!isAuthenticated || !user) return <GuestMainPage />;
-  if (!SERVICE_OPEN) return <GuestMainPage />;
+  if (!isServiceOpen()) return <GuestMainPage />;
   if (user.role === 'ROLE_ADMIN') return <Navigate to="/admin" replace />;
   return <Navigate to="/home" replace />;
 };
@@ -79,7 +83,7 @@ const RootRoute: React.FC = () => {
 const ProtectedRoute: React.FC = () => {
   const { isAuthenticated, user, isInitializing } = useAuth();
   if (isInitializing) return <PageLoader />;
-  if (!SERVICE_OPEN) return <Navigate to="/" replace />;
+  if (!isServiceOpen()) return <Navigate to="/" replace />;
   if (!isAuthenticated || !user) return <Navigate to="/" replace />;
   if (user.role === 'ROLE_ADMIN') return <Navigate to="/admin" replace />;
   return <Outlet />;
@@ -89,7 +93,6 @@ const ProtectedRoute: React.FC = () => {
 const AdminRoute: React.FC = () => {
   const { isAuthenticated, user, isInitializing } = useAuth();
   if (isInitializing) return <PageLoader />;
-  if (!SERVICE_OPEN) return <Navigate to="/" replace />;
   if (!isAuthenticated || !user) return <Navigate to="/" replace />;
   if (user.role !== 'ROLE_ADMIN') return <Navigate to="/home" replace />;
   return <Outlet />;
@@ -101,9 +104,9 @@ export const router = createBrowserRouter([
     children: [
       // 공개 라우트
       { path: '/', element: <RootRoute /> },
-      { path: '/login', element: SERVICE_OPEN ? <LoginPage /> : <Navigate to="/" replace /> },
-      { path: '/signup', element: SERVICE_OPEN ? <SignupPage /> : <Navigate to="/" replace /> },
-      { path: '/forgot-password', element: SERVICE_OPEN ? <ForgotPasswordPage /> : <Navigate to="/" replace /> },
+      { path: '/login', element: <ServiceGate><LoginPage /></ServiceGate> },
+      { path: '/signup', element: <ServiceGate><SignupPage /></ServiceGate> },
+      { path: '/forgot-password', element: <ServiceGate><ForgotPasswordPage /></ServiceGate> },
       { path: '/about', element: <AboutPage /> },
       { path: '/guide', element: <GuidePage /> },
       { path: '/pwa-guide', element: <PwaGuidePage /> },

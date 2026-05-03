@@ -11,6 +11,7 @@ import type { MatchingHistoryItem, MatchingType } from '@/types';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { Heart, Sparkles, X, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { isMatchingOpen } from '@/constants/serviceSchedule';
 
 const getMatchingTypeLabel = (type: MatchingType): string =>
   type === 'RANDOM' ? '랜덤 매칭' : '이상형 매칭';
@@ -49,9 +50,6 @@ const STATUS_BADGE: Record<StatusKey, { bg: string; color: string; border: strin
     label: '미매칭',
   },
 };
-
-const MATCHING_OPEN_DATE = new Date('2025-05-27T10:00:00+09:00');
-const isMatchingOpen = (): boolean => new Date() >= MATCHING_OPEN_DATE;
 
 const glassCard: React.CSSProperties = {
   background: 'rgba(255,255,255,.82)',

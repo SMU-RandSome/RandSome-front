@@ -15,6 +15,7 @@ import type { PersonalityTag, FaceTypeTag, DatingStyleTag, Mbti, MatchingApplica
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { Heart, Ticket, AlertTriangle, Minus, Plus, XCircle, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { isMatchingOpen } from '@/constants/serviceSchedule';
 
 type MatchView = 'main' | 'register' | 'result' | 'loading';
 type MatchType = 'ideal' | 'random';
@@ -26,9 +27,6 @@ const TAG_SELECTED_FACE: React.CSSProperties = { background: 'linear-gradient(13
 const TAG_SELECTED_DATING: React.CSSProperties = { background: 'linear-gradient(135deg, #7c3aed, #a855f7)', color: '#fff', boxShadow: '0 2px 10px rgba(124,58,237,.3)', border: '1px solid transparent' };
 const TAG_SELECTED_MBTI: React.CSSProperties = { background: 'linear-gradient(135deg, #f59e0b, #f97316)', color: '#fff', boxShadow: '0 2px 10px rgba(245,158,11,.3)', border: '1px solid transparent' };
 const TAG_UNSELECTED: React.CSSProperties = { background: 'rgba(255,255,255,.82)', color: '#475569', border: '1px solid rgba(219,234,254,.9)' };
-
-const MATCHING_OPEN_DATE = new Date('2025-05-27T10:00:00+09:00');
-const isMatchingOpen = (): boolean => new Date() >= MATCHING_OPEN_DATE;
 
 const MatchPage: React.FC = () => {
   const { toast } = useToast();
