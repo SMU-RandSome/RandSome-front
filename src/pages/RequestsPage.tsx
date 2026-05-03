@@ -61,7 +61,7 @@ const glassCard: React.CSSProperties = {
 const RequestsPage: React.FC = () => {
   const navigate = useNavigate();
   const { isPWA } = useDisplayMode();
-  const { items, isLoading, isError: loadError, refetch } = useMatchingHistory();
+  const { items, isLoading, isError: loadError, isServiceNotOpen, refetch } = useMatchingHistory();
   const [withdrawTarget, setWithdrawTarget] = useState<MatchingHistoryItem | null>(null);
   const withdrawMutation = useWithdrawMatching();
 
@@ -105,17 +105,25 @@ const RequestsPage: React.FC = () => {
               ))}
             </div>
           ) : loadError ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-              <p className="text-2xl">&#9888;&#65039;</p>
-              <p className="text-sm font-semibold text-slate-700">내역을 불러오지 못했습니다</p>
-              <p className="text-xs text-slate-400">네트워크 연결을 확인하고 다시 시도해주세요.</p>
-              <button
-                onClick={() => refetch()}
-                className="mt-1 px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors"
-              >
-                다시 시도
-              </button>
-            </div>
+            isServiceNotOpen ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+                <p className="text-2xl">&#128276;</p>
+                <p className="text-sm font-semibold text-slate-700">매칭 서비스 오픈 전이에요</p>
+                <p className="text-xs text-slate-400">매칭 신청 및 결과 조회는 5/27(화) 10:00에 오픈됩니다.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+                <p className="text-2xl">&#9888;&#65039;</p>
+                <p className="text-sm font-semibold text-slate-700">내역을 불러오지 못했습니다</p>
+                <p className="text-xs text-slate-400">네트워크 연결을 확인하고 다시 시도해주세요.</p>
+                <button
+                  onClick={() => refetch()}
+                  className="mt-1 px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  다시 시도
+                </button>
+              </div>
+            )
           ) : items.length === 0 ? (
             <EmptyState
               icon={<span>&#128140;</span>}
