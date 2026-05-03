@@ -59,6 +59,7 @@ const ForgotPasswordPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [verifyAttempts, setVerifyAttempts] = useState(0);
 
   useEffect(() => {
     sessionStorage.setItem(FORGOT_PW_STORAGE_KEY, JSON.stringify({
@@ -75,19 +76,20 @@ const ForgotPasswordPage: React.FC = () => {
       const res = await sendEmailVerificationCode({ email });
       if (res.result === 'ERROR') { toast(res.error?.message ?? '오류가 발생했습니다.', 'error'); return; }
       toast('인증 코드를 발송했습니다. 이메일을 확인해주세요.', 'success');
-      setCodeSent(true);
+      setCodeSent(true); setVerifyAttempts(0);
     } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setIsLoading(false); }
   };
 
   const handleVerifyCode = async (): Promise<void> => {
     if (!code) return;
+    if (verifyAttempts >= 5) { toast('인증 시도 횟수를 초과했습니다. 인증 코드를 재발송해주세요.', 'error'); return; }
     setIsLoading(true);
     try {
       const res = await verifyEmailCode({ email, code }, 'PASSWORD_RESET');
-      if (res.result === 'ERROR' || !res.data) { toast(res.error?.message ?? '오류가 발생했습니다.', 'error'); return; }
+      if (res.result === 'ERROR' || !res.data) { setVerifyAttempts(prev => prev + 1); toast(res.error?.message ?? '오류가 발생했습니다.', 'error'); return; }
       setEmailVerificationToken(res.data.emailVerificationToken);
       setCodeVerified(true); setStep(2);
-    } catch (err) { toast(getApiErrorMessage(err), 'error'); } finally { setIsLoading(false); }
+    } catch (err) { setVerifyAttempts(prev => prev + 1); toast(getApiErrorMessage(err), 'error'); } finally { setIsLoading(false); }
   };
 
   const handleResetPassword = async (): Promise<void> => {
@@ -155,9 +157,10 @@ const ForgotPasswordPage: React.FC = () => {
                 <div className="space-y-3">
                   <p className="text-xs text-blue-600 font-medium">인증 메일이 발송되었습니다. 코드를 입력해주세요.</p>
                   <div className="flex items-center gap-2">
-                    <input type="text" placeholder="인증 코드 6자리" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && code) void handleVerifyCode(); }} style={{ ...inputStyle, flex: 1, minWidth: 0 }} className="outline-none border border-blue-100/90 focus:border-blue-400 transition-colors placeholder:text-slate-400" autoFocus />
-                    <button type="button" onClick={() => void handleVerifyCode()} disabled={!code || isLoading} style={gradientButtonStyle} className="shrink-0 px-5 py-[13px] rounded-[14px] text-sm font-bold text-white disabled:opacity-50 transition-all">{isLoading ? '확인 중...' : '확인'}</button>
+                    <input type="text" placeholder="인증 코드 6자리" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && code && verifyAttempts < 5) void handleVerifyCode(); }} disabled={verifyAttempts >= 5} style={{ ...inputStyle, flex: 1, minWidth: 0 }} className="outline-none border border-blue-100/90 focus:border-blue-400 transition-colors placeholder:text-slate-400 disabled:opacity-50" autoFocus />
+                    <button type="button" onClick={() => void handleVerifyCode()} disabled={!code || isLoading || verifyAttempts >= 5} style={gradientButtonStyle} className="shrink-0 px-5 py-[13px] rounded-[14px] text-sm font-bold text-white disabled:opacity-50 transition-all">{isLoading ? '확인 중...' : '확인'}</button>
                   </div>
+                  {verifyAttempts >= 5 && <p className="text-xs text-red-500 font-medium">인증 시도 횟수를 초과했습니다. 인증 코드를 재발송해주세요.</p>}
                   <button type="button" onClick={() => void handleSendCode()} disabled={isLoading} className="text-xs text-slate-400 hover:text-blue-500 hover:underline disabled:pointer-events-none transition-colors">인증 코드 재발송</button>
                 </div>
               )}
