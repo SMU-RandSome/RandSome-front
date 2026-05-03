@@ -27,6 +27,9 @@ const TAG_SELECTED_DATING: React.CSSProperties = { background: 'linear-gradient(
 const TAG_SELECTED_MBTI: React.CSSProperties = { background: 'linear-gradient(135deg, #f59e0b, #f97316)', color: '#fff', boxShadow: '0 2px 10px rgba(245,158,11,.3)', border: '1px solid transparent' };
 const TAG_UNSELECTED: React.CSSProperties = { background: 'rgba(255,255,255,.82)', color: '#475569', border: '1px solid rgba(219,234,254,.9)' };
 
+const MATCHING_OPEN_DATE = new Date('2025-05-27T10:00:00+09:00');
+const isMatchingOpen = (): boolean => new Date() >= MATCHING_OPEN_DATE;
+
 const MatchPage: React.FC = () => {
   const { toast } = useToast();
   const { isPWA } = useDisplayMode();
@@ -413,8 +416,9 @@ const MatchPage: React.FC = () => {
               <button onClick={() => setCount(Math.min(5, count + 1))} className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors" style={{ background: 'rgba(255,255,255,.9)', border: '1px solid rgba(219,234,254,.9)' }} aria-label="인원 증가"><Plus size={14} /></button>
             </div>
           </div>
-          {isInsufficient && <div className="flex items-center gap-2 px-2 mb-2"><AlertTriangle size={13} className="text-red-400 shrink-0" /><p className="text-xs text-red-500 font-medium">티켓이 부족합니다.</p></div>}
-          <button disabled={isInsufficient} onClick={() => { setConfirmMode('match'); setShowConfirm(true); }} className="relative w-full h-14 rounded-2xl text-white font-bold text-base overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)' }}>
+          {!isMatchingOpen() && <div className="flex items-center gap-2 px-2 mb-2"><AlertTriangle size={13} className="text-amber-500 shrink-0" /><p className="text-xs text-amber-600 font-medium">매칭 신청은 5/27(화) 10:00에 오픈됩니다.</p></div>}
+          {isInsufficient && isMatchingOpen() && <div className="flex items-center gap-2 px-2 mb-2"><AlertTriangle size={13} className="text-red-400 shrink-0" /><p className="text-xs text-red-500 font-medium">티켓이 부족합니다.</p></div>}
+          <button disabled={isInsufficient || !isMatchingOpen()} onClick={() => { setConfirmMode('match'); setShowConfirm(true); }} className="relative w-full h-14 rounded-2xl text-white font-bold text-base overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)' }}>
             <span className="absolute inset-0 overflow-hidden rounded-[inherit] pointer-events-none"><span className="absolute top-0 h-full w-[55%] bg-gradient-to-r from-transparent via-white/25 to-transparent animate-sheen" /></span>
             <span className="relative flex items-center justify-center gap-2"><Heart size={18} className="fill-white" />매칭 신청하기 · 티켓 <span className="font-display text-[18px] font-bold leading-none">{count}</span>장</span>
           </button>
