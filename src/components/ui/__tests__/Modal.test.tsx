@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { Modal } from '@/components/ui/Modal';
 
 vi.mock('motion/react');
+vi.mock('@/hooks/useScrollLock', () => ({
+  useScrollLock: vi.fn(),
+}));
 
 describe('Modal', () => {
   it('isOpen=false 시 아무것도 렌더링 안 함', () => {

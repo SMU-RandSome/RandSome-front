@@ -55,6 +55,14 @@ describe('requestStore', () => {
     expect(result.current.requests[0].createdAt).toBeTruthy();
   });
 
+  it('addRequest 함수 참조가 렌더 간 안정적임', () => {
+    const { result, rerender } = renderHook(() => useRequests(), { wrapper });
+    const first = result.current.addRequest;
+    rerender();
+    const second = result.current.addRequest;
+    expect(first).toBe(second);
+  });
+
   it('RequestProvider 외부에서 useRequests 호출 시 에러', () => {
     expect(() => renderHook(() => useRequests())).toThrow(
       'useRequests must be used within a RequestProvider',

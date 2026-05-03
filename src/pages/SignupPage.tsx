@@ -242,9 +242,10 @@ const SignupPage: React.FC = () => {
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [openTermKey, setOpenTermKey] = useState<TermsKey | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verifyAttempts, setVerifyAttempts] = useState(0);
 
   useEffect(() => {
-    const { password: _pw, passwordConfirm: _pwc, ...safeFormData } = formData;
+    const { password: _, passwordConfirm: __, ...safeFormData } = formData; // eslint-disable-line @typescript-eslint/no-unused-vars
     sessionStorage.setItem(SIGNUP_STORAGE_KEY, JSON.stringify({
       step, formData: safeFormData, emailSent, emailVerified, emailVerificationToken, verificationCode,
     }));
@@ -254,17 +255,18 @@ const SignupPage: React.FC = () => {
     if (!formData.emailUsername.trim()) { toast('이메일 아이디를 입력해주세요.', 'error'); return; }
     try {
       await sendEmailVerificationCode({ email: `${formData.emailUsername}@sangmyung.kr` });
-      setEmailSent(true); setVerificationCode(''); toast('인증 메일이 발송되었습니다.', 'info');
+      setEmailSent(true); setVerificationCode(''); setVerifyAttempts(0); toast('인증 메일이 발송되었습니다.', 'info');
     } catch (err) { toast(getApiErrorMessage(err), 'error'); }
   };
 
   const handleVerifyCode = async (): Promise<void> => {
     if (!verificationCode.trim()) { toast('인증코드를 입력해주세요.', 'error'); return; }
+    if (verifyAttempts >= 5) { toast('인증 시도 횟수를 초과했습니다. 인증 코드를 재발송해주세요.', 'error'); return; }
     try {
       const res = await verifyEmailCode({ email: `${formData.emailUsername}@sangmyung.kr`, code: verificationCode }, 'SIGN_UP');
-      if (!res.data) { toast(res.error?.message ?? '오류가 발생했습니다.', 'error'); return; }
+      if (!res.data) { setVerifyAttempts(prev => prev + 1); toast(res.error?.message ?? '오류가 발생했습니다.', 'error'); return; }
       setEmailVerificationToken(res.data.emailVerificationToken); setEmailVerified(true); toast('이메일 인증이 완료되었습니다!', 'success');
-    } catch (err) { toast(getApiErrorMessage(err), 'error'); }
+    } catch (err) { setVerifyAttempts(prev => prev + 1); toast(getApiErrorMessage(err), 'error'); }
   };
 
   const requiredTermsAgreed = formData.terms.service && formData.terms.privacy && formData.terms.thirdParty && formData.terms.disclaimer && formData.terms.profilePublic;
@@ -377,9 +379,10 @@ const SignupPage: React.FC = () => {
                   <div className="space-y-2">
                     <p className="text-xs text-blue-600 font-medium">인증 메일이 발송되었습니다. 코드를 입력해주세요.</p>
                     <div className="flex items-center gap-2">
-                      <input type="text" placeholder="인증코드 입력" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} style={glassInputStyle} />
-                      <button type="button" onClick={handleVerifyCode} disabled={!verificationCode.trim()} className="shrink-0 text-sm font-bold text-white disabled:opacity-50 transition-all" style={{ ...gradientBtnBase, height: 46, padding: '0 16px' }}>확인</button>
+                      <input type="text" placeholder="인증코드 입력" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} disabled={verifyAttempts >= 5} style={glassInputStyle} />
+                      <button type="button" onClick={handleVerifyCode} disabled={!verificationCode.trim() || verifyAttempts >= 5} className="shrink-0 text-sm font-bold text-white disabled:opacity-50 transition-all" style={{ ...gradientBtnBase, height: 46, padding: '0 16px' }}>확인</button>
                     </div>
+                    {verifyAttempts >= 5 && <p className="text-xs text-red-500 font-medium">인증 시도 횟수를 초과했습니다. 인증 코드를 재발송해주세요.</p>}
                   </div>
                 )}
               </div>

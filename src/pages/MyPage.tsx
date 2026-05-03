@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -18,7 +19,7 @@ import {
   getInstagramIdErrorMessage,
 } from '@/lib/validation';
 import { sendEmailVerificationCode, verifyEmailCode } from '@/features/auth/api';
-import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY } from '@/hooks/useFcmToken';
+import { registerFcmToken, unregisterFcmToken, FCM_ENABLED_KEY, type FcmRegisterResult } from '@/hooks/useFcmToken';
 import { DEPARTMENT_OPTIONS } from '@/constants/departments';
 import { MBTI_OPTIONS, PERSONALITY_TAGS, FACE_TYPE_TAGS, DATING_STYLE_TAGS, PERSONALITY_TAG_LABELS, FACE_TYPE_TAG_LABELS, DATING_STYLE_TAG_LABELS } from '@/constants/tags';
 import type { Department, MemberProfile, MemberStatsResponse, Mbti, TicketBalanceResponse, PersonalityTag, FaceTypeTag, DatingStyleTag } from '@/types';
@@ -135,58 +136,46 @@ const MyPage: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    getTicketBalance()
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setTicketBalance(res.data);
-      })
-      .catch(() => {
-        // 티켓 잔고 조회 실패 — 무시 (위젯 숨김)
-      });
-    return () => { cancelled = true; };
-  }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    getMemberStats()
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setStats(res.data);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+    const fetchAll = async (): Promise<void> => {
+      const [ticketResult, statsResult, profileResult] = await Promise.allSettled([
+        getTicketBalance(),
+        getMemberStats(),
+        getMyProfile(),
+      ]);
+      if (cancelled) return;
 
-  useEffect(() => {
-    let cancelled = false;
-    getMyProfile()
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) {
-          setProfile(res.data);
-          setUser(res.data);
-          setEditForm({
-            legalName: res.data.legalName,
-            mbti: res.data.mbti,
-            department: (() => {
-              const v = res.data.department ?? '';
-              const opt = DEPARTMENT_OPTIONS.find((o) => o.value === v || o.label === v);
-              return opt ? opt.value : '';
-            })(),
-            instagramId: res.data.instagramId ?? '',
-            selfIntroduction: res.data.selfIntroduction ?? '',
-            idealDescription: res.data.idealDescription ?? '',
-            personalityTag: (res.data.personalityTag ?? '') as PersonalityTag | '',
-            faceTypeTag: (res.data.faceTypeTag ?? '') as FaceTypeTag | '',
-            datingStyleTag: (res.data.datingStyleTag ?? '') as DatingStyleTag | '',
-          });
-        }
-      })
-      .catch(() => {
-        // 네트워크 오류 등 — authStore 캐시 사용
-      });
+      if (ticketResult.status === 'fulfilled' && ticketResult.value.data) {
+        setTicketBalance(ticketResult.value.data);
+      }
+      if (statsResult.status === 'fulfilled' && statsResult.value.data) {
+        setStats(statsResult.value.data);
+      }
+      if (profileResult.status === 'fulfilled' && profileResult.value.data) {
+        const data = profileResult.value.data;
+        setProfile(data);
+        setUser(data);
+        setEditForm({
+          legalName: data.legalName,
+          mbti: data.mbti,
+          department: (() => {
+            const v = data.department ?? '';
+            const opt = DEPARTMENT_OPTIONS.find((o) => o.value === v || o.label === v);
+            return opt ? opt.value : '';
+          })(),
+          instagramId: data.instagramId ?? '',
+          selfIntroduction: data.selfIntroduction ?? '',
+          idealDescription: data.idealDescription ?? '',
+          personalityTag: (data.personalityTag ?? '') as PersonalityTag | '',
+          faceTypeTag: (data.faceTypeTag ?? '') as FaceTypeTag | '',
+          datingStyleTag: (data.datingStyleTag ?? '') as DatingStyleTag | '',
+        });
+      }
+    };
+
+    fetchAll().catch(() => {});
     return () => { cancelled = true; };
-  }, []);
+  }, [setUser]);
 
   const handleLogout = (): void => {
     logout();
@@ -244,10 +233,16 @@ const MyPage: React.FC = () => {
         toast('알림을 껐습니다.', 'info');
       } else {
         // 토글 ON: 권한 요청 → 토큰 발급 → 서버 동기화
-        const success = await registerFcmToken();
-        if (success) {
+        const result: FcmRegisterResult = await registerFcmToken();
+        if (result === 'success') {
           setNotifEnabled(true);
           toast('알림을 켰습니다.', 'success');
+        } else if (result === 'unsupported') {
+          toast('이 기기에서는 푸시 알림을 지원하지 않습니다.', 'error');
+        } else if (result === 'denied') {
+          toast('알림 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.', 'error');
+        } else {
+          toast('알림 설정에 실패했습니다. 다시 시도해주세요.', 'error');
         }
       }
     } catch {
@@ -731,6 +726,7 @@ const MyPage: React.FC = () => {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black z-[60]"
+              style={{ touchAction: 'none' }}
               onClick={() => setShowWithdrawConfirm(false)}
             />
             <motion.div
@@ -773,6 +769,7 @@ const MyPage: React.FC = () => {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black z-[60]"
+              style={{ touchAction: 'none' }}
               onClick={() => setShowCancelConfirm(false)}
             />
             <motion.div
@@ -855,13 +852,17 @@ interface EditProfileSheetProps {
   onClose: () => void;
 }
 
-const EditProfileSheet: React.FC<EditProfileSheetProps> = ({ editForm, setEditForm, isSaving, onSave, onClose }) => (
+const EditProfileSheet: React.FC<EditProfileSheetProps> = ({ editForm, setEditForm, isSaving, onSave, onClose }) => {
+  useScrollLock();
+
+  return (
   <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 0.5 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black z-[60]"
+      style={{ touchAction: 'none' }}
       onClick={onClose}
     />
     <motion.div
@@ -876,7 +877,7 @@ const EditProfileSheet: React.FC<EditProfileSheetProps> = ({ editForm, setEditFo
         <div className="h-0.5 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full" />
       </div>
 
-      <div className="overflow-y-auto px-6 pb-10 space-y-7">
+      <div className="overflow-y-auto overscroll-contain px-6 pb-10 space-y-7">
         {/* MBTI */}
         <div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">MBTI</p>
@@ -1032,7 +1033,8 @@ const EditProfileSheet: React.FC<EditProfileSheetProps> = ({ editForm, setEditFo
       </div>
     </motion.div>
   </>
-);
+  );
+};
 
 type PwStep = 'send' | 'verify' | 'newpw';
 
@@ -1040,6 +1042,7 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
   userEmail,
   onClose,
 }) => {
+  useScrollLock();
   const { toast } = useToast();
   const [step, setStep] = useState<PwStep>('send');
   const [code, setCode] = useState('');
@@ -1117,6 +1120,7 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
         animate={{ opacity: 0.5 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black z-[60]"
+        style={{ touchAction: 'none' }}
         onClick={onClose}
       />
       <motion.div
@@ -1170,6 +1174,7 @@ const PasswordChangeSheet: React.FC<{ userEmail: string; onClose: () => void }> 
               </p>
               <a
                 href="https://cloud.smu.ac.kr/t/smu.ac.kr"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
               >
@@ -1267,6 +1272,7 @@ const MemberWithdrawSheet: React.FC<{ onClose: () => void; onSuccess: () => void
   onClose,
   onSuccess,
 }) => {
+  useScrollLock();
   const { toast } = useToast();
   const [step, setStep] = useState<'warning' | 'confirm'>('warning');
   const [password, setPassword] = useState('');
@@ -1300,6 +1306,7 @@ const MemberWithdrawSheet: React.FC<{ onClose: () => void; onSuccess: () => void
         animate={{ opacity: 0.5 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black z-[60]"
+        style={{ touchAction: 'none' }}
         onClick={onClose}
       />
       <motion.div

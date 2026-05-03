@@ -17,7 +17,7 @@ import { MobileHeader } from '@/components/layout/MobileHeader';
 import { Heart, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
-import { PullToRefresh } from '@/components/ui/PullToRefresh';
+
 
 const MemberMainPage: React.FC = () => {
   const navigate = useNavigate();
@@ -195,7 +195,7 @@ const MemberMainPage: React.FC = () => {
     </div>
   );
 
-  return <MobileLayout className="!bg-transparent"><PullToRefresh>{content}</PullToRefresh></MobileLayout>;
+  return <MobileLayout className="!bg-transparent">{content}</MobileLayout>;
 };
 
 export default MemberMainPage;

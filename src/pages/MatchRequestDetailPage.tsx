@@ -301,6 +301,7 @@ const MatchRequestDetailPage: React.FC = () => {
                 {p.instagramId && VALID_INSTAGRAM_ID.test(p.instagramId) && (
                   <a
                     href={`https://instagram.com/${p.instagramId}`}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-[15px] rounded-[18px] text-white text-[15px] font-bold flex items-center justify-center gap-2 relative overflow-hidden mb-3"
                     style={{
@@ -406,6 +407,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ target, onClose, onSuccess })
         animate={{ opacity: 0.5 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black z-[60]"
+        style={{ touchAction: 'none' }}
         onClick={() => !isSubmitting && onClose()}
       />
       <motion.div

@@ -36,7 +36,7 @@ import {
   Users, Tag, LogOut, ShieldCheck, UserCheck, AlertTriangle, Menu, Bell, BellOff,
 } from 'lucide-react';
 import { getApiErrorMessage } from '@/lib/axios';
-import { FCM_ENABLED_KEY, registerFcmToken, unregisterFcmToken } from '@/hooks/useFcmToken';
+import { FCM_ENABLED_KEY, registerFcmToken, unregisterFcmToken, type FcmRegisterResult } from '@/hooks/useFcmToken';
 
 const CouponEventsTab = React.lazy(() => import('@/features/admin/components/CouponEventsTab'));
 const CandidateRegistrationsTab = React.lazy(() => import('@/features/admin/components/CandidateRegistrationsTab'));
@@ -421,10 +421,16 @@ const AdminDashboard: React.FC = () => {
         setNotifEnabled(false);
         toast('알림을 껐습니다.', 'info');
       } else {
-        const success = await registerFcmToken();
-        if (success) {
+        const result: FcmRegisterResult = await registerFcmToken();
+        if (result === 'success') {
           setNotifEnabled(true);
           toast('알림을 켰습니다.', 'success');
+        } else if (result === 'unsupported') {
+          toast('이 기기에서는 푸시 알림을 지원하지 않습니다.', 'error');
+        } else if (result === 'denied') {
+          toast('알림 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.', 'error');
+        } else {
+          toast('알림 설정에 실패했습니다. 다시 시도해주세요.', 'error');
         }
       }
     } catch {

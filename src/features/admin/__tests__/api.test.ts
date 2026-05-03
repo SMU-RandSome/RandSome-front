@@ -21,7 +21,6 @@ vi.mock('@/lib/axios', () => ({
 
 const mockGet = vi.mocked(apiClient.get);
 const mockPost = vi.mocked(apiClient.post);
-const mockPut = vi.mocked(apiClient.put);
 const mockDelete = vi.mocked(apiClient.delete);
 const mockPatch = vi.mocked(apiClient.patch);
 

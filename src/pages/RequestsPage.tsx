@@ -11,6 +11,7 @@ import type { MatchingHistoryItem, MatchingType } from '@/types';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { Heart, Sparkles, X, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { isMatchingOpen } from '@/constants/serviceSchedule';
 
 const getMatchingTypeLabel = (type: MatchingType): string =>
   type === 'RANDOM' ? '랜덤 매칭' : '이상형 매칭';
@@ -87,6 +88,12 @@ const RequestsPage: React.FC = () => {
         <MobileHeader title="신청내역" />
 
         <div className={`flex-1 overflow-y-auto p-4 ${isPWA ? 'pb-28' : 'pb-8'}`}>
+          {!isMatchingOpen() && (
+            <div className="flex items-center gap-2 px-3 py-2.5 mb-3 rounded-xl" style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)' }}>
+              <span className="text-amber-500 text-sm">&#9888;&#65039;</span>
+              <p className="text-xs text-amber-700 font-medium">매칭 신청 및 결과 조회는 5/27(화) 10:00에 오픈됩니다.</p>
+            </div>
+          )}
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -131,9 +138,8 @@ const RequestsPage: React.FC = () => {
                 >
                   <MatchingHistoryCard
                     item={item}
-                    onViewResult={() =>
-                      navigate('/requests/detail', { state: { applicationId: item.id } })
-                    }
+                    onViewResult={isMatchingOpen() ? () =>
+                      navigate('/requests/detail', { state: { applicationId: item.id } }) : undefined}
                     onWithdraw={() => setWithdrawTarget(item)}
                     formatDate={formatDate}
                   />
@@ -155,6 +161,7 @@ const RequestsPage: React.FC = () => {
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-black z-[60]"
+                style={{ touchAction: 'none' }}
                 onClick={() => setWithdrawTarget(null)}
               />
               <motion.div
@@ -194,11 +201,11 @@ const RequestsPage: React.FC = () => {
 
 const MatchingHistoryCard: React.FC<{
   item: MatchingHistoryItem;
-  onViewResult: () => void;
+  onViewResult?: () => void;
   onWithdraw: () => void;
   formatDate: (iso: string) => string;
 }> = React.memo(({ item, onViewResult, formatDate }) => {
-  const hasResult = item.applicationStatus === 'SUCCESS' || item.applicationStatus === 'PARTIAL_MATCH';
+  const hasResult = (item.applicationStatus === 'SUCCESS' || item.applicationStatus === 'PARTIAL_MATCH') && onViewResult;
   const isCancelled = item.applicationStatus === 'CANCELLED';
   const isFailed = item.applicationStatus === 'FAILED';
   const isIdeal = item.matchingType === 'IDEAL';

@@ -22,7 +22,7 @@ export const validateRealName = (name: string): boolean => {
   }
   
   // 위험한 특수문자 차단 (XSS, SQL Injection 방지)
-  const dangerousChars = /[<>{}()\[\]\\\/]/;
+  const dangerousChars = /[<>{}()[\]\\/]/;
   if (dangerousChars.test(trimmed)) {
     return false;
   }
@@ -48,7 +48,7 @@ export const getRealNameErrorMessage = (name: string): string | null => {
     return '실명은 50자 이하여야 합니다';
   }
   
-  if (/[<>{}()\[\]\\\/]/.test(trimmed)) {
+  if (/[<>{}()[\]\\/]/.test(trimmed)) {
     return '실명에 사용할 수 없는 특수문자가 포함되어 있습니다';
   }
   

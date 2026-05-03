@@ -7,24 +7,19 @@ import { Stars } from '@/components/ui/Stars';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useDashboard } from '@/hooks/useDashboard';
 import { Heart, Sparkles, MessageCircle, Clock } from 'lucide-react';
-
-const SERVICE_OPEN = import.meta.env.VITE_SERVICE_OPEN !== 'false';
+import { isServiceOpen } from '@/constants/serviceSchedule';
 
 import { motion } from 'motion/react';
-import { useAnnouncements } from '@/hooks/useAnnouncements';
-import { AnnouncementBanner } from '@/components/ui/AnnouncementBanner';
 
 const INFO_BADGES = [
   { text: '21학번+', bg: 'rgba(99,102,241,.25)', color: '#a5b4fc', borderColor: 'rgba(99,102,241,.4)' },
   { text: '@sangmyung.kr', bg: 'rgba(59,130,246,.22)', color: '#93c5fd', borderColor: 'rgba(59,130,246,.4)' },
-  { text: '무료', bg: 'rgba(34,197,94,.18)', color: '#86efac', borderColor: 'rgba(34,197,94,.3)' },
 ] as const;
 
 const GuestMainPage: React.FC = () => {
   const navigate = useNavigate();
   const { isPWA, isStandalone } = useDisplayMode();
   const { stats } = useDashboard();
-  const { announcements } = useAnnouncements();
 
   useEffect(() => {
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -135,13 +130,6 @@ const GuestMainPage: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* 공지사항 */}
-        {announcements.length > 0 && (
-          <div className="px-5 mb-4">
-            <AnnouncementBanner announcements={announcements} />
-          </div>
-        )}
-
         {/* CTA buttons */}
         <motion.div
           className={`px-4 sm:px-5 ${isPWA ? 'pb-28 sm:pb-32' : 'pb-6 sm:pb-8'}`}
@@ -149,7 +137,7 @@ const GuestMainPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.26 }}
         >
-          {SERVICE_OPEN ? (
+          {isServiceOpen() ? (
             <>
               <button
                 onClick={() => navigate('/signup')}

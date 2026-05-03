@@ -22,7 +22,7 @@ html {
 
 /* PWA standalone 모드에서 네이티브 pull-to-refresh 비활성화 (커스텀 사용) */
 @media (display-mode: standalone) {
-  html {
+  html, body {
     overscroll-behavior-y: contain;
   }
 }

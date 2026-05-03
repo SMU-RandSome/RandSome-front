@@ -6,6 +6,7 @@ import type { AuthUser, UserRole, Gender } from '@/types';
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isInitializing: boolean;
   setUser: (user: AuthUser) => void;
   logout: () => void;
 }
@@ -59,6 +60,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<AuthUser | null>(getStoredUser);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
   // useCallback으로 안정적인 참조 유지 — useAuth() 소비자의 불필요한 리렌더링 방지
   const setUser = useCallback((authUser: AuthUser): void => {
@@ -77,21 +79,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // 앱 마운트 및 탭 복귀 시 access token 만료 여부를 미리 확인하고 갱신
   useEffect(() => {
-    const tryRefresh = async (): Promise<void> => {
-      if (!localStorage.getItem('refreshToken')) return;
-      if (!isAccessTokenExpired()) return;
+    const tryRefresh = async (initial = false): Promise<void> => {
+      if (!localStorage.getItem('refreshToken')) {
+        if (initial) setIsInitializing(false);
+        return;
+      }
+      if (!isAccessTokenExpired()) {
+        if (initial) setIsInitializing(false);
+        return;
+      }
 
       try {
         await refreshAccessToken();
       } catch {
         logout();
+      } finally {
+        if (initial) setIsInitializing(false);
       }
     };
 
-    tryRefresh();
+    void tryRefresh(true);
 
     const handleVisibility = (): void => {
-      if (document.visibilityState === 'visible') void tryRefresh();
+      if (document.visibilityState === 'visible') void tryRefresh(false);
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
@@ -99,8 +109,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // useMemo로 context 값 안정화 — user 변경 시에만 하위 트리 리렌더링
   const value = useMemo(
-    () => ({ user, isAuthenticated: user !== null, setUser, logout }),
-    [user, setUser, logout],
+    () => ({ user, isAuthenticated: user !== null, isInitializing, setUser, logout }),
+    [user, isInitializing, setUser, logout],
   );
 
   return (

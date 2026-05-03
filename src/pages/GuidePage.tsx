@@ -17,6 +17,8 @@ import {
   Gift,
   Ticket,
   CheckCircle2,
+  Smartphone,
+  ChevronRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -50,7 +52,7 @@ const SIGNUP_STEPS = [
 const EARN_METHODS = [
   { icon: Gift, label: '회원가입 보상', desc: '가입 시 자동 지급', color: 'text-violet-500', bg: 'bg-violet-50 border-violet-100' },
   { icon: Calendar, label: '매일 출석 체크', desc: '랜덤권 1장/일', color: 'text-blue-500', bg: 'bg-blue-50 border-blue-100' },
-  { icon: QrCode, label: '축제 부스 QR', desc: '랜덤권 1장/스캔', color: 'text-emerald-500', bg: 'bg-emerald-50 border-emerald-100' },
+  { icon: QrCode, label: '축제 부스 QR', desc: '랜덤권 2장 or 이상형권 1장', color: 'text-emerald-500', bg: 'bg-emerald-50 border-emerald-100' },
   { icon: Ticket, label: '쿠폰 이벤트', desc: '이벤트별 상이', color: 'text-orange-500', bg: 'bg-orange-50 border-orange-100' },
 ] as const;
 
@@ -143,8 +145,7 @@ const GuidePage: React.FC = () => {
           </div>
           <div className="space-y-2 pt-3 border-t border-slate-100">
             {[
-              '상명대학교 학생 (21학번 이상)',
-              '21학번 이상 (2021년 이후 입학)',
+              '상명대학교 학생 (21학번 이상, 2021년 이후 입학)',
               '@sangmyung.kr 학교 이메일 보유',
             ].map((item) => (
               <div key={item} className="flex items-center gap-2">
@@ -288,7 +289,7 @@ const GuidePage: React.FC = () => {
                 <span className="text-base leading-none mt-0.5">🏫</span>
                 <div>
                   <p className="text-xs font-bold text-slate-800">같은 학과끼리는 매칭되지 않아요</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">자율전공학부는 예외로 다른 학과와 매칭될 수 있어요</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">자율전공학부는 예외로 같은 학부 내에서 매칭될 수 있어요</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
@@ -400,6 +401,29 @@ const GuidePage: React.FC = () => {
         </div>
       </motion.div>
 
+      {/* PWA 설치 안내 */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.42 }}
+        className="mb-5"
+      >
+        <button
+          type="button"
+          onClick={() => navigate('/pwa-guide')}
+          className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl border border-slate-200/60 shadow-sm text-left"
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
+            <Smartphone size={20} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-800 text-sm">앱으로 설치하기</p>
+            <p className="text-xs text-slate-500 mt-0.5">iOS · Android 설치 방법 보기</p>
+          </div>
+          <ChevronRight size={16} className="text-slate-400 shrink-0" />
+        </button>
+      </motion.div>
+
       {/* CTA */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -427,7 +451,10 @@ const GuidePage: React.FC = () => {
 
   return (
     <MobileLayout className="bg-[#F8FAFF]">
-      <div className={isPWA ? 'px-5 pt-5' : 'mx-auto max-w-2xl px-5 py-5'}>
+      <div
+        className={isPWA ? 'px-5' : 'mx-auto max-w-2xl px-5 py-5'}
+        style={isPWA ? { paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' } : undefined}
+      >
         {content}
       </div>
     </MobileLayout>

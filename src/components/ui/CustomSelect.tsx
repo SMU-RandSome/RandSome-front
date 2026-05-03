@@ -98,7 +98,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             bottom: rect.openUpward ? window.innerHeight - rect.top : undefined,
             left: rect.left,
             width: rect.width,
-            zIndex: 9999,
+            zIndex: 80,
           }}
           className="bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in duration-200"
         >
