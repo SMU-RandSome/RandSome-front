@@ -26,3 +26,6 @@ pnpm-debug.log*
 
 # test coverage
 coverage/
+
+# internal docs (local only)
+docs/
