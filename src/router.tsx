@@ -104,7 +104,7 @@ export const router = createBrowserRouter([
     children: [
       // 공개 라우트
       { path: '/', element: <RootRoute /> },
-      { path: '/login', element: <ServiceGate><LoginPage /></ServiceGate> },
+      { path: '/login', element: <LoginPage /> },
       { path: '/signup', element: <ServiceGate><SignupPage /></ServiceGate> },
       { path: '/forgot-password', element: <ServiceGate><ForgotPasswordPage /></ServiceGate> },
       { path: '/about', element: <AboutPage /> },
