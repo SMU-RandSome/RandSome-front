@@ -236,7 +236,7 @@ const MatchRequestDetailPage: React.FC = () => {
                 </div>
 
                 {/* Self intro */}
-                {p.selfIntroduction && (
+                {(p.selfIntroduction || p.personalityTag || p.faceTypeTag || p.datingStyleTag) && (
                   <div
                     className="rounded-[20px] p-[18px_20px] mb-3"
                     style={{ background: 'rgba(255,255,255,.07)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.1)' }}
@@ -247,7 +247,37 @@ const MatchRequestDetailPage: React.FC = () => {
                       </div>
                       <span className="text-[11px] font-bold text-white/45 tracking-wide uppercase">자기소개</span>
                     </div>
-                    <p className="text-[13.5px] text-white/82 leading-[1.78]">{p.selfIntroduction}</p>
+                    {p.selfIntroduction && (
+                      <p className={`text-[13.5px] text-white/82 leading-[1.78]${(p.personalityTag || p.faceTypeTag || p.datingStyleTag) ? ' mb-3.5' : ''}`}>{p.selfIntroduction}</p>
+                    )}
+                    {(p.personalityTag || p.faceTypeTag || p.datingStyleTag) && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {p.personalityTag && (
+                          <span
+                            className="px-3 py-1 rounded-full text-[11.5px] font-semibold text-white/75"
+                            style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.18)' }}
+                          >
+                            {PERSONALITY_TAG_LABELS[p.personalityTag] ?? p.personalityTag}
+                          </span>
+                        )}
+                        {p.faceTypeTag && (
+                          <span
+                            className="px-3 py-1 rounded-full text-[11.5px] font-semibold text-white/75"
+                            style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.18)' }}
+                          >
+                            {FACE_TYPE_TAG_LABELS[p.faceTypeTag] ?? p.faceTypeTag}
+                          </span>
+                        )}
+                        {p.datingStyleTag && (
+                          <span
+                            className="px-3 py-1 rounded-full text-[11.5px] font-semibold text-white/75"
+                            style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.18)' }}
+                          >
+                            {DATING_STYLE_TAG_LABELS[p.datingStyleTag] ?? p.datingStyleTag}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -263,37 +293,9 @@ const MatchRequestDetailPage: React.FC = () => {
                     <span className="text-[11px] font-bold text-white/45 tracking-wide uppercase">이상형 소개</span>
                   </div>
                   {p.idealDescription ? (
-                    <p className="text-[13.5px] text-white/82 leading-[1.78] mb-3.5">{p.idealDescription}</p>
+                    <p className="text-[13.5px] text-white/82 leading-[1.78]">{p.idealDescription}</p>
                   ) : (
-                    <p className="text-[13px] text-white/30 italic mb-3.5">작성된 내용이 없어요</p>
-                  )}
-                  {(p.personalityTag || p.faceTypeTag || p.datingStyleTag) && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {p.personalityTag && (
-                        <span
-                          className="px-3 py-1 rounded-full text-[11.5px] font-semibold text-white/75"
-                          style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.18)' }}
-                        >
-                          {PERSONALITY_TAG_LABELS[p.personalityTag] ?? p.personalityTag}
-                        </span>
-                      )}
-                      {p.faceTypeTag && (
-                        <span
-                          className="px-3 py-1 rounded-full text-[11.5px] font-semibold text-white/75"
-                          style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.18)' }}
-                        >
-                          {FACE_TYPE_TAG_LABELS[p.faceTypeTag] ?? p.faceTypeTag}
-                        </span>
-                      )}
-                      {p.datingStyleTag && (
-                        <span
-                          className="px-3 py-1 rounded-full text-[11.5px] font-semibold text-white/75"
-                          style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.18)' }}
-                        >
-                          {DATING_STYLE_TAG_LABELS[p.datingStyleTag] ?? p.datingStyleTag}
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-[13px] text-white/30 italic">작성된 내용이 없어요</p>
                   )}
                 </div>
 

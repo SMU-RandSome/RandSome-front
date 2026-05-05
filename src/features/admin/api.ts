@@ -135,6 +135,11 @@ export const getAdminCouponEventIssuedMembers = (
     .get<ApiResponse<CursorSlice<CouponIssuedMemberItem>>>(`/v1/admin/coupon-events/${couponEventId}/issued-members`, { params })
     .then((r) => r.data);
 
+export const syncAdminCouponEventStock = (couponEventId: number): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>(`/v1/admin/coupon-events/${couponEventId}/sync-redis-stock`)
+    .then((r) => r.data);
+
 // --- 신고 관리 ---
 
 export const getAdminReports = (params?: { statusFilter?: ReportStatusFilter }): Promise<ApiResponse<AdminReportListItem[]>> =>
