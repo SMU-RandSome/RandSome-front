@@ -10,10 +10,11 @@ import {
   getAdminCouponEvents,
   getAdminCouponEvent,
   getAdminCouponEventIssuedMembers,
+  syncAdminCouponEventStock,
 } from '@/features/admin/api';
 import { getApiErrorMessage } from '@/lib/axios';
 import type { AdminCouponEventPreviewItem, CouponEventDetailItem, CouponEventType, CouponIssuedMemberItem, TicketType } from '@/types';
-import { Plus, Pencil, Trash2, X, Zap, KeyRound, Calendar, Eye, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Zap, KeyRound, Calendar, Eye, Users, RefreshCw } from 'lucide-react';
 
 const STATUS_CONFIG = {
   DRAFT: { label: '준비중', bg: 'bg-slate-100', text: 'text-slate-600' },
@@ -213,6 +214,7 @@ const CouponEventsTab: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
 
   const [toggling, setToggling] = useState<number | null>(null);
+  const [syncing, setSyncing] = useState<number | null>(null);
 
   const [detailItem, setDetailItem] = useState<CouponEventDetailItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -402,6 +404,21 @@ const CouponEventsTab: React.FC = () => {
     }
   };
 
+  // --- 재고 동기화 ---
+
+  const handleSyncStock = async (event: AdminCouponEventPreviewItem): Promise<void> => {
+    setSyncing(event.id);
+    try {
+      await syncAdminCouponEventStock(event.id);
+      toast('재고가 동기화되었습니다.', 'success');
+      fetchEvents();
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setSyncing(null);
+    }
+  };
+
   // --- 활성화/비활성화 ---
 
   const handleToggleStatus = async (event: AdminCouponEventPreviewItem): Promise<void> => {
@@ -522,6 +539,16 @@ const CouponEventsTab: React.FC = () => {
                           : event.status === 'DRAFT'
                           ? '활성화'
                           : '종료하기'}
+                      </button>
+                    )}
+                    {event.status !== 'ENDED' && (
+                      <button
+                        onClick={() => handleSyncStock(event)}
+                        disabled={syncing === event.id}
+                        className="h-9 px-3 rounded-xl border border-blue-200 text-blue-500 hover:bg-blue-50 disabled:opacity-40 transition-colors"
+                        aria-label="재고 동기화"
+                      >
+                        <RefreshCw size={14} className={syncing === event.id ? 'animate-spin' : ''} />
                       </button>
                     )}
                     <button
