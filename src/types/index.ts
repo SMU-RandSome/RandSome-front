@@ -493,6 +493,7 @@ export interface AdminMemberDetail {
   gender: Gender;
   mbti: Mbti;
   role: UserRole;
+  department: string;
   instagramId: string;
   selfIntroduction?: string;
   idealDescription?: string;
