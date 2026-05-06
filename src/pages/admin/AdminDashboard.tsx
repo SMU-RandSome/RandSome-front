@@ -15,10 +15,12 @@ import {
   rejectAdminReport,
   restoreAdminMember,
   suspendAdminMember,
+  updateAdminMemberRole,
 } from '@/features/admin/api';
 import { getAnnouncements } from '@/features/announcement/api';
 import type {
   Gender,
+  UserRole,
   AdminMemberListItem,
   AdminMemberDetail,
   AdminMatchingItem,
@@ -181,6 +183,8 @@ const AdminDashboard: React.FC = () => {
   const [suspendReason, setSuspendReason] = useState('');
   const [showSuspendForm, setShowSuspendForm] = useState(false);
   const [suspendLoading, setSuspendLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
+  const [roleLoading, setRoleLoading] = useState(false);
 
   // 매칭 신청
   const [matchingApplications, setMatchingApplications] = useState<AdminMatchingItem[]>([]);
@@ -375,6 +379,22 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleUpdateRole = async (memberId: number): Promise<void> => {
+    if (!selectedRole || selectedRole === selectedMemberDetail?.role) return;
+    setRoleLoading(true);
+    try {
+      await updateAdminMemberRole(memberId, { role: selectedRole });
+      toast('권한이 변경되었습니다.', 'success');
+      const res = await getAdminMemberDetail(memberId);
+      if (res.data) setSelectedMemberDetail(res.data);
+      fetchMembers(currentPage, searchTerm);
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setRoleLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchCandidateStats();
   }, [fetchCandidateStats]);
@@ -462,9 +482,13 @@ const AdminDashboard: React.FC = () => {
     setDetailLoading(true);
     setShowSuspendForm(false);
     setSuspendReason('');
+    setSelectedRole('');
     try {
       const res = await getAdminMemberDetail(memberId);
-      if (res.data) setSelectedMemberDetail(res.data);
+      if (res.data) {
+        setSelectedMemberDetail(res.data);
+        setSelectedRole(res.data.role);
+      }
     } catch (err) {
       toast(getApiErrorMessage(err), 'error');
     } finally {
@@ -1262,7 +1286,32 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
+                  {/* 권한 변경 */}
+                  <div className="mt-5 pt-4 border-t border-slate-100 space-y-3">
+                    <p className="text-xs font-bold text-slate-500">권한 변경</p>
+                    <div className="flex gap-2">
+                      <select
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                        className="flex-1 h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+                        style={{ fontSize: '16px' }}
+                        aria-label="권한 선택"
+                      >
+                        <option value="ROLE_MEMBER">일반 회원</option>
+                        <option value="ROLE_CANDIDATE">후보자</option>
+                        <option value="ROLE_ADMIN">관리자</option>
+                      </select>
+                      <button
+                        onClick={() => handleUpdateRole(selectedMemberDetail.id)}
+                        disabled={roleLoading || !selectedRole || selectedRole === selectedMemberDetail.role}
+                        className="h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {roleLoading ? '변경 중...' : '변경'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
                     {selectedMemberDetail.role === 'ROLE_SUSPEND_MEMBER' ? (
                       <button
                         onClick={() => handleRestoreMember(selectedMemberDetail.id)}

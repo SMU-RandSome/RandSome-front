@@ -21,6 +21,7 @@ import type {
   CandidateRegistrationFilter,
   RestrictionRequest,
   Gender,
+  UserRole,
 } from '@/types';
 
 export const getAdminMembers = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMemberListItem>>> =>
@@ -165,4 +166,9 @@ export const rejectAdminReport = (reportId: number): Promise<ApiResponse<null>> 
 export const restoreAdminMember = (memberId: number): Promise<ApiResponse<null>> =>
   apiClient
     .delete<ApiResponse<null>>(`/v1/admin/members/${memberId}/suspensions`)
+    .then((r) => r.data);
+
+export const updateAdminMemberRole = (memberId: number, body: { role: UserRole }): Promise<ApiResponse<null>> =>
+  apiClient
+    .patch<ApiResponse<null>>(`/v1/admin/members/${memberId}/roles`, body)
     .then((r) => r.data);
