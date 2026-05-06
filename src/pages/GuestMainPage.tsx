@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Logo } from '@/components/ui/Logo';
@@ -7,7 +7,7 @@ import { Stars } from '@/components/ui/Stars';
 import { useDisplayMode } from '@/store/displayModeStore';
 import { useDashboard } from '@/hooks/useDashboard';
 import { Heart, Sparkles, MessageCircle, Clock } from 'lucide-react';
-import { isServiceOpen } from '@/constants/serviceSchedule';
+import { isServiceOpen, SERVICE_OPEN_DATE } from '@/constants/serviceSchedule';
 
 import { motion } from 'motion/react';
 
@@ -16,10 +16,31 @@ const INFO_BADGES = [
   { text: '@sangmyung.kr', bg: 'rgba(59,130,246,.22)', color: '#93c5fd', borderColor: 'rgba(59,130,246,.4)' },
 ] as const;
 
+const getTimeLeft = (): { hours: number; minutes: number; seconds: number } | null => {
+  const diff = SERVICE_OPEN_DATE.getTime() - Date.now();
+  if (diff <= 0) return null;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  return { hours, minutes, seconds };
+};
+
 const GuestMainPage: React.FC = () => {
   const navigate = useNavigate();
   const { isPWA, isStandalone } = useDisplayMode();
   const { stats } = useDashboard();
+  const [timeLeft, setTimeLeft] = useState(getTimeLeft);
+  const isCountingDown = timeLeft !== null;
+
+  useEffect(() => {
+    if (!isCountingDown) return;
+    const id = setInterval(() => {
+      const next = getTimeLeft();
+      setTimeLeft(next);
+      if (!next) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isCountingDown]);
 
   useEffect(() => {
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -137,7 +158,7 @@ const GuestMainPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.26 }}
         >
-          {isServiceOpen() ? (
+          {isServiceOpen() || !timeLeft ? (
             <>
               <button
                 onClick={() => navigate('/signup')}
@@ -166,12 +187,38 @@ const GuestMainPage: React.FC = () => {
               </button>
             </>
           ) : (
-            <div
-              className="w-full py-[15px] rounded-[18px] flex items-center justify-center gap-2 border border-white/15"
-              style={{ background: 'rgba(255,255,255,.06)' }}
-            >
-              <Clock size={16} className="text-white/40" />
-              <span className="text-white/50 text-[15px] font-bold">서비스 준비 중이에요</span>
+            <div className="space-y-3">
+              <div
+                className="w-full py-4 rounded-[18px] border border-white/15"
+                style={{ background: 'rgba(255,255,255,.06)' }}
+              >
+                <p className="text-center text-white/40 text-[11px] font-medium mb-2 flex items-center justify-center gap-1.5">
+                  <Clock size={12} />
+                  서비스 오픈까지
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="text-center">
+                    <p className="font-display text-[28px] leading-none gt">{String(timeLeft.hours).padStart(2, '0')}</p>
+                    <p className="text-[10px] text-white/30 mt-1">시간</p>
+                  </div>
+                  <span className="text-white/30 text-[22px] font-light -mt-3">:</span>
+                  <div className="text-center">
+                    <p className="font-display text-[28px] leading-none gt">{String(timeLeft.minutes).padStart(2, '0')}</p>
+                    <p className="text-[10px] text-white/30 mt-1">분</p>
+                  </div>
+                  <span className="text-white/30 text-[22px] font-light -mt-3">:</span>
+                  <div className="text-center">
+                    <p className="font-display text-[28px] leading-none gt">{String(timeLeft.seconds).padStart(2, '0')}</p>
+                    <p className="text-[10px] text-white/30 mt-1">초</p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full py-3 rounded-2xl border border-white/15 bg-transparent text-white/60 text-sm font-medium"
+              >
+                이미 계정이 있어요 · 로그인
+              </button>
             </div>
           )}
           <div className="flex items-center justify-center gap-5 mt-2">
