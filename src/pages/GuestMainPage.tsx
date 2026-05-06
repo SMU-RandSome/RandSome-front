@@ -187,38 +187,30 @@ const GuestMainPage: React.FC = () => {
               </button>
             </>
           ) : (
-            <div className="space-y-3">
-              <div
-                className="w-full py-4 rounded-[18px] border border-white/15"
-                style={{ background: 'rgba(255,255,255,.06)' }}
-              >
-                <p className="text-center text-white/40 text-[11px] font-medium mb-2 flex items-center justify-center gap-1.5">
-                  <Clock size={12} />
-                  서비스 오픈까지
-                </p>
-                <div className="flex items-center justify-center gap-3">
-                  <div className="text-center">
-                    <p className="font-display text-[28px] leading-none gt">{String(timeLeft.hours).padStart(2, '0')}</p>
-                    <p className="text-[10px] text-white/30 mt-1">시간</p>
-                  </div>
-                  <span className="text-white/30 text-[22px] font-light -mt-3">:</span>
-                  <div className="text-center">
-                    <p className="font-display text-[28px] leading-none gt">{String(timeLeft.minutes).padStart(2, '0')}</p>
-                    <p className="text-[10px] text-white/30 mt-1">분</p>
-                  </div>
-                  <span className="text-white/30 text-[22px] font-light -mt-3">:</span>
-                  <div className="text-center">
-                    <p className="font-display text-[28px] leading-none gt">{String(timeLeft.seconds).padStart(2, '0')}</p>
-                    <p className="text-[10px] text-white/30 mt-1">초</p>
-                  </div>
+            <div
+              className="w-full py-4 rounded-[18px] border border-white/15"
+              style={{ background: 'rgba(255,255,255,.06)' }}
+            >
+              <p className="text-center text-white/40 text-[11px] font-medium mb-2 flex items-center justify-center gap-1.5">
+                <Clock size={12} />
+                서비스 오픈까지
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <div className="text-center">
+                  <p className="font-display text-[28px] leading-none gt">{String(timeLeft.hours).padStart(2, '0')}</p>
+                  <p className="text-[10px] text-white/30 mt-1">시간</p>
+                </div>
+                <span className="text-white/30 text-[22px] font-light -mt-3">:</span>
+                <div className="text-center">
+                  <p className="font-display text-[28px] leading-none gt">{String(timeLeft.minutes).padStart(2, '0')}</p>
+                  <p className="text-[10px] text-white/30 mt-1">분</p>
+                </div>
+                <span className="text-white/30 text-[22px] font-light -mt-3">:</span>
+                <div className="text-center">
+                  <p className="font-display text-[28px] leading-none gt">{String(timeLeft.seconds).padStart(2, '0')}</p>
+                  <p className="text-[10px] text-white/30 mt-1">초</p>
                 </div>
               </div>
-              <button
-                onClick={() => navigate('/login')}
-                className="w-full py-3 rounded-2xl border border-white/15 bg-transparent text-white/60 text-sm font-medium"
-              >
-                이미 계정이 있어요 · 로그인
-              </button>
             </div>
           )}
           <div className="flex items-center justify-center gap-5 mt-2">
