@@ -1265,6 +1265,7 @@ const AdminDashboard: React.FC = () => {
 
                   <div className="space-y-3">
                     <Row label="실명" value={selectedMemberDetail.legalName} />
+                    <Row label="학과" value={selectedMemberDetail.department} />
                     <Row label="성별" value={selectedMemberDetail.gender === 'MALE' ? '남성' : '여성'} />
                     <Row label="MBTI" value={selectedMemberDetail.mbti} />
                     {selectedMemberDetail.instagramId && (
