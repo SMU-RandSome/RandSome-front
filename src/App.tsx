@@ -7,6 +7,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import FcmInitializer from '@/components/FcmInitializer';
 import { useAppResume } from '@/hooks/useAppResume';
+import { Analytics } from '@vercel/analytics/react';
 import { router } from '@/router';
 
 const AppLifecycle: React.FC = () => {
@@ -38,6 +39,7 @@ export default function App() {
               <ToastProvider>
                 <FcmInitializer />
                 <RouterProvider router={router} />
+                <Analytics />
               </ToastProvider>
             </AuthProvider>
           </DisplayModeProvider>
