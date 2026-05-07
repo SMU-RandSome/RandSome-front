@@ -258,7 +258,7 @@ export type TicketType = 'RANDOM' | 'IDEAL';
 
 export type TicketActionType = 'EARN' | 'USE' | 'REFUND';
 
-export type TicketSource = 'JOIN' | 'ATTENDANCE' | 'COUPON' | 'MATCHING' | 'PARTIAL_MATCH_REFUND' | 'NO_MATCH_REFUND' | 'ADMIN';
+export type TicketSource = 'JOIN' | 'ATTENDANCE' | 'COUPON' | 'MATCHING' | 'PARTIAL_MATCH_REFUND' | 'NO_MATCH_REFUND' | 'ADMIN' | 'CANDIDATE_APPROVAL' | 'CANDIDATE_WITHDRAWAL';
 
 export interface TicketBalanceResponse {
   randomTicketCount: number;
@@ -497,6 +497,20 @@ export interface AdminMemberDetail {
   instagramId: string;
   selfIntroduction?: string;
   idealDescription?: string;
+}
+
+export interface AdminTicketEarnRequest {
+  memberId: number;
+  ticketType: TicketType;
+  amount: number;
+  reason?: string;
+}
+
+export interface AdminTicketDeductRequest {
+  memberId: number;
+  ticketType: TicketType;
+  amount: number;
+  reason?: string;
 }
 
 export interface PageResponse<T> {

@@ -29,6 +29,8 @@ const SOURCE_LABELS: Record<TicketSource, string> = {
   PARTIAL_MATCH_REFUND: '부분 매칭 환불',
   NO_MATCH_REFUND: '미매칭 환불',
   ADMIN: '관리자 지급',
+  CANDIDATE_APPROVAL: '후보 등록 보상',
+  CANDIDATE_WITHDRAWAL: '후보 철회 차감',
 };
 
 const formatDate = (iso: string): string => {

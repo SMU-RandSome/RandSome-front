@@ -16,11 +16,14 @@ import {
   restoreAdminMember,
   suspendAdminMember,
   updateAdminMemberRole,
+  earnAdminTicket,
+  deductAdminTicket,
 } from '@/features/admin/api';
 import { getAnnouncements } from '@/features/announcement/api';
 import type {
   Gender,
   UserRole,
+  TicketType,
   AdminMemberListItem,
   AdminMemberDetail,
   AdminMatchingItem,
@@ -185,6 +188,11 @@ const AdminDashboard: React.FC = () => {
   const [suspendLoading, setSuspendLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
   const [roleLoading, setRoleLoading] = useState(false);
+  const [ticketAction, setTicketAction] = useState<'EARN' | 'DEDUCT'>('EARN');
+  const [ticketType, setTicketType] = useState<TicketType>('RANDOM');
+  const [ticketAmount, setTicketAmount] = useState('');
+  const [ticketReason, setTicketReason] = useState('');
+  const [ticketLoading, setTicketLoading] = useState(false);
 
   // 매칭 신청
   const [matchingApplications, setMatchingApplications] = useState<AdminMatchingItem[]>([]);
@@ -392,6 +400,27 @@ const AdminDashboard: React.FC = () => {
       toast(getApiErrorMessage(err), 'error');
     } finally {
       setRoleLoading(false);
+    }
+  };
+
+  const handleTicketAction = async (memberId: number): Promise<void> => {
+    const amount = Number(ticketAmount);
+    if (!amount || amount < 1 || amount > 100) { toast('수량은 1~100 사이로 입력해주세요.', 'error'); return; }
+    setTicketLoading(true);
+    try {
+      const body = { memberId, ticketType, amount, reason: ticketReason || undefined };
+      if (ticketAction === 'EARN') {
+        await earnAdminTicket(body);
+        toast(`${ticketType === 'RANDOM' ? '랜덤' : '이상형'} 티켓 ${amount}장 지급 완료`, 'success');
+      } else {
+        await deductAdminTicket(body);
+        toast(`${ticketType === 'RANDOM' ? '랜덤' : '이상형'} 티켓 ${amount}장 차감 완료`, 'success');
+      }
+      setTicketAmount(''); setTicketReason('');
+    } catch (err) {
+      toast(getApiErrorMessage(err), 'error');
+    } finally {
+      setTicketLoading(false);
     }
   };
 
@@ -1310,6 +1339,58 @@ const AdminDashboard: React.FC = () => {
                         {roleLoading ? '변경 중...' : '변경'}
                       </button>
                     </div>
+                  </div>
+
+                  {/* 티켓 수동 지급/차감 */}
+                  <div className="mt-5 pt-4 border-t border-slate-100 space-y-3">
+                    <p className="text-xs font-bold text-slate-500">티켓 수동 지급/차감</p>
+                    <div className="flex gap-2">
+                      <select
+                        value={ticketAction}
+                        onChange={(e) => setTicketAction(e.target.value as 'EARN' | 'DEDUCT')}
+                        className="h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+                        style={{ fontSize: '16px' }}
+                        aria-label="지급/차감 선택"
+                      >
+                        <option value="EARN">지급</option>
+                        <option value="DEDUCT">차감</option>
+                      </select>
+                      <select
+                        value={ticketType}
+                        onChange={(e) => setTicketType(e.target.value as TicketType)}
+                        className="h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+                        style={{ fontSize: '16px' }}
+                        aria-label="티켓 종류"
+                      >
+                        <option value="RANDOM">랜덤</option>
+                        <option value="IDEAL">이상형</option>
+                      </select>
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        placeholder="수량"
+                        value={ticketAmount}
+                        onChange={(e) => setTicketAmount(e.target.value)}
+                        className="w-20 h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 text-center focus:outline-none focus:border-slate-400 transition-colors"
+                        style={{ fontSize: '16px' }}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="사유 (선택)"
+                      value={ticketReason}
+                      onChange={(e) => setTicketReason(e.target.value)}
+                      className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-slate-400 transition-colors"
+                      style={{ fontSize: '16px' }}
+                    />
+                    <button
+                      onClick={() => handleTicketAction(selectedMemberDetail.id)}
+                      disabled={ticketLoading || !ticketAmount}
+                      className={`w-full h-10 rounded-xl text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${ticketAction === 'EARN' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-rose-500 hover:bg-rose-600'}`}
+                    >
+                      {ticketLoading ? '처리 중...' : ticketAction === 'EARN' ? '티켓 지급' : '티켓 차감'}
+                    </button>
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">

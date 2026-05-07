@@ -135,6 +135,13 @@ const MatchPage: React.FC = () => {
               ))}
             </ul>
           </div>
+          <div className="rounded-2xl px-4 py-3 mb-6" style={{ background: 'rgba(99,102,241,.06)', border: '1px solid rgba(99,102,241,.15)' }}>
+            <p className="text-xs font-bold text-indigo-600 mb-1">🎁 첫 등록 보상</p>
+            <p className="text-[12px] text-slate-600 leading-[1.6]">
+              첫 후보 등록 승인 시 랜덤 티켓 3장 + 이상형 티켓 3장이 지급됩니다.<br />
+              <span className="text-slate-400">※ 철회 시 지급된 티켓은 차감됩니다.</span>
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 rounded-2xl px-4 py-3 mb-4" style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.15)' }}>
           <AlertTriangle size={14} className="text-red-400 shrink-0" />
