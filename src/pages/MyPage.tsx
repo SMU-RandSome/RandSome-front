@@ -739,7 +739,8 @@ const MyPage: React.FC = () => {
               <div className="p-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-1">후보 등록 철회</h3>
                 <p className="text-sm text-slate-500 mb-2">정말 후보 등록을 철회하시겠어요?</p>
-                <p className="text-xs text-rose-400 mb-6">철회 후에는 다시 등록 신청이 필요합니다.</p>
+                <p className="text-xs text-rose-400 mb-2">철회 후에는 다시 등록 신청이 필요합니다.</p>
+                <p className="text-[11px] text-slate-400 mb-6">※ 첫 등록 시 지급된 보상 티켓(랜덤 3장 + 이상형 3장)은 차감됩니다.</p>
                 <div className="flex gap-2.5">
                   <button
                     onClick={() => setShowWithdrawConfirm(false)}

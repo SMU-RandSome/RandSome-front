@@ -22,6 +22,8 @@ import type {
   RestrictionRequest,
   Gender,
   UserRole,
+  AdminTicketEarnRequest,
+  AdminTicketDeductRequest,
 } from '@/types';
 
 export const getAdminMembers = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageResponse<AdminMemberListItem>>> =>
@@ -171,4 +173,16 @@ export const restoreAdminMember = (memberId: number): Promise<ApiResponse<null>>
 export const updateAdminMemberRole = (memberId: number, body: { role: UserRole }): Promise<ApiResponse<null>> =>
   apiClient
     .patch<ApiResponse<null>>(`/v1/admin/members/${memberId}/roles`, body)
+    .then((r) => r.data);
+
+// --- 티켓 수동 지급/차감 ---
+
+export const earnAdminTicket = (body: AdminTicketEarnRequest): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>('/v1/admin/tickets/earn', body)
+    .then((r) => r.data);
+
+export const deductAdminTicket = (body: AdminTicketDeductRequest): Promise<ApiResponse<null>> =>
+  apiClient
+    .post<ApiResponse<null>>('/v1/admin/tickets/deduct', body)
     .then((r) => r.data);

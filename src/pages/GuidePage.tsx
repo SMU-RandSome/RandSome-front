@@ -267,6 +267,10 @@ const GuidePage: React.FC = () => {
             ))}
           </div>
           <p className="text-[11px] text-slate-400 mt-2.5 text-center">승인까지 최대 약 10분 소요 · 언제든 철회 가능</p>
+          <div className="mt-3 rounded-xl px-3.5 py-2.5" style={{ background: 'rgba(99,102,241,.06)', border: '1px solid rgba(99,102,241,.12)' }}>
+            <p className="text-[11px] text-indigo-600 font-bold">🎁 첫 등록 보상: 랜덤 티켓 3장 + 이상형 티켓 3장</p>
+            <p className="text-[10.5px] text-slate-400 mt-0.5">철회 시 보상 티켓은 차감됩니다.</p>
+          </div>
         </div>
       </motion.div>
 
