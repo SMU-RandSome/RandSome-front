@@ -373,6 +373,10 @@ const SignupPage: React.FC = () => {
                   </button>
                 </div>
                 <a href="https://cloud.smu.ac.kr/t/smu.ac.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors">🏫 학교 웹메일 바로가기 <ExternalLink size={12} /></a>
+                <p className="text-[11px] text-amber-500/80 leading-[1.6]">
+                  <span className="font-bold">* 주의</span> — 메일 전송까지 시간이 조금 걸릴 수 있어요.<br />
+                  반복 요청 시 이메일 시스템에서 차단될 수 있으니 잠시 기다려주세요.
+                </p>
                 {emailVerified ? (
                   <p className="text-xs text-green-600 font-bold flex items-center gap-1"><CheckCircle2 size={12} /> 인증이 완료되었습니다.</p>
                 ) : emailSent && (
