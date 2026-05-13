@@ -233,7 +233,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchMembers = useCallback((page: number, search: string): void => {
     setMembersLoading(true);
-    getAdminMembers({ page: page - 1, size: ITEMS_PER_PAGE })
+    getAdminMembers({ page, size: ITEMS_PER_PAGE })
       .then((res) => {
         if (res.data) {
           const filtered = search
